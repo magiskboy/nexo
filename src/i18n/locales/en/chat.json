@@ -40,5 +40,7 @@
   "streamingTimeout": "Timeout in",
   "streamingTimeoutError": "Streaming timeout. Please try again.",
   "retry": "Retry",
+  "fileTooLarge": "File too large ({{size}}). Max {{max}}.",
+  "fileTypeNotSupported": "File type not supported: {{type}}",
   "messageTooLong": "Message is too long ({{length}}/{{max}} characters)."
 }

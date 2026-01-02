@@ -1,6 +1,10 @@
 import { useRef, useEffect, useState } from 'react';
 import { Send, Paperclip, Square, Wrench, Brain } from 'lucide-react';
-import { MAX_MESSAGE_LENGTH } from '@/lib/constants';
+import {
+  MAX_MESSAGE_LENGTH,
+  MAX_FILE_SIZE,
+  ALLOWED_FILE_TYPES,
+} from '@/lib/constants';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
 import { Textarea } from '@/ui/atoms/textarea';
@@ -21,8 +25,9 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from '@/ui/atoms/dropdown-menu';
-import { useAppSelector } from '@/store/hooks';
-import { cn } from '@/lib/utils';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { cn, formatFileSize } from '@/lib/utils';
+import { showError } from '@/store/slices/notificationSlice';
 import { isVisionModel } from '@/lib/model-utils';
 import { useChatInput } from '@/hooks/useChatInput';
 import { useMessages } from '@/hooks/useMessages';
@@ -56,6 +61,7 @@ export function ChatInput({
   onRetryStreaming,
 }: ChatInputProps) {
   const { t } = useTranslation(['chat', 'common', 'settings']);
+  const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
@@ -241,9 +247,43 @@ export function ChatInput({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      const newFiles = [...attachedFiles, ...files];
-      handleFileUpload(newFiles);
+      const validFiles: File[] = [];
+
+      for (const file of files) {
+        // Validate size
+        if (file.size > MAX_FILE_SIZE) {
+          dispatch(
+            showError(
+              t('fileTooLarge', {
+                size: formatFileSize(file.size),
+                max: formatFileSize(MAX_FILE_SIZE),
+                ns: 'chat',
+              })
+            )
+          );
+          continue;
+        }
+
+        // Validate type
+        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+          dispatch(
+            showError(
+              t('fileTypeNotSupported', { type: file.type, ns: 'chat' })
+            )
+          );
+          continue;
+        }
+
+        validFiles.push(file);
+      }
+
+      if (validFiles.length > 0) {
+        const newFiles = [...attachedFiles, ...validFiles];
+        handleFileUpload(newFiles);
+      }
     }
+
+    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
