@@ -41,6 +41,7 @@
   "streamingTimeoutError": "Streaming đã hết thời gian chờ. Vui lòng thử lại.",
   "retry": "Thử lại",
   "exportChat": "Xuất Chat",
+  "dropFiles": "Kéo thả ảnh vào đây",
   "fileTooLarge": "File quá lớn ({{size}}). Tối đa {{max}}.",
   "fileTypeNotSupported": "Loại file không được hỗ trợ: {{type}}",
   "messageTooLong": "Tin nhắn quá dài ({{length}}/{{max}} ký tự)."

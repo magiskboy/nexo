@@ -325,6 +325,93 @@ export function ChatInput({
     }
   }, [attachedFiles.length, handleFileUpload, supportsVision]);
 
+  // Handle paste event (images)
+  const handlePaste = (e: React.ClipboardEvent) => {
+    // Only handle if vision is supported
+    if (!supportsVision) return;
+
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          // Validate size
+          if (file.size > MAX_FILE_SIZE) {
+            dispatch(
+              showError(
+                t('fileTooLarge', {
+                  size: formatFileSize(file.size),
+                  max: formatFileSize(MAX_FILE_SIZE),
+                  ns: 'chat',
+                })
+              )
+            );
+            continue;
+          }
+          files.push(file);
+        }
+      }
+    }
+
+    if (files.length > 0) {
+      // If we found images, prevent default to handle them manually
+      // Note: This might prevent text pasting if copied together (unlikely combo)
+      // e.preventDefault();
+      handleFileUpload([...attachedFiles, ...files]);
+    }
+  };
+
+  // Drag & Drop logic
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!supportsVision) return;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (!supportsVision) return;
+
+    const files = Array.from(e.dataTransfer.files).filter((f) =>
+      f.type.startsWith('image/')
+    );
+
+    if (files.length > 0) {
+      const validFiles: File[] = [];
+      for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) {
+          dispatch(
+            showError(
+              t('fileTooLarge', {
+                size: formatFileSize(file.size),
+                max: formatFileSize(MAX_FILE_SIZE),
+                ns: 'chat',
+              })
+            )
+          );
+          continue;
+        }
+        validFiles.push(file);
+      }
+
+      if (validFiles.length > 0) {
+        handleFileUpload([...attachedFiles, ...validFiles]);
+      }
+    }
+  };
+
   return (
     <>
       <div className="bg-background">
@@ -370,7 +457,30 @@ export function ChatInput({
         )}
 
         <div className="mx-auto max-w-3xl px-4 py-3">
-          <div className="rounded-2xl border border-border bg-background shadow-sm p-3">
+          <div
+            className={cn(
+              'rounded-2xl border border-border bg-background shadow-sm p-3 relative transition-colors',
+              isDragging && 'border-primary ring-2 ring-primary/20 bg-muted/50'
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {/* Drag Indicator Overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl bg-background/80 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-2 text-primary">
+                  <Paperclip className="h-8 w-8 animate-bounce" />
+                  <span className="font-medium">
+                    {t('dropFiles', {
+                      ns: 'chat',
+                      defaultValue: 'Drop images here',
+                    })}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Attached Files */}
             {attachedFiles.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-1.5">
@@ -410,6 +520,7 @@ export function ChatInput({
                 value={input}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 placeholder={t('enterMessage')}
                 disabled={disabled}
                 className="w-full min-h-[40px] max-h-[200px] resize-none leading-relaxed text-base py-0 px-2 border-0 rounded-lg outline-none flex content-center ring-0 shadow-none focus:ring-0 focus:shadow-none"
