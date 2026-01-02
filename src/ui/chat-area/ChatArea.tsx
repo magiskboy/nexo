@@ -3,6 +3,7 @@ import { ChatInput } from './ChatInput';
 import { useMessages } from '@/hooks/useMessages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { MAX_MESSAGE_LENGTH } from '@/lib/constants';
 import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 import { sendMessage } from '@/store/slices/messages';
@@ -51,6 +52,19 @@ export function ChatArea() {
   const handleSend = async () => {
     if (!input.trim() || isStreaming || !selectedWorkspace || !selectedChatId)
       return;
+
+    if (input.length > MAX_MESSAGE_LENGTH) {
+      dispatch(
+        showError(
+          t('messageTooLong', {
+            length: input.length,
+            max: MAX_MESSAGE_LENGTH,
+            ns: 'chat',
+          })
+        )
+      );
+      return;
+    }
 
     const workspaceSetting = workspaceSettings[selectedWorkspace.id];
     const llmConnectionId = workspaceSetting?.llmConnectionId;
