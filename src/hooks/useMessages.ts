@@ -9,7 +9,9 @@ import {
   clearStreamingStartTime,
 } from '@/store/slices/messages';
 import { showError } from '@/store/slices/notificationSlice';
+
 import { useTranslation } from 'react-i18next';
+import { invokeCommand, TauriCommands } from '@/lib/tauri';
 
 const STREAMING_TIMEOUT = 60000; // 60 seconds
 
@@ -137,34 +139,25 @@ export function useMessages(selectedChatId: string | null) {
   }, [selectedChatId, streamingByChatId, streamingStartTimes, dispatch, t]);
 
   // Separate effect for countdown display (runs every second)
-  // Note: setState in effect is intentional here for real-time countdown updates
   useEffect(() => {
-    if (!selectedChatId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTimeLeft(null);
-      return;
-    }
+    if (!selectedChatId) return;
 
     const startTime = streamingStartTimes[selectedChatId];
     const isCurrentlyStreaming = !!streamingByChatId[selectedChatId];
 
-    if (!isCurrentlyStreaming || !startTime) {
-      setTimeLeft(null);
-      return;
-    }
+    if (!isCurrentlyStreaming || !startTime) return;
 
-    // Update countdown every second
-    const countdownInterval = setInterval(() => {
+    // Update countdown
+    const updateCountdown = () => {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, STREAMING_TIMEOUT - elapsed);
       setTimeLeft(Math.ceil(remaining / 1000));
-    }, 1000);
+    };
 
     // Set initial value immediately
-    const elapsed = Date.now() - startTime;
-    const remaining = Math.max(0, STREAMING_TIMEOUT - elapsed);
+    updateCountdown();
 
-    setTimeLeft(Math.ceil(remaining / 1000));
+    const countdownInterval = setInterval(updateCountdown, 1000);
 
     return () => {
       clearInterval(countdownInterval);
@@ -184,6 +177,11 @@ export function useMessages(selectedChatId: string | null) {
       dispatch(stopStreaming(selectedChatId));
       dispatch(clearStreamingStartTime(selectedChatId));
       setTimeLeft(null);
+
+      // Cancel backend request
+      invokeCommand(TauriCommands.CANCEL_MESSAGE, {
+        chatId: selectedChatId,
+      }).catch(console.error);
     } else {
       dispatch(stopStreaming());
     }
@@ -203,7 +201,7 @@ export function useMessages(selectedChatId: string | null) {
     pausedStreaming,
     isStreaming,
     streamingError,
-    timeLeft,
+    timeLeft: isStreaming ? timeLeft : null,
     handleStopStreaming,
     handleRetryStreaming,
   };

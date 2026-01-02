@@ -149,7 +149,6 @@ export const reducers = {
     action: PayloadAction<string | undefined>
   ) => {
     // Note: Streaming is now handled by Rust backend, so we only cleanup UI state here
-    // TODO: Implement cancel_streaming Tauri command if needed
     // If chatId provided, stop streaming for that specific chat
     if (action.payload) {
       const messageId = state.streamingByChatId[action.payload];
@@ -176,6 +175,8 @@ export const reducers = {
         state.streamingMessageId = null;
       }
     }
+    // Fixed: Issue #10 - Clear loading state when stopping streaming
+    state.loading = false;
   },
   setStreamingByChatId: (
     state: MessagesState,
