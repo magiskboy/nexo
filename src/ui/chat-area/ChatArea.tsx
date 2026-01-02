@@ -1,5 +1,6 @@
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
+import { ChatHeader } from './ChatHeader';
 import { useMessages } from '@/hooks/useMessages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -151,6 +152,11 @@ export function ChatArea() {
   // Has messages: Normal layout
   return (
     <>
+      {/* Header Area */}
+      {selectedChatId && (
+        <ChatHeader chatId={selectedChatId} messages={messages} />
+      )}
+
       {/* Messages Area */}
       <ChatMessages
         messages={messages}
