@@ -208,6 +208,10 @@ export function ChatInput({
   const supportsVision = isVisionModel(selectedModelName);
 
   useEffect(() => {
+    // Note: We use JS resize + debounce instead of CSS `field-sizing: content`
+    // because `field-sizing` is not yet supported in WebKit (Safari/Tauri macOS).
+    // The CSS Grid hack approach (textarea over hidden div) doubles DOM nodes
+    // and doesn't offer better performance than this debounced JS solution.
     const resize = () => {
       const textarea = textareaRef.current;
       if (textarea) {
