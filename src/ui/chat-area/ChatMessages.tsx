@@ -361,44 +361,52 @@ export function ChatMessages({
 
   // Memoize sorted messages - only recalculate when messages array changes
   const sortedMessages = useMemo(() => {
-    // Sort messages: tool_call messages should appear before their associated assistant message
-    // First, sort all messages by timestamp
+    // 1. Sort all messages by timestamp
     const timestampSorted = [...messages].sort(
       (a, b) => a.timestamp - b.timestamp
     );
 
-    // Then, reorganize to place tool_call messages before their assistant messages
+    // 2. Index tool calls by assistant message ID for O(1) lookup
+    // This avoids O(N^2) complexity from nested filtering
+    const toolCallsMap = new Map<string, typeof messages>();
+
+    for (const m of timestampSorted) {
+      if (m.role === 'tool_call' && m.assistantMessageId) {
+        if (!toolCallsMap.has(m.assistantMessageId)) {
+          toolCallsMap.set(m.assistantMessageId, []);
+        }
+        const list = toolCallsMap.get(m.assistantMessageId);
+        if (list) {
+          list.push(m);
+        }
+      }
+    }
+
     const sorted: typeof messages = [];
     const processedIds = new Set<string>();
 
     for (const message of timestampSorted) {
-      // Skip if already processed
+      // Skip if already processed (e.g., a tool call already added via its assistant parent)
       if (processedIds.has(message.id)) {
         continue;
       }
 
-      // Add the message itself first
+      // Add the message itself
       sorted.push(message);
       processedIds.add(message.id);
 
-      // If this is an assistant message, then add all its tool_call messages after it
+      // If this is an assistant message, append all its associated tool calls immediately after
       // This ensures Thinking (part of assistant message) -> Tool Call order
       if (message.role === 'assistant') {
-        const toolCalls = messages.filter(
-          (m) =>
-            m.role === 'tool_call' &&
-            m.assistantMessageId === message.id &&
-            !processedIds.has(m.id)
-        );
-
-        // Sort tool calls by timestamp and add them after the assistant message
-        const sortedToolCalls = toolCalls.sort(
-          (a, b) => a.timestamp - b.timestamp
-        );
-
-        for (const toolCall of sortedToolCalls) {
-          sorted.push(toolCall);
-          processedIds.add(toolCall.id);
+        const childToolCalls = toolCallsMap.get(message.id);
+        if (childToolCalls) {
+          // Tool calls in map are already sorted by timestamp because we iterated timestampSorted
+          for (const toolCall of childToolCalls) {
+            if (!processedIds.has(toolCall.id)) {
+              sorted.push(toolCall);
+              processedIds.add(toolCall.id);
+            }
+          }
         }
       }
     }

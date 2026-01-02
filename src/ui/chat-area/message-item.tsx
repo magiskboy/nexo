@@ -326,7 +326,6 @@ export const MessageItem = memo(
       prevProps.message.content === nextProps.message.content &&
       prevProps.message.reasoning === nextProps.message.reasoning &&
       prevProps.message.codeBlocks === nextProps.message.codeBlocks &&
-      prevProps.message.codeBlocks === nextProps.message.codeBlocks &&
       prevProps.message.tokenUsage === nextProps.message.tokenUsage &&
       prevProps.userMode === nextProps.userMode &&
       prevProps.markdownEnabled === nextProps.markdownEnabled &&
