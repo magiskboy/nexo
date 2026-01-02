@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { Send, Paperclip, Square, Wrench, Brain } from 'lucide-react';
+import { MAX_MESSAGE_LENGTH } from '@/lib/constants';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
 import { Textarea } from '@/ui/atoms/textarea';
@@ -502,6 +503,23 @@ export function ChatInput({
 
               {/* Right side: Model Selector and Send Button */}
               <div className="flex items-center gap-2">
+                {/* Character Counter */}
+                {input.length > 0 && (
+                  <div
+                    className={cn(
+                      'text-xs transition-colors',
+                      input.length > MAX_MESSAGE_LENGTH
+                        ? 'text-destructive'
+                        : input.length > MAX_MESSAGE_LENGTH * 0.9
+                          ? 'text-yellow-500'
+                          : 'text-muted-foreground/50'
+                    )}
+                  >
+                    {input.length.toLocaleString()} /{' '}
+                    {MAX_MESSAGE_LENGTH.toLocaleString()}
+                  </div>
+                )}
+
                 {/* Model Selector */}
                 <Select
                   value={selectedModel || ''}
@@ -542,7 +560,13 @@ export function ChatInput({
                 {/* Send/Stop Button */}
                 <Button
                   onClick={isStreaming ? handleStopStreaming : onSend}
-                  disabled={isStreaming ? false : !input.trim() || disabled}
+                  disabled={
+                    isStreaming
+                      ? false
+                      : !input.trim() ||
+                        disabled ||
+                        input.length > MAX_MESSAGE_LENGTH
+                  }
                   size="icon"
                   variant={isStreaming ? 'destructive' : 'ghost'}
                   className={cn(

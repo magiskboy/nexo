@@ -39,5 +39,6 @@
   "noActiveTools": "Không có công cụ",
   "streamingTimeout": "Hết thời gian chờ sau",
   "streamingTimeoutError": "Streaming đã hết thời gian chờ. Vui lòng thử lại.",
-  "retry": "Thử lại"
+  "retry": "Thử lại",
+  "messageTooLong": "Tin nhắn quá dài ({{length}}/{{max}} ký tự)."
 }
