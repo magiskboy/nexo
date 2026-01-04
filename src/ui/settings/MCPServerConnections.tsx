@@ -38,6 +38,7 @@ import {
   disconnectMCPConnection,
 } from '@/store/slices/mcpConnectionsSlice';
 import { refreshMCPConnections } from '@/store/slices/mcpConnectionsSlice';
+import { navigateToChat } from '@/store/slices/uiSlice';
 import { showError, showSuccess } from '@/store/slices/notificationSlice';
 import type { MCPToolType, MCPServerConnection } from '@/lib/mcp/types';
 
@@ -193,6 +194,7 @@ export function MCPServerConnections() {
 
         // Show success notification
         dispatch(showSuccess(t('connectionSaved'), t('mcpConnectionUpdated')));
+        dispatch(navigateToChat());
 
         // If connection needs reconnect, trigger async connection immediately
         if (updateResult.updates.status === 'connecting') {
@@ -222,6 +224,7 @@ export function MCPServerConnections() {
         dispatch(
           showSuccess(t('connectionSaved'), t('newMCPConnectionCreated'))
         );
+        dispatch(navigateToChat());
 
         // Start async connection immediately in background (don't await)
         dispatch(
@@ -246,6 +249,7 @@ export function MCPServerConnections() {
 
       // Show success notification
       dispatch(showSuccess(t('connectionSaved'), t('mcpConnectionUpdated')));
+      dispatch(navigateToChat());
     } catch (error) {
       console.error('Error saving MCP connection:', error);
       dispatch(showError(t('cannotSaveConnection')));

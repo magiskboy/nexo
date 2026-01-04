@@ -17,6 +17,7 @@ import {
 import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
 import { useAppDispatch } from '@/store/hooks';
+import { navigateToChat } from '@/store/slices/uiSlice';
 import { showError, showSuccess } from '@/store/slices/notificationSlice';
 
 // Types matching Rust structs
@@ -108,6 +109,7 @@ export function PromptManagement() {
           editingPrompt ? t('promptUpdated') : t('newPromptCreated')
         )
       );
+      dispatch(navigateToChat());
     } catch (error) {
       console.error('Error saving prompt:', error);
       dispatch(showError(t('cannotSavePrompt')));

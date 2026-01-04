@@ -34,8 +34,9 @@ import {
   addLLMConnection,
   updateLLMConnection,
   removeLLMConnection,
+  refreshLLMConnections,
 } from '@/store/slices/llmConnectionsSlice';
-import { refreshLLMConnections } from '@/store/slices/llmConnectionsSlice';
+import { navigateToChat } from '@/store/slices/uiSlice';
 import { showError, showSuccess } from '@/store/slices/notificationSlice';
 
 export interface LLMModel {
@@ -128,6 +129,7 @@ export function LLMConnections() {
           editingConnection ? t('connectionUpdated') : t('newConnectionCreated')
         )
       );
+      dispatch(navigateToChat());
     } catch (error) {
       console.error('Error saving LLM connection:', error);
       dispatch(showError(t('cannotSaveConnection')));

@@ -9,9 +9,13 @@ import {
 } from '@/ui/atoms/select';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import i18n from '@/i18n/config';
+import { useAppDispatch } from '@/store/hooks';
+import { navigateToChat } from '@/store/slices/uiSlice';
+import { Button } from '../atoms/button/button';
 
 export function AppSettings() {
-  const { t } = useTranslation('settings');
+  const { t } = useTranslation(['settings', 'common']);
+  const dispatch = useAppDispatch();
   const {
     language: currentLanguage,
     userMode: currentUserMode,
@@ -103,6 +107,12 @@ export function AppSettings() {
             </p>
           )}
         </div>
+      </div>
+
+      <div className="pt-6 flex justify-end">
+        <Button onClick={() => dispatch(navigateToChat())} className="min-w-32">
+          {t('common:save')}
+        </Button>
       </div>
     </div>
   );

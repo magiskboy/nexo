@@ -76,7 +76,13 @@ export function WorkspaceSettingsPage() {
   };
 
   const onSaveWorkspaceSettings = async (settings: WorkspaceSettings) => {
-    await handleSaveWorkspaceSettings(settings);
+    try {
+      await handleSaveWorkspaceSettings(settings);
+      dispatch(navigateToChat());
+    } catch (error) {
+      console.error('Error saving workspace settings:', error);
+      dispatch(showError(t('cannotSaveWorkspaceSettings')));
+    }
   };
 
   const onDeleteWorkspace = async (workspaceId: string) => {
