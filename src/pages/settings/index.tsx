@@ -6,7 +6,6 @@ import {
   Info,
   Package,
   BarChart,
-  Briefcase,
   ArrowLeft,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -108,11 +107,6 @@ export function SettingsPage() {
       id: 'general',
       label: t('title'),
       icon: <SettingsIcon className="size-4" />,
-    },
-    {
-      id: 'workspace',
-      label: t('workspaceSettings'),
-      icon: <Briefcase className="size-4" />,
     },
     {
       id: 'llm',
