@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::models::{AppSetting, WorkspaceSettings};
 use crate::state::AppState;
 use tauri::State;
@@ -12,7 +13,7 @@ pub fn save_workspace_settings(
     default_model: Option<String>,
     tool_permission_config: Option<String>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .workspace_settings_service
         .save(
@@ -24,18 +25,18 @@ pub fn save_workspace_settings(
             default_model,
             tool_permission_config,
         )
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
 pub fn get_workspace_settings(
     workspace_id: String,
     state: State<'_, AppState>,
-) -> Result<Option<WorkspaceSettings>, String> {
+) -> Result<Option<WorkspaceSettings>, AppError> {
     state
         .workspace_settings_service
         .get_by_workspace_id(&workspace_id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
@@ -43,25 +44,28 @@ pub fn save_app_setting(
     key: String,
     value: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .app_settings_service
         .save(key, value)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
-pub fn get_app_setting(key: String, state: State<'_, AppState>) -> Result<Option<String>, String> {
+pub fn get_app_setting(
+    key: String,
+    state: State<'_, AppState>,
+) -> Result<Option<String>, AppError> {
     state
         .app_settings_service
         .get_by_key(&key)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
-pub fn get_all_app_settings(state: State<'_, AppState>) -> Result<Vec<AppSetting>, String> {
+pub fn get_all_app_settings(state: State<'_, AppState>) -> Result<Vec<AppSetting>, AppError> {
     state
         .app_settings_service
         .get_all()
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }

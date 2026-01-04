@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::models::LLMConnection;
 use crate::state::AppState;
 use tauri::State;
@@ -13,7 +14,7 @@ pub fn create_llm_connection(
     models_json: Option<String>,
     default_model: Option<String>,
     state: State<'_, AppState>,
-) -> Result<LLMConnection, String> {
+) -> Result<LLMConnection, AppError> {
     state
         .llm_connection_service
         .create(
@@ -25,15 +26,15 @@ pub fn create_llm_connection(
             models_json,
             default_model,
         )
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
-pub fn get_llm_connections(state: State<'_, AppState>) -> Result<Vec<LLMConnection>, String> {
+pub fn get_llm_connections(state: State<'_, AppState>) -> Result<Vec<LLMConnection>, AppError> {
     state
         .llm_connection_service
         .get_all()
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
@@ -47,7 +48,7 @@ pub fn update_llm_connection(
     models_json: Option<String>,
     default_model: Option<String>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .llm_connection_service
         .update(
@@ -59,15 +60,15 @@ pub fn update_llm_connection(
             models_json,
             default_model,
         )
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
-pub fn delete_llm_connection(id: String, state: State<'_, AppState>) -> Result<(), String> {
+pub fn delete_llm_connection(id: String, state: State<'_, AppState>) -> Result<(), AppError> {
     state
         .llm_connection_service
         .delete(id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
@@ -76,12 +77,12 @@ pub async fn test_llm_connection(
     provider: String,
     api_key: Option<String>,
     _state: State<'_, AppState>,
-) -> Result<Vec<crate::models::llm_types::LLMModel>, String> {
+) -> Result<Vec<crate::models::llm_types::LLMModel>, AppError> {
     use crate::services::LLMService;
 
     let llm_service = LLMService::new();
     llm_service
         .fetch_models(&base_url, api_key.as_deref(), &provider)
         .await
-        .map_err(|e| e.to_string())
+    // No map_err needed as fetch_models returns AppError
 }

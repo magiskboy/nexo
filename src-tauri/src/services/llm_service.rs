@@ -24,6 +24,8 @@ impl LLMService {
 
     /// Fetch available models from LLM API
     /// Used for connection testing
+    /// Fetch available models from LLM API
+    /// Used for connection testing
     pub async fn fetch_models(
         &self,
         base_url: &str,
@@ -54,10 +56,7 @@ impl LLMService {
 
         req_builder = req_builder.header("Content-Type", "application/json");
 
-        let response = req_builder
-            .send()
-            .await
-            .map_err(|e| AppError::Generic(format!("HTTP request failed: {e}")))?;
+        let response = req_builder.send().await?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -65,15 +64,12 @@ impl LLMService {
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(AppError::Generic(format!(
+            return Err(AppError::Llm(format!(
                 "LLM API error ({status}): {error_text}"
             )));
         }
 
-        let json: serde_json::Value = response
-            .json()
-            .await
-            .map_err(|e| AppError::Generic(format!("Failed to parse response: {e}")))?;
+        let json: serde_json::Value = response.json().await?;
 
         // Helper function to parse a model item flexibly
         let parse_model = |item: &serde_json::Value| -> Option<LLMModel> {
@@ -135,7 +131,10 @@ impl LLMService {
                     serde_json::to_string_pretty(&json)
                         .unwrap_or_else(|_| "Failed to serialize".to_string())
                 );
-                return Err(AppError::Generic(format!("Unexpected response format. Expected array or object with 'data' field. Got: {}", json.to_string())));
+                return Err(AppError::Llm(format!(
+                    "Unexpected response format. Expected array or object with 'data' field. Got: {}",
+                    json.to_string()
+                )));
             }
         };
 
@@ -162,7 +161,7 @@ impl LLMService {
 
         req_builder = req_builder.header("Content-Type", "application/json");
 
-        let request_body = serde_json::to_value(&request).map_err(AppError::Serialization)?;
+        let request_body = serde_json::to_value(&request)?;
 
         if request.stream {
             self.handle_streaming(req_builder, request_body, chat_id, message_id, app)
@@ -181,11 +180,7 @@ impl LLMService {
         message_id: String,
         app: AppHandle,
     ) -> Result<LLMChatResponse, AppError> {
-        let response = req_builder
-            .json(&request_body)
-            .send()
-            .await
-            .map_err(|e| AppError::Generic(format!("HTTP request failed: {e}")))?;
+        let response = req_builder.json(&request_body).send().await?;
 
         let message_emitter = MessageEmitter::new(app.clone());
         let tool_emitter = ToolEmitter::new(app.clone());
@@ -204,7 +199,7 @@ impl LLMService {
                 error_msg.clone(),
             )?;
 
-            return Err(AppError::Generic(error_msg));
+            return Err(AppError::Llm(error_msg));
         }
 
         let mut stream = response.bytes_stream();

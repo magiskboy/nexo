@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::services::{IndexConfigService, NodeRuntime};
 use tauri::{command, AppHandle, State};
 
@@ -12,7 +13,7 @@ pub struct NodeRuntimeStatus {
 pub async fn get_node_runtimes_status(
     app: AppHandle,
     config_service: State<'_, IndexConfigService>,
-) -> Result<Vec<NodeRuntimeStatus>, String> {
+) -> Result<Vec<NodeRuntimeStatus>, AppError> {
     // Get configured versions from IndexConfigService
     let config = config_service.get_config().await;
 
@@ -38,19 +39,22 @@ pub async fn install_node_runtime(
     app: AppHandle,
     version: String,
     config_service: State<'_, IndexConfigService>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     // Get config to verify version exists
     let config = config_service.get_config().await;
 
     // Verify version exists in config
     if !config.addons.nodejs.versions.contains(&version) {
-        return Err(format!("Version {} not found in config", version));
+        return Err(AppError::Node(format!(
+            "Version {} not found in config",
+            version
+        )));
     }
 
     NodeRuntime::install(&app, &version).await
 }
 
 #[command]
-pub fn uninstall_node_runtime(app: AppHandle, version: String) -> Result<(), String> {
+pub fn uninstall_node_runtime(app: AppHandle, version: String) -> Result<(), AppError> {
     NodeRuntime::uninstall(&app, &version)
 }

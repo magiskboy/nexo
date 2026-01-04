@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::models::Prompt;
 use crate::state::AppState;
 use tauri::State;
@@ -8,16 +9,19 @@ pub fn create_prompt(
     name: String,
     content: String,
     state: State<'_, AppState>,
-) -> Result<Prompt, String> {
+) -> Result<Prompt, AppError> {
     state
         .prompt_service
         .create(id, name, content)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Prompt(e.to_string()))
 }
 
 #[tauri::command]
-pub fn get_prompts(state: State<'_, AppState>) -> Result<Vec<Prompt>, String> {
-    state.prompt_service.get_all().map_err(|e| e.to_string())
+pub fn get_prompts(state: State<'_, AppState>) -> Result<Vec<Prompt>, AppError> {
+    state
+        .prompt_service
+        .get_all()
+        .map_err(|e| AppError::Prompt(e.to_string()))
 }
 
 #[tauri::command]
@@ -26,14 +30,17 @@ pub fn update_prompt(
     name: Option<String>,
     content: Option<String>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .prompt_service
         .update(id, name, content)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Prompt(e.to_string()))
 }
 
 #[tauri::command]
-pub fn delete_prompt(id: String, state: State<'_, AppState>) -> Result<(), String> {
-    state.prompt_service.delete(id).map_err(|e| e.to_string())
+pub fn delete_prompt(id: String, state: State<'_, AppState>) -> Result<(), AppError> {
+    state
+        .prompt_service
+        .delete(id)
+        .map_err(|e| AppError::Prompt(e.to_string()))
 }

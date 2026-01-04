@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::models::Chat;
 use crate::state::AppState;
 use tauri::{AppHandle, State};
@@ -8,19 +9,19 @@ pub fn create_chat(
     workspace_id: String,
     title: String,
     state: State<'_, AppState>,
-) -> Result<Chat, String> {
+) -> Result<Chat, AppError> {
     state
         .chat_service
         .create(id, workspace_id, title)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
-pub fn get_chats(workspace_id: String, state: State<'_, AppState>) -> Result<Vec<Chat>, String> {
+pub fn get_chats(workspace_id: String, state: State<'_, AppState>) -> Result<Vec<Chat>, AppError> {
     state
         .chat_service
         .get_by_workspace_id(&workspace_id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
@@ -29,27 +30,30 @@ pub fn update_chat(
     title: Option<String>,
     last_message: Option<String>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .chat_service
         .update(id, title, last_message)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
-pub fn delete_chat(id: String, state: State<'_, AppState>) -> Result<(), String> {
-    state.chat_service.delete(id).map_err(|e| e.to_string())
+pub fn delete_chat(id: String, state: State<'_, AppState>) -> Result<(), AppError> {
+    state
+        .chat_service
+        .delete(id)
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
 pub fn delete_all_chats_by_workspace(
     workspace_id: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .chat_service
         .delete_by_workspace_id(workspace_id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[derive(serde::Serialize)]
@@ -65,12 +69,12 @@ pub async fn send_message(
     reasoning_effort: Option<String>,
     app: AppHandle,
     state: State<'_, AppState>,
-) -> Result<SendMessageResult, String> {
+) -> Result<SendMessageResult, AppError> {
     let (assistant_message_id, _) = state
         .chat_service
         .send_message(chat_id, content, selected_model, reasoning_effort, app)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| AppError::Generic(e.to_string()))?;
 
     Ok(SendMessageResult {
         assistant_message_id,
@@ -86,7 +90,7 @@ pub async fn edit_and_resend_message(
     reasoning_effort: Option<String>,
     app: AppHandle,
     state: State<'_, AppState>,
-) -> Result<SendMessageResult, String> {
+) -> Result<SendMessageResult, AppError> {
     let (assistant_message_id, _) = state
         .chat_service
         .edit_and_resend_message(
@@ -98,7 +102,7 @@ pub async fn edit_and_resend_message(
             app,
         )
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| AppError::Generic(e.to_string()))?;
 
     Ok(SendMessageResult {
         assistant_message_id,
@@ -112,13 +116,12 @@ pub fn respond_tool_permission(
     approved: bool,
     allowed_tool_ids: Option<Vec<String>>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     // Get the sender from pending permissions
     let sender = {
-        let mut pending = state
-            .pending_tool_permissions
-            .lock()
-            .map_err(|e| format!("Failed to lock pending_tool_permissions: {e}"))?;
+        let mut pending = state.pending_tool_permissions.lock().map_err(|e| {
+            AppError::Generic(format!("Failed to lock pending_tool_permissions: {e}"))
+        })?;
         pending.remove(&message_id)
     };
 
@@ -128,13 +131,15 @@ pub fn respond_tool_permission(
             approved,
             allowed_tool_ids: allowed_tool_ids.unwrap_or_default(),
         };
-        sender
-            .send(decision)
-            .map_err(|_| format!("Failed to send approval response for message {message_id}"))?;
+        sender.send(decision).map_err(|_| {
+            AppError::Generic(format!(
+                "Failed to send approval response for message {message_id}"
+            ))
+        })?;
         Ok(())
     } else {
-        Err(format!(
+        Err(AppError::Validation(format!(
             "No pending tool permission request found for message {message_id}"
-        ))
+        )))
     }
 }

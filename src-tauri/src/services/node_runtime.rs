@@ -1,9 +1,10 @@
+use crate::error::AppError;
 use std::path::PathBuf;
 use std::process::Command;
 use tauri::{AppHandle, Manager};
 
 /// Get the path to bundled FNM binary
-fn get_bundled_fnm_path(app: &AppHandle) -> Result<PathBuf, String> {
+fn get_bundled_fnm_path(app: &AppHandle) -> Result<PathBuf, AppError> {
     let fnm_name = if cfg!(windows) { "fnm.exe" } else { "fnm" };
 
     // Try production bundle path first (in resource_dir)
@@ -29,6 +30,7 @@ fn get_bundled_fnm_path(app: &AppHandle) -> Result<PathBuf, String> {
     // Try relative to executable
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {
+            // From target/debug or target/release, go up to project root
             if let Some(target_dir) = exe_dir.parent() {
                 if let Some(project_root) = target_dir.parent() {
                     let dev_fnm_path = project_root.join("binaries").join(fnm_name);
@@ -40,8 +42,8 @@ fn get_bundled_fnm_path(app: &AppHandle) -> Result<PathBuf, String> {
         }
     }
 
-    Err(format!(
-        "Bundled FNM not found. Please ensure FNM binary is bundled."
+    Err(AppError::Node(
+        "Bundled FNM not found. Please ensure FNM binary is bundled.".to_string(),
     ))
 }
 
@@ -51,14 +53,14 @@ pub struct NodeRuntime {
 
 impl NodeRuntime {
     /// Detect installed Node runtime
-    pub fn detect(app: &AppHandle, full_version: &str) -> Result<Self, String> {
+    pub fn detect(app: &AppHandle, full_version: &str) -> Result<Self, AppError> {
         let node_path = Self::get_installed_node(app, full_version)?;
         Ok(Self { node_path })
     }
 
     /// Get path to installed Node executable
-    fn get_installed_node(app: &AppHandle, full_version: &str) -> Result<PathBuf, String> {
-        let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    fn get_installed_node(app: &AppHandle, full_version: &str) -> Result<PathBuf, AppError> {
+        let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
 
         // FNM directory structure:
         // FNM_DIR/node-versions/v<version>/installation/
@@ -76,10 +78,10 @@ impl NodeRuntime {
             .join("installation");
 
         if !installation_dir.exists() {
-            return Err(format!(
+            return Err(AppError::Node(format!(
                 "Node {} not installed (dir not found)",
                 full_version
-            ));
+            )));
         }
 
         let node_executable = if cfg!(windows) {
@@ -93,11 +95,11 @@ impl NodeRuntime {
         } else {
             // Sometimes it might just be the version dir if structure changes,
             // but standard fnm is .../installation/...
-            Err(format!(
+            Err(AppError::Node(format!(
                 "Node {} executable not found at {}",
                 full_version,
                 node_executable.display()
-            ))
+            )))
         }
     }
 
@@ -107,12 +109,12 @@ impl NodeRuntime {
     }
 
     /// Download and install Node runtime using fnm
-    pub async fn install(app: &AppHandle, full_version: &str) -> Result<(), String> {
+    pub async fn install(app: &AppHandle, full_version: &str) -> Result<(), AppError> {
         let fnm_path = get_bundled_fnm_path(app)?;
-        let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+        let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
         let fnm_dir = app_data.join("node-runtimes");
 
-        std::fs::create_dir_all(&fnm_dir).map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(&fnm_dir).map_err(AppError::Io)?;
 
         // Command: fnm install <version>
         // Env: FNM_DIR = ...
@@ -134,24 +136,24 @@ impl NodeRuntime {
             .env("FNM_DIR", &fnm_dir)
             // FNM might try to use XDG env vars or home, but FNM_DIR should override.
             .output()
-            .map_err(|e| format!("Failed to execute fnm: {}", e))?;
+            .map_err(AppError::Io)?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            return Err(format!(
+            return Err(AppError::Node(format!(
                 "FNM install failed: {}\nOutput: {}",
                 stderr, stdout
-            ));
+            )));
         }
 
         Ok(())
     }
 
     /// Uninstall Node runtime
-    pub fn uninstall(app: &AppHandle, full_version: &str) -> Result<(), String> {
+    pub fn uninstall(app: &AppHandle, full_version: &str) -> Result<(), AppError> {
         let fnm_path = get_bundled_fnm_path(app)?;
-        let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+        let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
         let fnm_dir = app_data.join("node-runtimes");
 
         let output = Command::new(&fnm_path)
@@ -159,11 +161,11 @@ impl NodeRuntime {
             .arg(full_version)
             .env("FNM_DIR", &fnm_dir)
             .output()
-            .map_err(|e| format!("Failed to execute fnm: {}", e))?;
+            .map_err(AppError::Io)?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("FNM uninstall failed: {}", stderr));
+            return Err(AppError::Node(format!("FNM uninstall failed: {}", stderr)));
         }
 
         Ok(())

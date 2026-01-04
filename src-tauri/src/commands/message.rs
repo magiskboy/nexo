@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::models::Message;
 use crate::state::AppState;
 use tauri::State;
@@ -13,7 +14,7 @@ pub fn create_message(
     assistant_message_id: Option<String>,
     tool_call_id: Option<String>,
     state: State<'_, AppState>,
-) -> Result<Message, String> {
+) -> Result<Message, AppError> {
     state
         .message_service
         .create(
@@ -25,15 +26,15 @@ pub fn create_message(
             assistant_message_id,
             tool_call_id,
         )
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
-pub fn get_messages(chat_id: String, state: State<'_, AppState>) -> Result<Vec<Message>, String> {
+pub fn get_messages(chat_id: String, state: State<'_, AppState>) -> Result<Vec<Message>, AppError> {
     state
         .message_service
         .get_by_chat_id(&chat_id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
@@ -42,11 +43,11 @@ pub fn update_message(
     content: String,
     timestamp: Option<i64>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .message_service
         .update(id, content, None, timestamp)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }
 
 #[tauri::command]
@@ -54,9 +55,9 @@ pub fn delete_messages_after(
     chat_id: String,
     message_id: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .message_service
         .delete_messages_after(chat_id, message_id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Generic(e.to_string()))
 }

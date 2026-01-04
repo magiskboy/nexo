@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::models::MCPServerConnection;
 use crate::state::AppState;
 use tauri::State;
@@ -11,21 +12,21 @@ pub fn create_mcp_server_connection(
     headers: String,
     runtime_path: Option<String>,
     state: State<'_, AppState>,
-) -> Result<MCPServerConnection, String> {
+) -> Result<MCPServerConnection, AppError> {
     state
         .mcp_connection_service
         .create(id, name, url, r#type, headers, runtime_path)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Mcp(e.to_string()))
 }
 
 #[tauri::command]
 pub fn get_mcp_server_connections(
     state: State<'_, AppState>,
-) -> Result<Vec<MCPServerConnection>, String> {
+) -> Result<Vec<MCPServerConnection>, AppError> {
     state
         .mcp_connection_service
         .get_all()
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Mcp(e.to_string()))
 }
 
 #[tauri::command]
@@ -37,11 +38,11 @@ pub fn update_mcp_server_connection(
     headers: Option<String>,
     runtime_path: Option<String>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .mcp_connection_service
         .update(id, name, url, r#type, headers, runtime_path)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Mcp(e.to_string()))
 }
 
 #[tauri::command]
@@ -51,17 +52,20 @@ pub fn update_mcp_server_status(
     tools_json: Option<String>,
     error_message: Option<String>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     state
         .mcp_connection_service
         .update_status(id, status, tools_json, error_message)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Mcp(e.to_string()))
 }
 
 #[tauri::command]
-pub fn delete_mcp_server_connection(id: String, state: State<'_, AppState>) -> Result<(), String> {
+pub fn delete_mcp_server_connection(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
     state
         .mcp_connection_service
         .delete(id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| AppError::Mcp(e.to_string()))
 }

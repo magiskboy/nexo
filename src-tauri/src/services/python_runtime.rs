@@ -1,9 +1,10 @@
+use crate::error::AppError;
 use std::path::PathBuf;
 use std::process::Command;
 use tauri::{AppHandle, Manager};
 
 /// Get the path to bundled UV binary (sidecar)
-fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, String> {
+fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
     let uv_name = if cfg!(windows) { "uv.exe" } else { "uv" };
 
     // Try production bundle path first (in resource_dir)
@@ -43,10 +44,11 @@ fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, String> {
         }
     }
 
-    Err(format!(
+    Err(AppError::Python(
         "Bundled UV not found. Please ensure UV binary is downloaded.\n\
          Run: cd src-tauri && cargo build\n\
          This will trigger build.rs to download UV binaries."
+            .to_string(),
     ))
 }
 
@@ -57,7 +59,7 @@ pub struct PythonRuntime {
 
 impl PythonRuntime {
     /// Detect installed Python runtime
-    pub fn detect(app: &AppHandle, full_version: &str) -> Result<Self, String> {
+    pub fn detect(app: &AppHandle, full_version: &str) -> Result<Self, AppError> {
         let python_path = Self::get_installed_python(app, full_version)?;
         let uv_path = get_bundled_uv_path(app)?;
 
@@ -67,18 +69,21 @@ impl PythonRuntime {
         })
     }
 
-    fn get_installed_python(app: &AppHandle, full_version: &str) -> Result<PathBuf, String> {
-        let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    fn get_installed_python(app: &AppHandle, full_version: &str) -> Result<PathBuf, AppError> {
+        let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
         // We manage Python installations in AppData/python-runtimes/<version>
         let python_dir = app_data.join("python-runtimes").join(full_version);
 
         if !python_dir.exists() {
-            return Err(format!("Python {} directory not found", full_version));
+            return Err(AppError::Python(format!(
+                "Python {} directory not found",
+                full_version
+            )));
         }
 
         // UV installs into a nested directory like <install_dir>/cpython-3.12.1-.../
         // We look for the first subdirectory.
-        let entries = std::fs::read_dir(&python_dir).map_err(|e| e.to_string())?;
+        let entries = std::fs::read_dir(&python_dir)?;
         for entry in entries.flatten() {
             if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                 let install_root = entry.path();
@@ -97,11 +102,11 @@ impl PythonRuntime {
             }
         }
 
-        Err(format!(
+        Err(AppError::Python(format!(
             "Python {} binary not found in {}",
             full_version,
             python_dir.display()
-        ))
+        )))
     }
 
     /// Install Python runtime using bundled UV
@@ -109,20 +114,17 @@ impl PythonRuntime {
         app: &AppHandle,
         full_version: &str,
         _uv_version: &str, // No longer needed, UV is bundled
-    ) -> Result<(), String> {
+    ) -> Result<(), AppError> {
         // Get bundled UV path
         let uv_path = get_bundled_uv_path(app)?;
 
         // Set up UV cache directory
-        let cache_dir = app
-            .path()
-            .app_cache_dir()
-            .map_err(|e| format!("Failed to get cache dir: {}", e))?;
+        let cache_dir = app.path().app_cache_dir().map_err(AppError::Tauri)?;
         let uv_cache = cache_dir.join("uv_cache");
-        std::fs::create_dir_all(&uv_cache).map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(&uv_cache)?;
 
         // Set up target directory in AppData
-        let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+        let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
         let python_dir = app_data.join("python-runtimes").join(full_version);
 
         // If directory already exists, uv might fail or skip.
@@ -130,7 +132,7 @@ impl PythonRuntime {
         if python_dir.exists() {
             let _ = std::fs::remove_dir_all(&python_dir);
         }
-        std::fs::create_dir_all(&python_dir).map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(&python_dir)?;
 
         // Use UV to install Python into our specific directory
         // Command: uv python install <version> --install-dir <dir>
@@ -141,23 +143,25 @@ impl PythonRuntime {
             .arg("--install-dir")
             .arg(&python_dir)
             .env("UV_CACHE_DIR", &uv_cache)
-            .output()
-            .map_err(|e| format!("Failed to execute uv: {}", e))?;
+            .output()?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("UV python install failed: {}", stderr));
+            return Err(AppError::Python(format!(
+                "UV python install failed: {}",
+                stderr
+            )));
         }
 
         Ok(())
     }
 
-    pub fn uninstall(app: &AppHandle, full_version: &str) -> Result<(), String> {
-        let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    pub fn uninstall(app: &AppHandle, full_version: &str) -> Result<(), AppError> {
+        let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
         let python_dir = app_data.join("python-runtimes").join(full_version);
 
         if python_dir.exists() {
-            std::fs::remove_dir_all(&python_dir).map_err(|e| e.to_string())?;
+            std::fs::remove_dir_all(&python_dir)?;
         }
 
         Ok(())
@@ -165,10 +169,10 @@ impl PythonRuntime {
 
     pub fn list_installed(
         app: &AppHandle,
-    ) -> Result<std::collections::HashMap<String, PathBuf>, String> {
+    ) -> Result<std::collections::HashMap<String, PathBuf>, AppError> {
         let mut installed = std::collections::HashMap::new();
 
-        let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+        let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
         let runtimes_dir = app_data.join("python-runtimes");
 
         if let Ok(entries) = std::fs::read_dir(runtimes_dir) {

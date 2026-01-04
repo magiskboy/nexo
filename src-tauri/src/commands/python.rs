@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::services::{IndexConfigService, PythonRuntime};
 use tauri::{command, AppHandle, State};
 
@@ -12,7 +13,7 @@ pub struct PythonRuntimeStatus {
 pub async fn get_python_runtimes_status(
     app: AppHandle,
     config_service: State<'_, IndexConfigService>,
-) -> Result<Vec<PythonRuntimeStatus>, String> {
+) -> Result<Vec<PythonRuntimeStatus>, AppError> {
     // Get configured versions from IndexConfigService
     let config = config_service.get_config().await;
 
@@ -42,13 +43,16 @@ pub async fn install_python_runtime(
     app: AppHandle,
     version: String,
     config_service: State<'_, IndexConfigService>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     // Get config to lookup uv version
     let config = config_service.get_config().await;
 
     // Verify version exists in config
     if !config.addons.python.versions.contains(&version) {
-        return Err(format!("Version {} not found in config", version));
+        return Err(AppError::Python(format!(
+            "Version {} not found in config",
+            version
+        )));
     }
 
     let uv_version = &config.addons.python.uv.version;
@@ -57,6 +61,6 @@ pub async fn install_python_runtime(
 }
 
 #[command]
-pub fn uninstall_python_runtime(app: AppHandle, version: String) -> Result<(), String> {
+pub fn uninstall_python_runtime(app: AppHandle, version: String) -> Result<(), AppError> {
     PythonRuntime::uninstall(&app, &version)
 }
