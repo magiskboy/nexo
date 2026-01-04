@@ -187,130 +187,134 @@ export const MessageItem = memo(
               </div>
             </div>
           ) : (
-            <div
-              className={cn(
-                'relative min-w-0 wrap-break-words rounded-2xl px-4 py-3 text-sm leading-relaxed select-text',
-                'group/message',
-                isStreaming && 'will-change-contents',
-                message.role === 'user'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-foreground'
-              )}
-              style={
-                isStreaming
-                  ? {
-                      contain: 'layout style',
-                    }
-                  : undefined
-              }
-            >
-              <div className="relative">
-                <div
-                  ref={contentRef}
-                  style={{ height: contentHeight }}
-                  className="overflow-hidden transition-[height] duration-300 ease-in-out"
-                >
-                  {message.role === 'assistant' ? (
-                    <>
-                      {markdownEnabled ? (
-                        <MarkdownContent
-                          content={message.content}
-                          messageId={message.id}
-                        />
-                      ) : (
-                        <div className="whitespace-pre-wrap wrap-break-words">
-                          {message.content}
-                        </div>
+            <div className="relative flex flex-col gap-1 group">
+              <div
+                className={cn(
+                  'relative min-w-0 wrap-break-words rounded-2xl px-4 py-3 text-sm leading-relaxed select-text',
+
+                  isStreaming && 'will-change-contents',
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-foreground'
+                )}
+                style={
+                  isStreaming
+                    ? {
+                        contain: 'layout style',
+                      }
+                    : undefined
+                }
+              >
+                <div className="relative">
+                  <div
+                    ref={contentRef}
+                    style={{ height: contentHeight }}
+                    className="overflow-hidden transition-[height] duration-300 ease-in-out"
+                  >
+                    {message.role === 'assistant' ? (
+                      <>
+                        {markdownEnabled ? (
+                          <MarkdownContent
+                            content={message.content}
+                            messageId={message.id}
+                          />
+                        ) : (
+                          <div className="whitespace-pre-wrap wrap-break-words">
+                            {message.content}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="whitespace-pre-wrap wrap-break-words">
+                        {message.content}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Gradient fade overlay when collapsed */}
+                  {canCollapse && isCollapsed && (
+                    <div
+                      className={cn(
+                        'absolute bottom-0 left-0 right-0 h-16 pointer-events-none',
+                        message.role === 'user'
+                          ? 'bg-gradient-to-t from-primary to-transparent'
+                          : 'bg-gradient-to-t from-muted to-transparent'
                       )}
-                    </>
-                  ) : (
-                    <div className="whitespace-pre-wrap wrap-break-words">
-                      {message.content}
-                    </div>
+                    />
                   )}
                 </div>
 
-                {/* Gradient fade overlay when collapsed */}
-                {canCollapse && isCollapsed && (
+                {/* Collapse/Expand button */}
+                {canCollapse && (
                   <div
                     className={cn(
-                      'absolute bottom-0 left-0 right-0 h-16 pointer-events-none',
-                      message.role === 'user'
-                        ? 'bg-gradient-to-t from-primary to-transparent'
-                        : 'bg-gradient-to-t from-muted to-transparent'
+                      'flex items-center mt-2 pt-2',
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
                     )}
-                  />
+                  >
+                    <button
+                      className="text-xs opacity-60 hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                      onClick={() => setIsCollapsed(!isCollapsed)}
+                    >
+                      {isCollapsed ? (
+                        <>
+                          <ChevronDown className="h-3 w-3" />
+                          {t('showMore')}
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp className="h-3 w-3" />
+                          {t('showLess')}
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
 
-              {/* Collapse/Expand button */}
-              {canCollapse && (
-                <div
-                  className={cn(
-                    'flex items-center mt-2 pt-2',
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  )}
-                >
-                  <button
-                    className="text-xs opacity-60 hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                  >
-                    {isCollapsed ? (
-                      <>
-                        <ChevronDown className="h-3 w-3" />
-                        {t('showMore')}
-                      </>
-                    ) : (
-                      <>
-                        <ChevronUp className="h-3 w-3" />
-                        {t('showLess')}
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Action buttons - Overlay on message bubble edge */}
+              {/* Action buttons - Outside message bubble */}
               <div
                 className={cn(
-                  'absolute flex items-center gap-0.5 z-10 px-1 py-0.5',
-                  'opacity-0 group-hover/message:opacity-100 transition-opacity duration-200',
-                  'top-0 -translate-y-1/2 -translate-x-1/2 left-full'
+                  'flex items-center gap-1',
+                  'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
+                  message.role === 'user'
+                    ? 'justify-start pl-2'
+                    : 'justify-end pr-2'
                 )}
               >
                 {message.role === 'user' && (
                   <button
-                    className="h-5 w-5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex items-center justify-center"
+                    className="p-1.5 rounded-md hover:bg-muted transition-colors group/btn"
                     onClick={handleEdit}
                     title={t('edit') || 'Edit'}
                   >
-                    <Pencil className="h-3 w-3 transition-opacity" />
+                    <Pencil className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
                   </button>
                 )}
                 {message.role === 'assistant' && (
                   <button
-                    className="h-5 w-5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex items-center justify-center"
+                    className="p-1.5 rounded-md hover:bg-muted transition-colors group/btn"
                     onClick={handleToggleMarkdown}
                     title={
                       markdownEnabled ? t('showRawText') : t('showMarkdown')
                     }
                   >
                     {markdownEnabled ? (
-                      <FileText className="h-3 w-3 text-current opacity-60 hover:opacity-100 transition-opacity" />
+                      <FileText className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
                     ) : (
-                      <Code className="h-3 w-3 text-current opacity-60 hover:opacity-100 transition-opacity" />
+                      <Code className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
                     )}
                   </button>
                 )}
                 <button
-                  className="h-5 w-5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex items-center justify-center"
+                  className="p-1.5 rounded-md hover:bg-muted transition-colors group/btn"
                   onClick={handleCopy}
                   title={t('copy')}
                 >
                   {isCopied ? (
-                    <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+                    <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                   ) : (
-                    <Copy className="h-3 w-3 text-current opacity-60 hover:opacity-100 transition-opacity" />
+                    <Copy className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
                   )}
                 </button>
               </div>
