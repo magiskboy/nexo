@@ -24,7 +24,7 @@ export function useAppSettings() {
     dispatch(setUserMode(mode));
   };
 
-  const updateTheme = (newTheme: 'light' | 'dark' | 'system') => {
+  const updateTheme = (newTheme: any) => {
     dispatch(setTheme(newTheme));
   };
 

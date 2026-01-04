@@ -19,7 +19,16 @@ interface UIState {
     | 'about';
   language: 'vi' | 'en';
   userMode: 'normal' | 'developer';
-  theme: 'light' | 'dark' | 'system';
+  theme:
+    | 'light'
+    | 'dark'
+    | 'system'
+    | 'github-light'
+    | 'github-dark'
+    | 'gruvbox'
+    | 'midnight'
+    | 'dracula';
+
   loading: boolean;
 }
 
@@ -66,9 +75,20 @@ export const loadAppSettings = createAsyncThunk(
       }
 
       // Validate and set theme
-      let finalTheme: 'light' | 'dark' | 'system' = 'light';
-      if (theme === 'light' || theme === 'dark' || theme === 'system') {
-        finalTheme = theme;
+      let finalTheme: UIState['theme'] = 'light';
+      const validThemes = [
+        'light',
+        'dark',
+        'system',
+        'github-light',
+        'github-dark',
+        'gruvbox',
+        'midnight',
+        'dracula',
+      ];
+
+      if (theme && validThemes.includes(theme)) {
+        finalTheme = theme as UIState['theme'];
       } else {
         // If not found, save default value
         await invokeCommand(TauriCommands.SAVE_APP_SETTING, {
@@ -224,7 +244,7 @@ const uiSlice = createSlice({
         console.error('Failed to save userMode to database:', error);
       });
     },
-    setTheme: (state, action: PayloadAction<'light' | 'dark' | 'system'>) => {
+    setTheme: (state, action: PayloadAction<UIState['theme']>) => {
       state.theme = action.payload;
       invokeCommand(TauriCommands.SAVE_APP_SETTING, {
         key: 'theme',

@@ -30,7 +30,7 @@ export function AppSettings() {
     updateUserMode(mode);
   };
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+  const handleThemeChange = (newTheme: any) => {
     updateTheme(newTheme);
   };
 
@@ -60,9 +60,7 @@ export function AppSettings() {
           <Label htmlFor="theme-select">{t('theme')}</Label>
           <Select
             value={currentTheme}
-            onValueChange={(value: 'light' | 'dark' | 'system') =>
-              handleThemeChange(value)
-            }
+            onValueChange={(value: any) => handleThemeChange(value)}
           >
             <SelectTrigger id="theme-select" className="w-full">
               <SelectValue placeholder={t('selectTheme')} />
@@ -71,6 +69,15 @@ export function AppSettings() {
               <SelectItem value="light">{t('lightTheme')}</SelectItem>
               <SelectItem value="dark">{t('darkTheme')}</SelectItem>
               <SelectItem value="system">{t('systemTheme')}</SelectItem>
+              <SelectItem value="github-light">
+                {t('githubLightTheme')}
+              </SelectItem>
+              <SelectItem value="github-dark">
+                {t('githubDarkTheme')}
+              </SelectItem>
+              <SelectItem value="gruvbox">{t('gruvboxTheme')}</SelectItem>
+              <SelectItem value="midnight">{t('midnightTheme')}</SelectItem>
+              <SelectItem value="dracula">{t('draculaTheme')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

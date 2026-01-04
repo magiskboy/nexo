@@ -13,7 +13,10 @@ export function useTheme() {
     if (theme === 'system') {
       return 'system';
     }
-    return theme;
+    if (theme === 'light' || theme === 'github-light') {
+      return 'light';
+    }
+    return 'dark';
   };
 
   return { theme: getEffectiveTheme() };

@@ -311,3 +311,115 @@
 .btn-uninstall {
   @apply bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed;
 }
+
+/* Custom Themes */
+
+.theme-github-light {
+  --background: #ffffff;
+  --foreground: #24292e;
+  --card: #f6f8fa;
+  --card-foreground: #24292e;
+  --popover: #ffffff;
+  --popover-foreground: #24292e;
+  --primary: #24292e;
+  --primary-foreground: #ffffff;
+  --secondary: #f6f8fa;
+  --secondary-foreground: #24292e;
+  --muted: #f6f8fa;
+  --muted-foreground: #586069;
+  --accent: #f6f8fa;
+  --accent-foreground: #24292e;
+  --destructive: #cb2431;
+  --destructive-foreground: #ffffff;
+  --border: #e1e4e8;
+  --input: #e1e4e8;
+  --ring: #24292e;
+}
+
+.theme-github-dark {
+  --background: #0d1117;
+  --foreground: #c9d1d9;
+  --card: #161b22;
+  --card-foreground: #c9d1d9;
+  --popover: #161b22;
+  --popover-foreground: #c9d1d9;
+  --primary: #c9d1d9;
+  --primary-foreground: #0d1117;
+  --secondary: #161b22;
+  --secondary-foreground: #c9d1d9;
+  --muted: #161b22;
+  --muted-foreground: #8b949e;
+  --accent: #161b22;
+  --accent-foreground: #c9d1d9;
+  --destructive: #f85149;
+  --destructive-foreground: #ffffff;
+  --border: #30363d;
+  --input: #30363d;
+  --ring: #c9d1d9;
+}
+
+.theme-gruvbox {
+  --background: #282828;
+  --foreground: #ebdbb2;
+  --card: #3c3836;
+  --card-foreground: #ebdbb2;
+  --popover: #3c3836;
+  --popover-foreground: #ebdbb2;
+  --primary: #d79921;
+  --primary-foreground: #282828;
+  --secondary: #504945;
+  --secondary-foreground: #ebdbb2;
+  --muted: #504945;
+  --muted-foreground: #a89984;
+  --accent: #504945;
+  --accent-foreground: #ebdbb2;
+  --destructive: #cc241d;
+  --destructive-foreground: #ebdbb2;
+  --border: #504945;
+  --input: #504945;
+  --ring: #d79921;
+}
+
+.theme-midnight {
+  --background: #0f0f44;
+  --foreground: #e0e0e0;
+  --card: #1a1a4f;
+  --card-foreground: #e0e0e0;
+  --popover: #1a1a4f;
+  --popover-foreground: #e0e0e0;
+  --primary: #00ffff;
+  --primary-foreground: #000080;
+  --secondary: #000080;
+  --secondary-foreground: #e0e0e0;
+  --muted: #000080;
+  --muted-foreground: #a0a0c0;
+  --accent: #000080;
+  --accent-foreground: #e0e0e0;
+  --destructive: #ff4444;
+  --destructive-foreground: #e0e0e0;
+  --border: #404080;
+  --input: #404080;
+  --ring: #00ffff;
+}
+
+.theme-dracula {
+  --background: #282a36;
+  --foreground: #f8f8f2;
+  --card: #44475a;
+  --card-foreground: #f8f8f2;
+  --popover: #44475a;
+  --popover-foreground: #f8f8f2;
+  --primary: #bd93f9;
+  --primary-foreground: #282a36;
+  --secondary: #44475a;
+  --secondary-foreground: #f8f8f2;
+  --muted: #44475a;
+  --muted-foreground: #6272a4;
+  --accent: #44475a;
+  --accent-foreground: #f8f8f2;
+  --destructive: #ff5555;
+  --destructive-foreground: #f8f8f2;
+  --border: #6272a4;
+  --input: #6272a4;
+  --ring: #bd93f9;
+}

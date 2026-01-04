@@ -60,6 +60,14 @@ function AppContent() {
   // Apply theme to document
   useEffect(() => {
     const root = document.documentElement;
+    const allThemes = [
+      'theme-github-light',
+      'theme-github-dark',
+      'theme-gruvbox',
+      'theme-midnight',
+      'theme-dracula',
+    ];
+    root.classList.remove(...allThemes);
 
     if (theme === 'system') {
       // Use system preference
@@ -84,11 +92,26 @@ function AppContent() {
 
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    // Handle explicit themes
+    if (theme === 'light') {
+      root.classList.remove('dark');
     } else if (theme === 'dark') {
       root.classList.add('dark');
     } else {
-      // light theme
-      root.classList.remove('dark');
+      // Custom themes
+      root.classList.add(`theme-${theme}`);
+
+      // Determine if base is dark or light
+      const isDark = ['github-dark', 'gruvbox', 'midnight', 'dracula'].includes(
+        theme
+      );
+      if (isDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
     }
   }, [theme]);
 
