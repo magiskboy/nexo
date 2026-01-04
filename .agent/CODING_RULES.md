@@ -29,7 +29,14 @@
 - **Commands**: Never call `invoke` directly in components. Create a wrapper function in `src/lib/api` or similar if available, or keep them typed.
 - **Events**: Use strong typing for event payloads.
 
-### 4. Internationalization
+### 4. Error Handling
+
+- **Global**: The App is wrapped in an `ErrorBoundary`. Do not catch render errors individually unless necessary for partial UI recovery.
+- **Commands**: Use `handleCommandError(dispatch, error)` from `@/lib/tauri` to automatically parse and display backend errors.
+- **Parsing**: Backend errors follow `[Category] Message` format. Use `parseBackendError` utility if manual handling is needed.
+- **Notifications**: Errors will be automatically categorized and styled with appropriate icons when using the standard handler.
+
+### 5. Internationalization
 
 - **Strings**: No hardcoded strings in UI. Use `t('key')` from `useTranslation`.
 - **Keys**: snake_case or nested.structure.
@@ -53,8 +60,9 @@ Data flow must follow this path:
 
 ### 3. Error Handling
 
-- **Result Type**: Return `Result<T, CommandError>` (or app-specific error) from commands.
-- **Anyhow**: Use `anyhow::Result` for internal logic but convert to serializable error for frontend.
+- **AppError**: Use `AppError` and its specific variants (`Http`, `Python`, `Llm`, etc.) instead of generic strings or `anyhow`.
+- **Return Type**: Commands MUST return `Result<T, AppError>`.
+- **Propagation**: Use `?` operator for cleaner propagation.
 
 ### 4. Async
 
