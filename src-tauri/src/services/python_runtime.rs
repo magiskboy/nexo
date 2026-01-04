@@ -5,7 +5,27 @@ use tauri::{AppHandle, Manager};
 
 /// Get the path to bundled UV binary (sidecar)
 fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
-    let uv_name = if cfg!(windows) { "uv.exe" } else { "uv" };
+    // Determine the UV binary name based on platform and architecture
+    let uv_name = if cfg!(target_os = "macos") {
+        // On macOS, use architecture-specific binary
+        if cfg!(target_arch = "aarch64") {
+            "uv-aarch64-apple-darwin"
+        } else if cfg!(target_arch = "x86_64") {
+            "uv-x86_64-apple-darwin"
+        } else {
+            "uv" // Fallback
+        }
+    } else if cfg!(target_os = "linux") {
+        if cfg!(target_arch = "x86_64") {
+            "uv-x86_64-unknown-linux-gnu"
+        } else {
+            "uv" // Fallback for other Linux architectures
+        }
+    } else if cfg!(windows) {
+        "uv.exe"
+    } else {
+        "uv" // Generic fallback
+    };
 
     // Try production bundle path first (in resource_dir)
     if let Ok(resource_path) = app.path().resource_dir() {
@@ -25,6 +45,15 @@ fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
                 if dev_uv_path.exists() {
                     return Ok(dev_uv_path);
                 }
+
+                // In dev mode, also try the generic "uv" name as fallback
+                if uv_name != "uv" && uv_name != "uv.exe" {
+                    let generic_name = if cfg!(windows) { "uv.exe" } else { "uv" };
+                    let generic_path = parent.join("src-tauri").join("binaries").join(generic_name);
+                    if generic_path.exists() {
+                        return Ok(generic_path);
+                    }
+                }
             }
         }
     }
@@ -39,17 +68,26 @@ fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
                     if dev_uv_path.exists() {
                         return Ok(dev_uv_path);
                     }
+
+                    // In dev mode, also try the generic name
+                    if uv_name != "uv" && uv_name != "uv.exe" {
+                        let generic_name = if cfg!(windows) { "uv.exe" } else { "uv" };
+                        let generic_path = project_root.join("binaries").join(generic_name);
+                        if generic_path.exists() {
+                            return Ok(generic_path);
+                        }
+                    }
                 }
             }
         }
     }
 
-    Err(AppError::Python(
-        "Bundled UV not found. Please ensure UV binary is downloaded.\n\
-         Run: cd src-tauri && cargo build\n\
-         This will trigger build.rs to download UV binaries."
-            .to_string(),
-    ))
+    Err(AppError::Python(format!(
+        "Bundled UV '{}' not found. Please ensure UV binary is downloaded.\n\
+             Run: cd src-tauri && cargo build\n\
+             This will trigger build.rs to download UV binaries.",
+        uv_name
+    )))
 }
 
 pub struct PythonRuntime {

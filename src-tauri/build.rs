@@ -46,10 +46,49 @@ impl SidecarTool {
     fn install(&self, out_dir: &PathBuf, binaries_dir: &PathBuf) {
         let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
         let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
-        let target_triple = format!("{}-{}", target_os, target_arch); // Simplified identifier
 
-        // Resolve URL and Binary Name
-        let (url, _) = match (self.url_generator)(self.version, &target_os) {
+        // For macOS, we need to handle cross-compilation for both architectures
+        // When building for aarch64 on x86_64 host (or vice versa), we need both binaries
+        if target_os == "macos" && self.name == "uv" {
+            // Install binaries for both macOS architectures
+            for arch in &["aarch64", "x86_64"] {
+                self.install_for_arch(out_dir, binaries_dir, &target_os, arch);
+            }
+
+            // Create a default symlink/copy for the current arch
+            let default_binary = binaries_dir.join(self.name);
+            let arch_specific =
+                binaries_dir.join(format!("{}-{}-apple-darwin", self.name, target_arch));
+
+            if arch_specific.exists() && !default_binary.exists() {
+                let _ = fs::copy(&arch_specific, &default_binary);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    if let Ok(metadata) = fs::metadata(&default_binary) {
+                        let mut perms = metadata.permissions();
+                        perms.set_mode(0o755);
+                        let _ = fs::set_permissions(&default_binary, perms);
+                    }
+                }
+            }
+        } else {
+            // For other platforms, install as before
+            self.install_for_arch(out_dir, binaries_dir, &target_os, &target_arch);
+        }
+    }
+
+    fn install_for_arch(
+        &self,
+        out_dir: &PathBuf,
+        binaries_dir: &PathBuf,
+        target_os: &str,
+        target_arch: &str,
+    ) {
+        let target_triple = format!("{}-{}", target_os, target_arch);
+
+        // Resolve URL and Binary Name using the specific architecture
+        let (url, _) = match self.get_url_for_arch(self.version, target_os, target_arch) {
             Some(u) => u,
             None => {
                 println!(
@@ -60,9 +99,10 @@ impl SidecarTool {
             }
         };
 
-        // Determine final binary name (tauri sidecar convention is specific,
-        // but here we use generic names as we are using 'resources' in tauri.conf.json)
-        let binary_name = if target_os == "windows" {
+        // For UV on macOS, use architecture-specific binary names
+        let binary_name = if self.name == "uv" && target_os == "macos" {
+            format!("{}-{}-apple-darwin", self.name, target_arch)
+        } else if target_os == "windows" {
             format!("{}.exe", self.name)
         } else {
             self.name.to_string()
@@ -73,21 +113,51 @@ impl SidecarTool {
         if output_path.exists() {
             println!(
                 "{} binary already exists at: {}",
-                self.name,
+                binary_name,
                 output_path.display()
             );
             return;
         }
 
-        println!("Setting up {} version {}...", self.name, self.version);
+        println!(
+            "Setting up {} version {} for {}...",
+            self.name, self.version, target_triple
+        );
         download_and_extract(
             self.name,
             &url,
-            &binary_name,
+            if self.name == "uv" {
+                "uv"
+            } else {
+                &binary_name
+            },
             &target_triple,
             out_dir,
             &output_path,
         );
+    }
+
+    fn get_url_for_arch(
+        &self,
+        version: &str,
+        target_os: &str,
+        target_arch: &str,
+    ) -> Option<(String, String)> {
+        (self.url_generator)(version, target_os).and_then(|(url, bin)| {
+            // For UV, we need to adjust the URL based on architecture
+            if self.name == "uv" && target_os == "macos" {
+                let arch_url = if target_arch == "aarch64" {
+                    format!("https://github.com/astral-sh/uv/releases/download/{}/uv-aarch64-apple-darwin.tar.gz", version)
+                } else if target_arch == "x86_64" {
+                    format!("https://github.com/astral-sh/uv/releases/download/{}/uv-x86_64-apple-darwin.tar.gz", version)
+                } else {
+                    return None;
+                };
+                Some((arch_url, bin))
+            } else {
+                Some((url, bin))
+            }
+        })
     }
 }
 
