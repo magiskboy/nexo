@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
+import { handleCommandError } from '@/lib/tauri';
 import { useEffect, useState } from 'react';
-import { showError, showSuccess } from '@/store/slices/notificationSlice';
+import { showSuccess } from '@/store/slices/notificationSlice';
 import { useAppDispatch } from '@/store/hooks';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
@@ -88,7 +89,7 @@ export default function AddonSettings() {
       );
       setPythonRuntimes(status);
     } catch (error) {
-      dispatch(showError(`${t('failedToLoadPythonStatus')}: ${error}`));
+      handleCommandError(dispatch, error);
     }
   };
 
@@ -99,7 +100,7 @@ export default function AddonSettings() {
       );
       setNodeRuntimes(status);
     } catch (error) {
-      dispatch(showError(`${t('failedToLoadNodeStatus')}: ${error}`));
+      handleCommandError(dispatch, error);
     }
   };
 
@@ -117,9 +118,7 @@ export default function AddonSettings() {
       dispatch(showSuccess(t('pythonInstalled', { version })));
       await loadPythonStatus();
     } catch (error) {
-      dispatch(
-        showError(`${t('failedToInstallPython', { version })}: ${error}`)
-      );
+      handleCommandError(dispatch, error);
     } finally {
       setInstalling(null);
     }
@@ -131,9 +130,7 @@ export default function AddonSettings() {
       dispatch(showSuccess(t('pythonUninstalled', { version })));
       await loadPythonStatus();
     } catch (error) {
-      dispatch(
-        showError(`${t('failedToUninstallPython', { version })}: ${error}`)
-      );
+      handleCommandError(dispatch, error);
     }
   };
 
@@ -144,7 +141,7 @@ export default function AddonSettings() {
       dispatch(showSuccess(t('nodeInstalled', { version })));
       await loadNodeStatus();
     } catch (error) {
-      dispatch(showError(`${t('failedToInstallNode', { version })}: ${error}`));
+      handleCommandError(dispatch, error);
     } finally {
       setInstallingNode(null);
     }
@@ -156,9 +153,7 @@ export default function AddonSettings() {
       dispatch(showSuccess(t('nodeUninstalled', { version })));
       await loadNodeStatus();
     } catch (error) {
-      dispatch(
-        showError(`${t('failedToUninstallNode', { version })}: ${error}`)
-      );
+      handleCommandError(dispatch, error);
     }
   };
 

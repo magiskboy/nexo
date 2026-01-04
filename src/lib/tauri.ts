@@ -37,3 +37,16 @@ export async function listenToEvent<T = unknown>(
 // Re-export for convenience
 export { TauriCommands } from '@/bindings/commands';
 export { TauriEvents } from '@/bindings/events';
+
+import { AppDispatch } from '@/store';
+import { showError } from '@/store/slices/notificationSlice';
+import { parseBackendError } from '@/lib/utils';
+
+/**
+ * Standardized error handler for Tauri command failures.
+ * Parses the backend error format [Category] Message and dispatches a notification.
+ */
+export function handleCommandError(dispatch: AppDispatch, error: unknown) {
+  const { category, message } = parseBackendError(error);
+  dispatch(showError(message, undefined, undefined, category));
+}

@@ -104,12 +104,16 @@ function AppContent() {
   );
 }
 
+import { ErrorBoundary } from '@/ui/atoms/ErrorBoundary';
+
 function App() {
   return (
     <Provider store={store}>
       <DialogOriginProvider>
         <ModalStackProvider>
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
         </ModalStackProvider>
       </DialogOriginProvider>
     </Provider>

@@ -31,3 +31,24 @@ export function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
+
+export function parseBackendError(error: unknown): {
+  category?: string;
+  message: string;
+} {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
+  // Regex to match [Category] Message
+  const match = errorMessage.match(/^\[(.*?)\]\s?(.*)/);
+
+  if (match) {
+    return {
+      category: match[1], // e.g. "Network", "Python"
+      message: match[2] || errorMessage, // The rest of the message
+    };
+  }
+
+  return {
+    message: errorMessage,
+  };
+}

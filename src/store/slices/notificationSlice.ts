@@ -8,6 +8,7 @@ export interface Notification {
   title: string;
   description?: string;
   duration?: number;
+  category?: string;
 }
 
 interface NotificationState {
@@ -56,8 +57,9 @@ export const showSuccess = (
 export const showError = (
   title: string,
   description?: string,
-  duration?: number
-) => addNotification({ type: 'error', title, description, duration });
+  duration?: number,
+  category?: string
+) => addNotification({ type: 'error', title, description, duration, category });
 
 export const showInfo = (
   title: string,
