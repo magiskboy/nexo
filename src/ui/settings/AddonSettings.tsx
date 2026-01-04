@@ -223,16 +223,18 @@ export default function AddonSettings() {
                 </div>
               </div>
 
-              {runtime.path && (
-                <div className="mb-4">
+              <div className="h-5 mb-4">
+                {runtime.path ? (
                   <span
                     className="text-[10px] text-muted-foreground font-mono block truncate"
                     title={runtime.path}
                   >
                     {runtime.path}
                   </span>
-                </div>
-              )}
+                ) : (
+                  <div className="h-full" />
+                )}
+              </div>
 
               <div className="mt-auto pt-2">
                 {!runtime.installed ? (
@@ -317,16 +319,18 @@ export default function AddonSettings() {
                 </div>
               </div>
 
-              {runtime.path && (
-                <div className="mb-4">
+              <div className="h-5 mb-4">
+                {runtime.path ? (
                   <span
                     className="text-[10px] text-muted-foreground font-mono block truncate"
                     title={runtime.path}
                   >
                     {runtime.path}
                   </span>
-                </div>
-              )}
+                ) : (
+                  <div className="h-full" />
+                )}
+              </div>
 
               <div className="mt-auto pt-2">
                 {!runtime.installed ? (
