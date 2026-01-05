@@ -61,35 +61,8 @@ impl SidecarTool {
         let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
         let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
 
-        // For macOS, we need to handle cross-compilation for both architectures
-        // When building for aarch64 on x86_64 host (or vice versa), we need both binaries
-        if target_os == "macos" && self.name == "uv" {
-            // Install binaries for both macOS architectures
-            for arch in &["aarch64", "x86_64"] {
-                self.install_for_arch(out_dir, binaries_dir, &target_os, arch);
-            }
-
-            // Create a default symlink/copy for the current arch
-            let default_binary = binaries_dir.join(self.name);
-            let arch_specific =
-                binaries_dir.join(format!("{}-{}-apple-darwin", self.name, target_arch));
-
-            if arch_specific.exists() && !default_binary.exists() {
-                let _ = fs::copy(&arch_specific, &default_binary);
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::PermissionsExt;
-                    if let Ok(metadata) = fs::metadata(&default_binary) {
-                        let mut perms = metadata.permissions();
-                        perms.set_mode(0o755);
-                        let _ = fs::set_permissions(&default_binary, perms);
-                    }
-                }
-            }
-        } else {
-            // For other platforms, install as before
-            self.install_for_arch(out_dir, binaries_dir, &target_os, &target_arch);
-        }
+        // Install binary for current architecture only (like fnm does)
+        self.install_for_arch(out_dir, binaries_dir, &target_os, &target_arch);
     }
 
     fn install_for_arch(
@@ -113,10 +86,8 @@ impl SidecarTool {
             }
         };
 
-        // For UV on macOS, use architecture-specific binary names
-        let binary_name = if self.name == "uv" && target_os == "macos" {
-            format!("{}-{}-apple-darwin", self.name, target_arch)
-        } else if target_os == "windows" {
+        // Use simple binary names (same as fnm)
+        let binary_name = if target_os == "windows" {
             format!("{}.exe", self.name)
         } else {
             self.name.to_string()
