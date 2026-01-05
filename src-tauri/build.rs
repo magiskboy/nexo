@@ -31,6 +31,20 @@ fn main() {
     uv.install(&out_dir, &binaries_dir);
     fnm.install(&out_dir, &binaries_dir);
 
+    // Tell cargo about the binaries directory so Tauri can find it
+    println!("cargo:rerun-if-changed=binaries");
+
+    // Verify binaries exist and print them for debugging
+    if binaries_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&binaries_dir) {
+            for entry in entries.flatten() {
+                println!("cargo:warning=Binary found: {}", entry.path().display());
+            }
+        }
+    } else {
+        println!("cargo:warning=Binaries directory does not exist!");
+    }
+
     tauri_build::build();
 }
 
