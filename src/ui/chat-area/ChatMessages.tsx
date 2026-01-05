@@ -445,7 +445,7 @@ export function ChatMessages({
           );
         })}
 
-        {isLoading && (
+        {isLoading && !streamingMessageId && (
           <div className="mb-6 flex justify-start w-full">
             <div className="flex min-w-0 w-full flex-col gap-2">
               <div className="min-w-0 wrap-break-words rounded-2xl bg-muted px-4 py-3">

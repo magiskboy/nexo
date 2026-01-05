@@ -1,7 +1,14 @@
-import { Component, ErrorInfo, ReactNode, useMemo } from 'react';
+import {
+  Component,
+  ErrorInfo,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { Streamdown } from '@/ui/atoms/streamdown';
-import { useThrottledDebounce } from '@/ui/atoms/streamdown/hooks/use-throttled-debouce';
 import { useAppSelector } from '@/store/hooks';
 import { cn } from '@/lib/utils';
 import { CustomCodeComponent } from './CustomCodeComponent';
@@ -19,16 +26,56 @@ export function MarkdownContent({
   );
   const isStreaming = messageId ? streamingMessageId === messageId : false;
 
-  // Throttle/debounce content updates during streaming to improve performance
-  // - throttleMs: Update immediately if 100ms has passed since last update (ensures responsiveness)
-  // - debounceMs: Otherwise, wait 30ms before updating (batches rapid chunks)
-  // This prevents parsing markdown on every single chunk, which can cause UI freezing
-  // When not streaming, update immediately (no throttling) to show final content right away
-  const throttledContent = useThrottledDebounce(
-    sanitizedContent,
-    isStreaming ? 100 : 0, // Throttle: update immediately if 100ms passed (only when streaming)
-    isStreaming ? 30 : 0 // Debounce: wait 30ms before updating (only when streaming)
-  );
+  const [streamBuffer, setStreamBuffer] = useState(sanitizedContent);
+  const lastUpdateLength = useRef(sanitizedContent.length);
+  const bufferTimeout = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    if (isStreaming) {
+      // Initialize buffer when streaming starts
+      setStreamBuffer(sanitizedContent);
+      lastUpdateLength.current = sanitizedContent.length;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStreaming]);
+
+  useEffect(() => {
+    if (!isStreaming) return;
+
+    const newContentLength = sanitizedContent.length;
+    const diff = newContentLength - lastUpdateLength.current;
+
+    // Check newline count in the new chunk
+    // Optimization: no need to slice if diff is zero
+    if (diff === 0) return;
+
+    const newChunk = sanitizedContent.slice(lastUpdateLength.current);
+    const newlineCount = (newChunk.match(/\n/g) || []).length;
+
+    // Update if > 5 newlines or > 500 chars or user stopped typing for 800ms
+    // This creates larger chunks of text appearing at once
+    const shouldUpdate = newlineCount >= 5 || diff > 500;
+
+    if (shouldUpdate) {
+      if (bufferTimeout.current) clearTimeout(bufferTimeout.current);
+
+      setStreamBuffer(sanitizedContent);
+      lastUpdateLength.current = newContentLength;
+    } else {
+      if (bufferTimeout.current) clearTimeout(bufferTimeout.current);
+
+      bufferTimeout.current = setTimeout(() => {
+        setStreamBuffer(sanitizedContent);
+        lastUpdateLength.current = newContentLength;
+      }, 800);
+    }
+
+    return () => {
+      if (bufferTimeout.current) clearTimeout(bufferTimeout.current);
+    };
+  }, [sanitizedContent, isStreaming]);
+
+  const displayedContent = isStreaming ? streamBuffer : sanitizedContent;
 
   // Override code component to add run button
   const components = useMemo(
@@ -60,8 +107,12 @@ export function MarkdownContent({
           parseIncompleteMarkdown={true}
           controls
           components={components}
+          className={cn(
+            isStreaming &&
+              '[&>*]:animate-in [&>*]:fade-in [&>*]:slide-in-from-bottom-1 [&>*]:duration-1000'
+          )}
         >
-          {throttledContent}
+          {displayedContent}
         </Streamdown>
       </div>
     </MarkdownErrorBoundary>
