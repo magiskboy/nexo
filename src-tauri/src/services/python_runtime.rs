@@ -4,7 +4,7 @@ use std::process::Command;
 use tauri::{AppHandle, Manager};
 
 /// Get the path to bundled UV binary (sidecar)
-fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
+pub fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
     // Determine the UV binary name based on platform and architecture
     let uv_name = if cfg!(target_os = "macos") {
         // On macOS, use architecture-specific binary

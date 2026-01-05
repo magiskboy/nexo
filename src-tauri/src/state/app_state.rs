@@ -3,7 +3,7 @@ use crate::services::*;
 use rusqlite::Connection;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::oneshot;
 
 #[derive(Debug)]
@@ -32,6 +32,9 @@ pub struct AppState {
 
     // Tool permission state: message_id -> oneshot sender for approval response
     pub pending_tool_permissions: Arc<Mutex<HashMap<String, oneshot::Sender<PermissionDecision>>>>,
+
+    // Agent Manager
+    pub agent_manager: Arc<crate::agent::manager::AgentManager>,
 }
 
 impl AppState {
@@ -113,6 +116,14 @@ impl AppState {
             app_settings_service,
             prompt_service,
             pending_tool_permissions: Arc::new(Mutex::new(HashMap::new())),
+            agent_manager: Arc::new(crate::agent::manager::AgentManager::new(
+                (*app).path().app_data_dir().unwrap(),
+                // Use bundled UV path, or fallback to "uv" literal if resolution fails (though it propagates error in runtime service)
+                // For simplicity, verify_uv might fail, so we handle it.
+                // But AppState::new usually returns Error on failure initialization. with ? this is handled.
+                // However, get_bundled_uv_path returns AppError. AppState::new returns AppError.
+                crate::services::python_runtime::get_bundled_uv_path(&app)?,
+            )),
         })
     }
 }

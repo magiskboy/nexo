@@ -40,6 +40,9 @@ serde_yaml = "0.9"
 ts-rs = "9.0"
 uuid = { version = "1.19.0", features = ["v4", "serde"] }
 chrono = { version = "0.4.42", features = ["serde"] }
+regex = "1.12.2"
+sha2 = "0.10.9"
+hex = "0.4.3"
 
 [lints.clippy]
 pedantic = "warn"
@@ -52,3 +55,6 @@ module_name_repetitions = "allow"
 unsafe_code = "warn"
 unused_mut = "warn"
 dead_code = "warn"
+
+[dev-dependencies]
+tempfile = "3.24.0"
