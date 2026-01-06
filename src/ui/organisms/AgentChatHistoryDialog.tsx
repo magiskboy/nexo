@@ -9,7 +9,7 @@ import {
   DialogBody,
 } from '@/ui/atoms/dialog';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
-import { MessageList } from '@/ui/organisms/MessageList';
+import { MessageList } from '@/ui/organisms/chat/MessageList';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import type { Message } from '@/store/types';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';

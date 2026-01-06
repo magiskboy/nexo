@@ -1,5 +1,5 @@
-import { ChatMessages } from '@/ui/organisms/ChatMessages';
-import { ChatInput } from '@/ui/organisms/ChatInput';
+import { ChatMessages } from '@/ui/organisms/chat/ChatMessages';
+import { ChatInput } from '@/ui/organisms/chat/ChatInput';
 import { AgentChatHistoryDialog } from '@/ui/organisms/AgentChatHistoryDialog';
 import { useMessages } from '@/hooks/useMessages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';

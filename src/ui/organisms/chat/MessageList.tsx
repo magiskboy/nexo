@@ -1,9 +1,9 @@
 import { useMemo, useState, useCallback } from 'react';
 import type { Message } from '@/store/types';
 import type { PermissionRequest } from '@/store/slices/toolPermissionSlice';
-import { ToolCallItem } from '@/ui/organisms/ToolCallItem';
-import { ThinkingItem } from '@/ui/organisms/ThinkingItem';
-import { MessageItem } from '@/ui/organisms/MessageItem';
+import { ToolCallItem } from '@/ui/organisms/chat/ToolCallItem';
+import { ThinkingItem } from '@/ui/organisms/chat/ThinkingItem';
+import { MessageItem } from '@/ui/organisms/chat/MessageItem';
 import { sortMessages } from './utils/messageSorting';
 
 interface MessageListProps {

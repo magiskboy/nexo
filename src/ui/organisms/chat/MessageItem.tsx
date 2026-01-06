@@ -14,7 +14,7 @@ import { Button } from '@/ui/atoms/button/button';
 import { Textarea } from '@/ui/atoms/textarea';
 import { cn } from '@/lib/utils';
 import { MarkdownContent } from '@/ui/organisms/markdown/MarkdownContent';
-import { AgentCard } from '@/ui/molecules/AgentCard';
+import { AgentCard } from '@/ui/organisms/chat/AgentCard';
 import type { Message } from '@/store/types';
 
 export interface MessageItemProps {

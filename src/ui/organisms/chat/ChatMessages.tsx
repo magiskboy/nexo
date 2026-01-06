@@ -9,7 +9,7 @@ import { removePermissionRequest } from '@/store/slices/toolPermissionSlice';
 import { setLoading } from '@/store/slices/chatInputSlice';
 import { showError } from '@/store/slices/notificationSlice';
 import { setAgentChatHistoryDrawerOpen } from '@/store/slices/uiSlice';
-import { MessageList } from '@/ui/organisms/MessageList';
+import { MessageList } from '@/ui/organisms/chat/MessageList';
 import type { Message } from '@/store/types';
 
 interface ChatMessagesProps {
