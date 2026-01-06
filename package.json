@@ -80,6 +80,7 @@
     "streamdown": "^1.6.10",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
+    "use-stick-to-bottom": "^1.1.1",
     "zod": "^4.2.1"
   },
   "devDependencies": {

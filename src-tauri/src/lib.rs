@@ -120,6 +120,8 @@ pub fn run() {
             // Agent commands
             agent::commands::install_agent,
             agent::commands::get_installed_agents,
+            agent::commands::delete_agent,
+            agent::commands::get_agent_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

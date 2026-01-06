@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -9,6 +9,7 @@ import { setLoading } from '@/store/slices/chatInputSlice';
 import { showError } from '@/store/slices/notificationSlice';
 import { setAgentChatHistoryDrawerOpen } from '@/store/slices/uiSlice';
 import { MessageList } from '@/ui/organisms/chat/MessageList';
+import { ScrollArea } from '@/ui/atoms/scroll-area';
 import type { Message } from '@/store/types';
 
 interface ChatMessagesProps {
@@ -177,27 +178,111 @@ export function ChatMessages({
     [selectedChatId, dispatch, t, messages]
   );
 
+  // Enable auto scroll for chat messages
+  const enableAutoScroll = true;
+
+  // Refs for auto scroll
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const contentWrapperRef = useRef<HTMLDivElement>(null);
+  const scrollRefFromMessageList = useRef<
+    | ((element: HTMLElement | null) => void)
+    | React.MutableRefObject<HTMLElement | null>
+    | null
+  >(null);
+  const contentRefFromMessageList = useRef<HTMLElement | null>(null);
+
+  // Handle scroll ref from MessageList
+  const handleScrollRefReady = useCallback(
+    (
+      ref:
+        | HTMLElement
+        | null
+        | ((element: HTMLElement | null) => void)
+        | React.RefObject<HTMLElement>
+    ) => {
+      if (!ref) {
+        scrollRefFromMessageList.current = null;
+        return;
+      }
+
+      // Attach to ScrollArea viewport
+      if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector(
+          '[data-slot="scroll-area-viewport"]'
+        ) as HTMLElement;
+        if (viewport) {
+          if (typeof ref === 'function') {
+            // Callback ref
+            ref(viewport);
+          } else if (ref && typeof ref === 'object' && 'current' in ref) {
+            // Object ref - we can't directly assign, but the hook should handle this
+            // Store for later use in useEffect
+            scrollRefFromMessageList.current = ref;
+          }
+        }
+      }
+    },
+    []
+  );
+
+  // Handle content ref from MessageList
+  const handleContentRefReady = useCallback((ref: HTMLElement | null) => {
+    contentRefFromMessageList.current = ref;
+    if (ref && contentWrapperRef.current) {
+      // The contentRef should point to the wrapper div
+      // But MessageList already handles this internally
+    }
+  }, []);
+
+  // Attach scrollRef to viewport when ScrollArea is ready
+  useEffect(() => {
+    if (
+      scrollAreaRef.current &&
+      scrollRefFromMessageList.current &&
+      enableAutoScroll
+    ) {
+      const viewport = scrollAreaRef.current.querySelector(
+        '[data-slot="scroll-area-viewport"]'
+      ) as HTMLElement;
+      if (viewport) {
+        const ref = scrollRefFromMessageList.current;
+        if (typeof ref === 'function') {
+          ref(viewport);
+        }
+        // Note: For object refs, the hook manages the assignment internally
+        // We just need to ensure the viewport element is available
+      }
+    }
+  }, [enableAutoScroll]);
+
   return (
-    <div
-      className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
+    <ScrollArea
+      ref={scrollAreaRef}
+      className="flex-1 min-h-0"
       style={{ overscrollBehavior: 'contain' }}
     >
-      <div className="mx-auto w-full max-w-3xl px-4 pt-6 gap-2 flex flex-col">
+      <div
+        ref={contentWrapperRef}
+        className="mx-auto w-full max-w-3xl px-4 pt-6 gap-2 flex flex-col"
+      >
         <MessageList
           messages={messages}
           enableStreaming={true}
           enableThinkingItem={true}
           enablePendingPermissions={true}
+          enableAutoScroll={enableAutoScroll}
           streamingMessageId={streamingMessageId}
           pendingRequests={pendingRequests}
           onSaveEdit={handleSaveEdit}
           onPermissionRespond={handlePermissionRespond}
           onViewAgentDetails={handleViewAgentDetails}
+          onScrollRefReady={handleScrollRefReady}
+          onContentRefReady={handleContentRefReady}
           userMode={userMode}
           t={t}
           isLoading={isLoading && !streamingMessageId}
         />
       </div>
-    </div>
+    </ScrollArea>
   );
 }

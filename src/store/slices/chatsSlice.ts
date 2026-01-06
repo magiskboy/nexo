@@ -10,6 +10,8 @@ interface Chat {
   last_message: string | null;
   created_at: number;
   updated_at: number;
+  agent_id: string | null;
+  parent_id: string | null;
 }
 
 interface ChatsState {
@@ -45,6 +47,8 @@ export const fetchChats = createAsyncThunk(
         title: c.title,
         lastMessage: c.last_message || undefined,
         timestamp: c.updated_at * 1000, // Convert to milliseconds
+        agentId: c.agent_id || undefined,
+        parentId: c.parent_id || undefined,
       })),
       lastChatId,
     };

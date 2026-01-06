@@ -12,6 +12,15 @@ import {
 import { Input } from '@/ui/atoms/input';
 import { Label } from '@/ui/atoms/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/atoms/tabs';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/ui/atoms/dialog/component';
+import { Separator } from '@/ui/atoms/separator';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -20,7 +29,14 @@ import {
   GitBranch,
   ChevronDown,
   ChevronUp,
+  Bot,
+  ExternalLink,
+  Trash2,
+  Wrench,
+  FileText,
 } from 'lucide-react';
+import { TauriCommands } from '@/bindings/commands';
+import { invokeCommand } from '@/lib/tauri';
 
 interface Manifest {
   id: string;
@@ -28,6 +44,10 @@ interface Manifest {
   description: string;
   author: string;
   schema_version: number;
+  homepage?: string;
+  repository?: string;
+  license?: string;
+  permissions?: string[];
 }
 
 interface InstalledAgent {
@@ -38,7 +58,7 @@ interface InstalledAgent {
 
 export function AgentSettings() {
   const [agents, setAgents] = useState<InstalledAgent[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [installing, setInstalling] = useState(false);
 
   // Git Install State
@@ -46,6 +66,19 @@ export function AgentSettings() {
   const [gitRevision, setGitRevision] = useState('');
   const [gitSubpath, setGitSubpath] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Agent Detail Dialog State
+  const [selectedAgent, setSelectedAgent] = useState<InstalledAgent | null>(
+    null
+  );
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [agentTools, setAgentTools] = useState<
+    Array<{ name: string; description?: string }>
+  >([]);
+  const [agentInstructions, setAgentInstructions] = useState<string>('');
+  const [loadingAgentInfo, setLoadingAgentInfo] = useState(false);
 
   const fetchAgents = async () => {
     setLoading(true);
@@ -126,6 +159,52 @@ export function AgentSettings() {
     }
   };
 
+  const handleDeleteAgent = async () => {
+    if (!selectedAgent) return;
+
+    setDeleting(true);
+    try {
+      await invoke(TauriCommands.DELETE_AGENT, {
+        agentId: selectedAgent.manifest.id,
+      });
+
+      toast.success('Agent deleted successfully!');
+      setDeleteDialogOpen(false);
+      setDialogOpen(false);
+      setSelectedAgent(null);
+      fetchAgents();
+    } catch (error) {
+      toast.error('Failed to delete agent: ' + error);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const fetchAgentInfo = async (agentId: string) => {
+    setLoadingAgentInfo(true);
+    try {
+      const info = await invokeCommand<{
+        tools: Array<{ name: string; description?: string }>;
+        instructions: string;
+      }>(TauriCommands.GET_AGENT_INFO, { agentId });
+
+      setAgentTools(info.tools || []);
+      setAgentInstructions(info.instructions || '');
+    } catch (error) {
+      console.error('Failed to fetch agent info:', error);
+      setAgentTools([]);
+      setAgentInstructions('');
+    } finally {
+      setLoadingAgentInfo(false);
+    }
+  };
+
+  const handleAgentClick = (agent: InstalledAgent) => {
+    setSelectedAgent(agent);
+    setDialogOpen(true);
+    fetchAgentInfo(agent.manifest.id);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -135,14 +214,6 @@ export function AgentSettings() {
             Extend Nexo capabilities with specialized agents.
           </p>
         </div>
-        <Button
-          onClick={fetchAgents}
-          variant="outline"
-          size="sm"
-          disabled={loading}
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
-        </Button>
       </div>
 
       <Tabs defaultValue="installed" className="w-full">
@@ -161,7 +232,11 @@ export function AgentSettings() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {agents.map((agent) => (
-                <Card key={agent.manifest.id}>
+                <Card
+                  key={agent.manifest.id}
+                  className="cursor-pointer hover:bg-accent/50 transition-colors"
+                  onClick={() => handleAgentClick(agent)}
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">
                       {agent.manifest.name}
@@ -320,6 +395,265 @@ export function AgentSettings() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Agent Detail Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2.5">
+                <Bot className="size-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-xl">
+                  {selectedAgent?.manifest.name || 'Agent Details'}
+                </DialogTitle>
+                {selectedAgent && (
+                  <p className="text-xs text-muted-foreground font-mono mt-1">
+                    {selectedAgent.manifest.id}
+                  </p>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogBody style={{ scrollbarWidth: 'none' }}>
+            {selectedAgent && (
+              <div className="space-y-6">
+                {/* Description */}
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">Description</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedAgent.manifest.description}
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Information</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Author</p>
+                      <p className="font-medium">
+                        {selectedAgent.manifest.author}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Version</p>
+                      <p className="font-mono text-xs">
+                        {selectedAgent.version_ref}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">
+                        Schema Version
+                      </p>
+                      <p className="font-medium">
+                        {selectedAgent.manifest.schema_version}
+                      </p>
+                    </div>
+                    {selectedAgent.manifest.license && (
+                      <div>
+                        <p className="text-muted-foreground mb-1">License</p>
+                        <p className="font-medium">
+                          {selectedAgent.manifest.license}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Links */}
+                {(selectedAgent.manifest.homepage ||
+                  selectedAgent.manifest.repository) && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Links</h4>
+                      <div className="space-y-2">
+                        {selectedAgent.manifest.homepage && (
+                          <a
+                            href={selectedAgent.manifest.homepage}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            <span>Homepage</span>
+                          </a>
+                        )}
+                        {selectedAgent.manifest.repository && (
+                          <a
+                            href={selectedAgent.manifest.repository}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            <span>Repository</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Permissions */}
+                {selectedAgent.manifest.permissions &&
+                  selectedAgent.manifest.permissions.length > 0 && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm">Permissions</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedAgent.manifest.permissions.map(
+                            (permission, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 text-xs bg-muted rounded-md"
+                              >
+                                {permission}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                {/* Tools */}
+                <Separator />
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <Wrench className="h-4 w-4" />
+                    Tools ({agentTools.length})
+                  </h4>
+                  {loadingAgentInfo ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading tools...</span>
+                    </div>
+                  ) : agentTools.length > 0 ? (
+                    <div className="space-y-2">
+                      {agentTools.map((tool, index) => (
+                        <div
+                          key={index}
+                          className="p-3 rounded-md bg-muted/50 border"
+                        >
+                          <div className="font-medium text-sm mb-1">
+                            {tool.name}
+                          </div>
+                          {tool.description && (
+                            <p className="text-xs text-muted-foreground">
+                              {tool.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No tools available
+                    </p>
+                  )}
+                </div>
+
+                {/* Instructions */}
+                <Separator />
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Instructions
+                  </h4>
+                  {loadingAgentInfo ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading instructions...</span>
+                    </div>
+                  ) : agentInstructions ? (
+                    <div className="p-3 rounded-md bg-muted/50 border">
+                      <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans">
+                        {agentInstructions}
+                      </pre>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No instructions available
+                    </p>
+                  )}
+                </div>
+
+                {/* Path */}
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">Installation Path</h4>
+                  <p className="text-xs text-muted-foreground font-mono break-all">
+                    {selectedAgent.path}
+                  </p>
+                </div>
+              </div>
+            )}
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Agent
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Agent</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete{' '}
+              {selectedAgent && (
+                <span className="font-semibold">
+                  {selectedAgent.manifest.name}
+                </span>
+              )}
+              ? This action cannot be undone.
+            </p>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteAgent}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -47,11 +47,13 @@ export function ChatSearchDialog() {
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = chats.filter(
-      (chat) =>
-        chat.title.toLowerCase().includes(query) ||
-        chat.lastMessage?.toLowerCase().includes(query)
-    );
+    const filtered = chats
+      .filter((chat) => !chat.parentId) // Filter out subagent chats
+      .filter(
+        (chat) =>
+          chat.title.toLowerCase().includes(query) ||
+          chat.lastMessage?.toLowerCase().includes(query)
+      );
     dispatch(setFilteredChats(filtered));
     prevChatsLengthRef.current = chats.length;
   }, [searchQuery, chats, dispatch]); // Only depend on chats.length, not the whole array

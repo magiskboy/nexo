@@ -85,6 +85,8 @@ export const TauriCommands = {
   // Agent commands
   INSTALL_AGENT: 'install_agent',
   GET_INSTALLED_AGENTS: 'get_installed_agents',
+  DELETE_AGENT: 'delete_agent',
+  GET_AGENT_INFO: 'get_agent_info',
   GET_OR_CREATE_SPECIALIST_SESSION: 'get_or_create_specialist_session',
 } as const;
 

@@ -181,80 +181,82 @@ export function ChatSidebar() {
             </div>
           ) : (
             <div className="space-y-1">
-              {chats.map((chat) => (
-                <div
-                  key={chat.id}
-                  className={cn(
-                    'group relative flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
-                    'hover:bg-sidebar-accent',
-                    selectedChatId === chat.id && 'bg-sidebar-accent'
-                  )}
-                  onClick={() => {
-                    setContextMenu(null);
-                    handleChatSelect(chat.id);
-                  }}
-                  onContextMenu={(e) => handleContextMenu(e, chat.id)}
-                >
-                  <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <div className="line-clamp-1 text-sm font-medium text-sidebar-foreground flex-1">
-                        {chat.title}
+              {chats
+                .filter((chat) => !chat.parentId) // Filter out subagent chats
+                .map((chat) => (
+                  <div
+                    key={chat.id}
+                    className={cn(
+                      'group relative flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+                      'hover:bg-sidebar-accent',
+                      selectedChatId === chat.id && 'bg-sidebar-accent'
+                    )}
+                    onClick={() => {
+                      setContextMenu(null);
+                      handleChatSelect(chat.id);
+                    }}
+                    onContextMenu={(e) => handleContextMenu(e, chat.id)}
+                  >
+                    <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="line-clamp-1 text-sm font-medium text-sidebar-foreground flex-1">
+                          {chat.title}
+                        </div>
+                        {streamingByChatId[chat.id] && (
+                          <Loader2
+                            className={cn(
+                              'size-3 shrink-0 animate-spin',
+                              selectedChatId === chat.id &&
+                                !pausedStreaming[chat.id]
+                                ? 'text-primary'
+                                : 'text-muted-foreground opacity-60'
+                            )}
+                          />
+                        )}
                       </div>
-                      {streamingByChatId[chat.id] && (
-                        <Loader2
-                          className={cn(
-                            'size-3 shrink-0 animate-spin',
-                            selectedChatId === chat.id &&
-                              !pausedStreaming[chat.id]
-                              ? 'text-primary'
-                              : 'text-muted-foreground opacity-60'
-                          )}
-                        />
-                      )}
                     </div>
-                  </div>
 
-                  {/* Export Button - Visible on hover */}
-                  <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 p-0 hover:bg-black/10 dark:hover:bg-white/10"
+                    {/* Export Button - Visible on hover */}
+                    <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 p-0 hover:bg-black/10 dark:hover:bg-white/10"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                          >
+                            <Download className="size-4 text-muted-foreground" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                           }}
                         >
-                          <Download className="size-4 text-muted-foreground" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                      >
-                        <DropdownMenuItem
-                          onClick={(e) => handleExport(e, chat.id, 'md')}
-                        >
-                          <FileText className="mr-2 size-4" />
-                          Markdown (.md)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => handleExport(e, chat.id, 'json')}
-                        >
-                          <FileJson className="mr-2 size-4" />
-                          JSON (.json)
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          <DropdownMenuItem
+                            onClick={(e) => handleExport(e, chat.id, 'md')}
+                          >
+                            <FileText className="mr-2 size-4" />
+                            Markdown (.md)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => handleExport(e, chat.id, 'json')}
+                          >
+                            <FileJson className="mr-2 size-4" />
+                            JSON (.json)
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>

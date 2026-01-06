@@ -1,6 +1,7 @@
 use super::common;
 use super::downloader;
 use anyhow::{Context, Result};
+use rust_mcp_sdk::McpClient;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -296,5 +297,90 @@ impl AgentManager {
 
         let content = std::fs::read_to_string(persona_path)?;
         Ok(content)
+    }
+
+    /// Get agent tools and instructions (for display purposes)
+    pub async fn get_agent_info(
+        &self,
+        app: &tauri::AppHandle,
+        agent_id: &str,
+    ) -> Result<(Vec<crate::models::mcp_tool::MCPTool>, String), anyhow::Error> {
+        use crate::services::MCPClientService;
+
+        // 1. Get instructions
+        let instructions = self.get_agent_instructions(agent_id)?;
+
+        // 2. Get tools by creating a temporary client
+        let agent_path = self.agents_dir().join(agent_id).join("current");
+        if !agent_path.exists() {
+            anyhow::bail!("Agent not found: {}", agent_id);
+        }
+
+        let entrypoint = "tools/main.py";
+        let entrypoint_path = agent_path.join(entrypoint);
+
+        #[cfg(not(windows))]
+        let python_exe = agent_path.join(".venv").join("bin").join("python");
+        #[cfg(windows)]
+        let python_exe = agent_path.join(".venv").join("Scripts").join("python.exe");
+
+        let cmd_str = shell_words::join(vec![
+            python_exe.to_string_lossy().to_string(),
+            entrypoint_path.to_string_lossy().to_string(),
+        ]);
+
+        // Create temporary client to fetch tools
+        let client = MCPClientService::create_and_start_client(
+            app,
+            cmd_str,
+            "stdio".to_string(),
+            None,
+            None,
+        )
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to create agent client: {}", e))?;
+
+        // List tools
+        let tools_result = client
+            .list_tools(None)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to list tools: {}", e))?;
+
+        // Convert to MCPTool format
+        let tools: Vec<crate::models::mcp_tool::MCPTool> = tools_result
+            .tools
+            .into_iter()
+            .map(|tool| {
+                let input_schema = serde_json::to_string(&tool.input_schema).ok();
+                crate::models::mcp_tool::MCPTool {
+                    name: tool.name,
+                    description: tool.description,
+                    input_schema,
+                }
+            })
+            .collect();
+
+        // Shut down the temporary client
+        client
+            .shut_down()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to close client: {}", e))?;
+
+        Ok((tools, instructions))
+    }
+
+    /// Delete an installed agent
+    pub fn delete_agent(&self, agent_id: &str) -> Result<()> {
+        let agent_root = self.agents_dir().join(agent_id);
+        
+        if !agent_root.exists() {
+            anyhow::bail!("Agent not found: {}", agent_id);
+        }
+
+        // Remove the entire agent directory (includes all versions and the current symlink)
+        fs::remove_dir_all(&agent_root)
+            .context(format!("Failed to delete agent directory: {}", agent_root.display()))?;
+
+        Ok(())
     }
 }

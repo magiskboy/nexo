@@ -1,4 +1,5 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useStickToBottom } from 'use-stick-to-bottom';
 import type { Message } from '@/store/types';
 import type { PermissionRequest } from '@/store/slices/toolPermissionSlice';
 import { ToolCallItem } from '@/ui/organisms/chat/ToolCallItem';
@@ -28,6 +29,7 @@ interface MessageListProps {
   enableStreaming?: boolean; // default: true
   enableThinkingItem?: boolean; // default: true
   enablePendingPermissions?: boolean; // default: true
+  enableAutoScroll?: boolean; // default: false
   streamingMessageId?: string | null;
   pendingRequests?: Record<string, PermissionRequest>;
 
@@ -41,6 +43,10 @@ interface MessageListProps {
     approved: boolean
   ) => void | Promise<void>;
   onViewAgentDetails?: (sessionId: string, agentId: string) => void;
+
+  // Auto scroll callbacks (for parent to attach refs to scroll container)
+  onScrollRefReady?: (ref: HTMLElement | null) => void;
+  onContentRefReady?: (ref: HTMLElement | null) => void;
 
   // Other
   userMode: 'normal' | 'developer';
@@ -63,11 +69,14 @@ export function MessageList({
   enableStreaming = true,
   enableThinkingItem = true,
   enablePendingPermissions = true,
+  enableAutoScroll = false,
   streamingMessageId = null,
   pendingRequests = {},
   onSaveEdit,
   onPermissionRespond,
   onViewAgentDetails,
+  onScrollRefReady,
+  onContentRefReady,
   userMode,
   t,
 }: MessageListProps) {
@@ -207,8 +216,56 @@ export function MessageList({
   // Memoize sorted messages - only recalculate when messages array changes
   const sortedMessages = useMemo(() => sortMessages(messages), [messages]);
 
+  // Setup auto scroll hook
+  const { scrollRef, contentRef } = useStickToBottom({
+    resize: 'smooth',
+    initial: 'smooth',
+    damping: 0.7,
+    stiffness: 0.05,
+    mass: 1.25,
+  });
+
+  // Expose scrollRef to parent component (for attaching to ScrollArea viewport)
+  useEffect(() => {
+    if (enableAutoScroll) {
+      // scrollRef can be a callback ref or object ref
+      // We'll pass it directly and let parent handle it
+      onScrollRefReady?.(scrollRef as unknown as HTMLElement | null);
+    } else {
+      onScrollRefReady?.(null);
+    }
+  }, [enableAutoScroll, scrollRef, onScrollRefReady]);
+
+  // Combined ref callback for contentRef - handles both hook's ref and parent callback
+  const contentRefCallback = useCallback(
+    (element: HTMLDivElement | null) => {
+      if (enableAutoScroll && contentRef) {
+        // Attach to hook's contentRef (only if it's a callback ref)
+        if (typeof contentRef === 'function') {
+          contentRef(element);
+        }
+        // Note: If contentRef is an object ref, the hook manages it internally
+        // We don't need to modify it - just use it directly via the ref prop
+      }
+      // Expose to parent
+      onContentRefReady?.(element);
+    },
+    [enableAutoScroll, contentRef, onContentRefReady]
+  );
+
+  // Use contentRef directly if it's a callback ref, otherwise use our combined callback
+  // For object refs, we need to use a callback that doesn't modify the ref
+  const finalContentRef = enableAutoScroll
+    ? typeof contentRef === 'function'
+      ? (element: HTMLDivElement | null) => {
+          contentRef(element);
+          onContentRefReady?.(element);
+        }
+      : contentRefCallback
+    : undefined;
+
   return (
-    <>
+    <div ref={finalContentRef}>
       {sortedMessages.map((message) => {
         // Skip tool result messages (role="tool") - they are only used internally
         // Tool results are displayed within tool_call messages
@@ -301,6 +358,6 @@ export function MessageList({
           </div>
         );
       })}
-    </>
+    </div>
   );
 }

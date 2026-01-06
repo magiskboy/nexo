@@ -32,6 +32,8 @@ export interface ChatItem {
   title: string;
   lastMessage?: string;
   timestamp?: number; // Unix timestamp in milliseconds
+  agentId?: string;
+  parentId?: string;
 }
 
 export interface ToolCall {

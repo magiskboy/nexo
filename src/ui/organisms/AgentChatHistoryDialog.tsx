@@ -160,7 +160,7 @@ export function AgentChatHistoryDialog({
           </div>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-hidden px-0 py-0">
+        <DialogBody className="overflow-hidden px-0 py-0">
           {loading && messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -173,7 +173,7 @@ export function AgentChatHistoryDialog({
           ) : (
             <ScrollArea className="h-full">
               <div className="px-6 py-4">
-                <div className="mx-auto w-full flex flex-col gap-4">
+                <div className="mx-auto flex flex-col gap-4">
                   <MessageList
                     messages={displayMessages}
                     enableStreaming={false}

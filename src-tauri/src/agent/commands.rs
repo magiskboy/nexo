@@ -58,3 +58,35 @@ pub async fn get_installed_agents(
         .list_installed()
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn delete_agent(
+    state: State<'_, AppState>,
+    agent_id: String,
+) -> Result<(), String> {
+    state
+        .agent_manager
+        .delete_agent(&agent_id)
+        .map_err(|e| e.to_string())
+}
+
+#[derive(serde::Serialize)]
+pub struct AgentInfo {
+    pub tools: Vec<crate::models::mcp_tool::MCPTool>,
+    pub instructions: String,
+}
+
+#[tauri::command]
+pub async fn get_agent_info(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    agent_id: String,
+) -> Result<AgentInfo, String> {
+    let (tools, instructions) = state
+        .agent_manager
+        .get_agent_info(&app, &agent_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(AgentInfo { tools, instructions })
+}

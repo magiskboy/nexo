@@ -77,4 +77,10 @@ impl TauriCommands {
     pub const GET_NODE_RUNTIMES_STATUS: &'static str = "get_node_runtimes_status";
     pub const INSTALL_NODE_RUNTIME: &'static str = "install_node_runtime";
     pub const UNINSTALL_NODE_RUNTIME: &'static str = "uninstall_node_runtime";
+
+    // Agent commands
+    pub const INSTALL_AGENT: &'static str = "install_agent";
+    pub const GET_INSTALLED_AGENTS: &'static str = "get_installed_agents";
+    pub const DELETE_AGENT: &'static str = "delete_agent";
+    pub const GET_AGENT_INFO: &'static str = "get_agent_info";
 }
