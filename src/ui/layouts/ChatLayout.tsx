@@ -1,9 +1,13 @@
-import { ChatSidebar } from '@/ui/ChatSidebar';
-import { ChatArea } from '@/ui/chat-area/ChatArea';
+import { ReactNode } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { cn } from '@/lib/utils';
 
-export function ChatPage() {
+interface ChatLayoutProps {
+  sidebar: ReactNode;
+  content: ReactNode;
+}
+
+export function ChatLayout({ sidebar, content }: ChatLayoutProps) {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.ui.isSidebarCollapsed
   );
@@ -23,23 +27,14 @@ export function ChatPage() {
             isSidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
           )}
         >
-          <ChatSidebar />
+          {sidebar}
         </div>
       </div>
 
       {/* Chat Area */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
-        <ChatArea />
+        {content}
       </div>
-
-      {/* Sidebar Toggle Button - Floating or persistent */}
-      {/* Note: In AppLayout this was in TitleBar, but if we want it here we can add it or rely on TitleBar. 
-          The plan is to have TitleBar outside of pages. 
-          So TitleBar will handle the sidebar toggle? 
-          Wait, AppLayout had TitleBar with leftContent containing the toggle button.
-          The TitleBar should remain global in AppLayout. 
-          So ChatPage should only contain the content below TitleBar.
-       */}
     </div>
   );
 }

@@ -31,9 +31,9 @@ import { useChatInput } from '@/hooks/useChatInput';
 import { useMessages } from '@/hooks/useMessages';
 import { useSlashCommand } from '@/hooks/useSlashCommand';
 import { useAgentMention } from '@/hooks/useAgentMention';
-import { SlashCommandDropdown } from './SlashCommandDropdown';
-import { AgentMentionDropdown } from './AgentMentionDropdown';
-import { VariableInputDialog } from './VariableInputDialog';
+import { SlashCommandDropdown } from '@/ui/molecules/SlashCommandDropdown';
+import { AgentMentionDropdown } from '@/ui/molecules/AgentMentionDropdown';
+import { VariableInputDialog } from '@/ui/molecules/VariableInputDialog';
 import { parsePromptVariables, renderPrompt } from '@/lib/prompt-utils';
 import type { Prompt, InstalledAgent } from '@/store/types';
 

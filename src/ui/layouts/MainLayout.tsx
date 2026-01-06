@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
-import { WorkspaceSelector } from '@/ui/workspace/WorkspaceSelector';
-import { About } from '@/ui/settings/About';
-import { ChatSearchDialog } from '@/ui/chat-search/ChatSearchDialog';
-import { KeyboardShortcutsDialog } from '@/ui/KeyboardShortcutsDialog';
-import { TitleBar } from '@/ui/TitleBar';
+import { WorkspaceSelector } from '@/ui/organisms/workspace/WorkspaceSelector';
+import { About } from '@/ui/organisms/settings/About';
+import { ChatSearchDialog } from '@/ui/molecules/ChatSearchDialog';
+import { KeyboardShortcutsDialog } from '@/ui/organisms/KeyboardShortcutsDialog';
+import { TitleBar } from '@/ui/organisms/TitleBar';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useDialogClick } from '@/hooks/useDialogClick';
 import {
@@ -21,12 +21,12 @@ import {
   setSettingsSection,
 } from '@/store/slices/uiSlice';
 
-// Pages
-import { ChatPage } from '@/pages/chat';
-import { SettingsPage } from '@/pages/settings';
-import { WorkspaceSettingsPage } from '@/pages/workspace-settings';
+// Screens
+import { ChatScreen } from '@/ui/screens/ChatScreen';
+import { SettingsScreen } from '@/ui/screens/SettingsScreen';
+import { WorkspaceSettingsScreen } from '@/ui/screens/WorkspaceSettingsScreen';
 
-export function AppLayout() {
+export function MainLayout() {
   const { t } = useTranslation(['common', 'settings']);
   const dispatch = useAppDispatch();
 
@@ -45,11 +45,6 @@ export function AppLayout() {
 
   return (
     <div className="flex h-screen flex-col bg-background select-none">
-      {/* Custom Title Bar with integrated app content - Only show complex title bar on Chat Page? 
-          Actually, we want TitleBar everywhere. 
-          But the content of TitleBar (Sidebar toggle, Workspace Selector) might be specific to ChatPage.
-          Let's adjust TitleBar usage.
-      */}
       <TitleBar
         leftContent={
           activePage === 'chat' ? (
@@ -74,8 +69,6 @@ export function AppLayout() {
               <WorkspaceSelector />
             </>
           ) : (
-            // Keep Workspace Selector in Settings? Or just the Back button (handled in SettingsPage)
-            // Maybe empty left content for Settings Page, as it has its own header/sidebar
             <div className="flex items-center gap-2">
               {/* Optional: Breadcrumbs or Title */}
             </div>
@@ -126,9 +119,9 @@ export function AppLayout() {
       />
 
       {/* Main Content Area */}
-      {activePage === 'chat' && <ChatPage />}
-      {activePage === 'settings' && <SettingsPage />}
-      {activePage === 'workspaceSettings' && <WorkspaceSettingsPage />}
+      {activePage === 'chat' && <ChatScreen />}
+      {activePage === 'settings' && <SettingsScreen />}
+      {activePage === 'workspaceSettings' && <WorkspaceSettingsScreen />}
 
       {/* About Dialog */}
       <About

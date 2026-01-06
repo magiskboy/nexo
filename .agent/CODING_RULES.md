@@ -17,10 +17,28 @@
 - **Typed Hooks**: ALWAYS use `useAppDispatch` and `useAppSelector` instead of `useDispatch` and `useSelector`.
 - **Slices**: Keep logic inside slices (`src/store/slices`). Async logic goes into `createAsyncThunk`.
 
-### 2. Component Structure
+### 2. Component Structure (Atomic Design)
 
-- **Location**: All UI components go in `src/ui`.
-- **Shadcn UI**: Do not modify `src/ui/atoms` directly if possible; wrap them or compose them.
+- **Location**: All UI components go in `src/ui` following Atomic Design principles.
+- **Atomic Design Hierarchy**:
+  - **Atoms** (`src/ui/atoms/`): Basic UI primitives (Button, Input, Select).
+    - NO business logic, NO Tauri API calls, NO Redux.
+    - Pure presentational components.
+    - Shadcn UI components live here.
+  - **Molecules** (`src/ui/molecules/`): Composed UI elements (LabeledInput, SearchBox, Dropdown).
+    - Composed of atoms only.
+    - Minimal local state (UI-only).
+    - NO Tauri API calls, NO Redux.
+  - **Organisms** (`src/ui/organisms/`): Complex UI sections (Sidebar, MessageList, SettingsForm).
+    - Can use hooks, Redux, local state.
+    - Can call Tauri APIs via hooks.
+    - May compose molecules and other organisms.
+  - **Layouts** (`src/ui/layouts/`): Structure definitions (MainLayout, SettingsLayout).
+    - Define window/screen layout structure.
+    - NO business logic.
+  - **Screens** (`src/ui/screens/`): Full screen compositions (ChatScreen, SettingsScreen).
+    - Compose layouts + organisms.
+    - Handle screen-level state and navigation.
 - **Props Interface**: Define props interface immediately before the component, named `[ComponentName]Props`.
 - **Functional Components**: Use `export const [Name] = (...) => { ... }` syntax relative to the file.
 

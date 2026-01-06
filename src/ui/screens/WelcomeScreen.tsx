@@ -75,7 +75,7 @@ const features = [
   },
 ];
 
-export function Welcome({ open, onOpenChange }: WelcomeProps) {
+export function WelcomeScreen({ open, onOpenChange }: WelcomeProps) {
   const { t } = useTranslation('common');
   const dispatch = useAppDispatch();
 

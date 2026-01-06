@@ -1,5 +1,5 @@
-import { ChatMessages } from './ChatMessages';
-import { ChatInput } from './ChatInput';
+import { ChatMessages } from '@/ui/organisms/ChatMessages';
+import { ChatInput } from '@/ui/organisms/ChatInput';
 import { useMessages } from '@/hooks/useMessages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';

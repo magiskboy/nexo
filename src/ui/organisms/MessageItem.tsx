@@ -13,7 +13,7 @@ import {
 import { Button } from '@/ui/atoms/button/button';
 import { Textarea } from '@/ui/atoms/textarea';
 import { cn } from '@/lib/utils';
-import { MarkdownContent } from '@/ui/markdown-content';
+import { MarkdownContent } from '@/ui/organisms/markdown/MarkdownContent';
 import { AgentCard } from '@/ui/molecules/AgentCard';
 import type { Message } from '@/store/types';
 

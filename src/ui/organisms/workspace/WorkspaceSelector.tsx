@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/ui/atoms/dropdown-menu';
-import { AddWorkspaceDialog } from '@/ui/workspace/AddWorkspaceDialog';
+import { AddWorkspaceDialog } from '@/ui/organisms/workspace/AddWorkspaceDialog';
 import { cn } from '@/lib/utils';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 

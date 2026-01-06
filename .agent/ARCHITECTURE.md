@@ -69,6 +69,44 @@ For long-running AI generation, we use events.
 - **State**: Managing temporary UI state and cached server data (Redux).
 - **Routing**: Internal app navigation.
 
+### UI Architecture (Atomic Design)
+
+The frontend follows **Atomic Design principles** adapted for desktop applications:
+
+```
+src/ui/
+├── atoms/          # Basic UI primitives (Button, Input, Select)
+│                   # - No business logic
+│                   # - No Tauri API calls
+│                   # - Pure presentational
+│
+├── molecules/      # Composed UI elements (Dropdown, Dialog, SearchBox)
+│                   # - Composed of atoms
+│                   # - Minimal UI-only logic
+│                   # - No Tauri API calls
+│
+├── organisms/      # Complex UI sections (Sidebar, MessageList, SettingsForm)
+│                   # - Can use hooks, Redux, local state
+│                   # - Can call Tauri APIs via hooks
+│                   # - Organized by domain (chat/, settings/, workspace/, markdown/)
+│
+├── layouts/        # Layout structure definitions
+│                   # - MainLayout: Root layout with TitleBar
+│                   # - SettingsLayout: Settings page structure
+│                   # - ChatLayout: Chat page structure
+│
+└── screens/        # Full screen compositions
+                    # - ChatScreen: Composes ChatLayout + ChatSidebar + ChatArea
+                    # - SettingsScreen: Composes SettingsLayout + settings organisms
+                    # - WorkspaceSettingsScreen: Full workspace settings view
+```
+
+**Key Rules:**
+
+- **Atoms/Molecules**: Must NOT call Tauri APIs or use Redux directly.
+- **Organisms/Screens**: Can use Tauri APIs via hooks and Redux for state management.
+- **Separation**: Business logic lives in hooks/services, not in UI components.
+
 ### Backend (`src-tauri/`)
 
 - **Business Logic**: All core application logic lives here.

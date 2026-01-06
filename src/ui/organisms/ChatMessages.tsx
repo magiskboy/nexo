@@ -9,9 +9,9 @@ import { removePermissionRequest } from '@/store/slices/toolPermissionSlice';
 import { setLoading } from '@/store/slices/chatInputSlice';
 import { showError } from '@/store/slices/notificationSlice';
 import type { Message } from '@/store/types';
-import { ToolCallItem } from './toolcall-item';
-import { ThinkingItem } from './thinking-item';
-import { MessageItem } from './message-item';
+import { ToolCallItem } from '@/ui/organisms/ToolCallItem';
+import { ThinkingItem } from '@/ui/organisms/ThinkingItem';
+import { MessageItem } from '@/ui/organisms/MessageItem';
 
 interface ChatMessagesProps {
   messages: Message[];

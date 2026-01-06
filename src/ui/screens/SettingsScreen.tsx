@@ -6,26 +6,24 @@ import {
   Info,
   Package,
   BarChart,
-  ArrowLeft,
   Bot,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { cn } from '@/lib/utils';
-import { Button } from '@/ui/atoms/button/button';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { navigateToChat, setSettingsSection } from '@/store/slices/uiSlice';
+import { setSettingsSection } from '@/store/slices/uiSlice';
+import { SettingsLayout } from '@/ui/layouts/SettingsLayout';
 
 // Section Components
-import { LLMConnections } from '@/ui/settings/LLMConnections';
-import { MCPServerConnections } from '@/ui/settings/MCPServerConnections';
-import { AppSettings } from '@/ui/settings/AppSettings';
-import { PromptManagement } from '@/ui/settings/PromptManagement';
-import AddonSettings from '@/ui/settings/AddonSettings';
-import { UsagePage } from '@/ui/settings/usage/UsagePage';
-import { AgentSettings } from '@/ui/settings/AgentSettings';
+import { LLMConnections } from '@/ui/organisms/settings/LLMConnections';
+import { MCPServerConnections } from '@/ui/organisms/settings/MCPServerConnections';
+import { AppSettings } from '@/ui/organisms/settings/AppSettings';
+import { PromptManagement } from '@/ui/organisms/settings/PromptManagement';
+import AddonSettings from '@/ui/organisms/settings/AddonSettings';
+import { UsagePage } from '@/ui/organisms/settings/usage/UsagePage';
+import { AgentSettings } from '@/ui/organisms/settings/AgentSettings';
 
-export function SettingsPage() {
+export function SettingsScreen() {
   const { t } = useTranslation(['settings', 'common']);
   const dispatch = useAppDispatch();
   const selectedSection = useAppSelector((state) => state.ui.settingsSection);
@@ -129,63 +127,48 @@ export function SettingsPage() {
     );
   }
 
-  return (
-    <div className="flex h-screen bg-background text-foreground">
-      {/* Sidebar */}
-      <div className="w-64 border-r border-border bg-muted/30 flex flex-col shrink-0">
-        <div className="p-4 border-b border-border flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => dispatch(navigateToChat())}
-            className="h-8 w-8"
+  const sidebar = (
+    <div className="p-3">
+      {sections.map((section) => (
+        <button
+          key={section.id}
+          onClick={() => dispatch(setSettingsSection(section.id))}
+          className={cn(
+            'mb-2 w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all',
+            'hover:bg-accent hover:text-accent-foreground',
+            selectedSection === section.id
+              ? 'bg-accent text-accent-foreground shadow-sm'
+              : 'text-muted-foreground'
+          )}
+        >
+          <span
+            className={cn(
+              'transition-transform',
+              selectedSection === section.id && 'scale-110'
+            )}
           >
-            <ArrowLeft className="size-4" />
-          </Button>
-          <h2 className="text-lg font-semibold">{t('title')}</h2>
-        </div>
-        <ScrollArea className="flex-1 [&_[data-slot='scroll-area-scrollbar']]:hidden">
-          <div className="p-3">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => dispatch(setSettingsSection(section.id))}
-                className={cn(
-                  'mb-2 w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all',
-                  'hover:bg-accent hover:text-accent-foreground',
-                  selectedSection === section.id
-                    ? 'bg-accent text-accent-foreground shadow-sm'
-                    : 'text-muted-foreground'
-                )}
-              >
-                <span
-                  className={cn(
-                    'transition-transform',
-                    selectedSection === section.id && 'scale-110'
-                  )}
-                >
-                  {section.icon}
-                </span>
-                <span>{section.label}</span>
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ScrollArea className="flex-1 [&_[data-slot='scroll-area-scrollbar']]:hidden">
-          <div className="p-8 max-w-4xl mx-auto w-full space-y-6">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold">
-                {sections.find((s) => s.id === selectedSection)?.label}
-              </h1>
-            </div>
-            {renderContent()}
-          </div>
-        </ScrollArea>
-      </div>
+            {section.icon}
+          </span>
+          <span>{section.label}</span>
+        </button>
+      ))}
     </div>
+  );
+
+  const content = (
+    <div className="p-8 max-w-4xl mx-auto w-full space-y-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">
+          {sections.find((s) => s.id === selectedSection)?.label}
+        </h1>
+      </div>
+      {renderContent()}
+    </div>
+  );
+
+  return (
+    <SettingsLayout sidebar={sidebar} title={t('title')}>
+      {content}
+    </SettingsLayout>
   );
 }

@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { ChatItem } from '@/ui/ChatSidebar';
+import type { ChatItem } from '@/ui/organisms/ChatSidebar';
 
 interface ChatSearchState {
   searchOpen: boolean;

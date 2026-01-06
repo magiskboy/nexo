@@ -35,8 +35,8 @@ import {
 } from '@/ui/atoms/dialog/component';
 import { cn } from '@/lib/utils';
 import { useSlashCommand } from '@/hooks/useSlashCommand';
-import { SlashCommandDropdown } from '@/ui/chat-area/SlashCommandDropdown';
-import { VariableInputDialog } from '@/ui/chat-area/VariableInputDialog';
+import { SlashCommandDropdown } from '@/ui/molecules/SlashCommandDropdown';
+import { VariableInputDialog } from '@/ui/molecules/VariableInputDialog';
 import { parsePromptVariables, renderPrompt } from '@/lib/prompt-utils';
 import type {
   Workspace,

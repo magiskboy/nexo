@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { navigateToChat } from '@/store/slices/uiSlice';
 
 // Workspace Settings Component
-import { WorkspaceSettingsForm } from '@/ui/workspace/WorkspaceSettingsForm';
+import { WorkspaceSettingsForm } from '@/ui/organisms/workspace/WorkspaceSettingsForm';
 
 // Hooks for Workspace Settings
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -23,7 +23,7 @@ import {
 import { showError, showSuccess } from '@/store/slices/notificationSlice';
 import type { WorkspaceSettings } from '@/store/types';
 
-export function WorkspaceSettingsPage() {
+export function WorkspaceSettingsScreen() {
   const { t } = useTranslation(['settings', 'common']);
   const dispatch = useAppDispatch();
 

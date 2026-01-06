@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { AppLayout } from '@/ui/AppLayout';
+import { MainLayout } from '@/ui/layouts/MainLayout';
 import { Toaster } from '@/ui/atoms/sonner';
 import { DialogOriginProvider } from '@/ui/atoms/dialog/provider';
 import { ModalStackProvider } from '@/ui/atoms/modal-stack';
@@ -15,7 +15,7 @@ import {
   checkFirstLaunch,
   setWelcomeOpen,
 } from '@/store/slices/uiSlice';
-import { Welcome } from '@/ui/Welcome';
+import { WelcomeScreen } from '@/ui/screens/WelcomeScreen';
 import i18n from '@/i18n/config';
 
 function AppContent() {
@@ -117,9 +117,9 @@ function AppContent() {
 
   return (
     <>
-      <AppLayout />
+      <MainLayout />
       <Toaster />
-      <Welcome
+      <WelcomeScreen
         open={welcomeOpen}
         onOpenChange={(open) => dispatch(setWelcomeOpen(open))}
       />

@@ -20,17 +20,16 @@
 - `src/store/`: Redux store configuration.
   - `src/store/slices/`: Redux state slices (reducers/actions).
 - `src/types/`: shared TypeScript type definitions.
-- `src/ui/`: UI Components.
-  - `src/ui/atoms/`: Shadcn UI primitives (Buttons, Inputs) and base atoms.
-  - `src/ui/chat-area/`: Chat interface specific components.
-  - `src/ui/chat-search/`: Chat history search components.
-  - `src/ui/markdown-content/`: Markdown rendering logic.
-  - `src/ui/settings/`: Settings pages.
-  - `src/ui/workspace/`: Workspace management UI.
-  - `src/ui/AppLayout.tsx`: Main application layout structure.
-  - `src/ui/ChatSidebar.tsx`: Sidebar for navigation and history.
-  - `src/ui/TitleBar.tsx`: Custom window title bar.
-  - `src/ui/Welcome.tsx`: Onboarding/Welcome screen.
+- `src/ui/`: UI Components (Atomic Design structure).
+  - `src/ui/atoms/`: Basic UI primitives (Buttons, Inputs, Select, etc.). No business logic, no Tauri API calls.
+  - `src/ui/molecules/`: Composed UI elements (dropdowns, dialogs, form fields). Minimal logic, UI-only.
+  - `src/ui/organisms/`: Complex UI sections (sidebar, message list, input area). Can use hooks, Redux, Tauri APIs.
+    - `src/ui/organisms/chat/`: Chat-related organisms (ChatArea).
+    - `src/ui/organisms/markdown/`: Markdown rendering components.
+    - `src/ui/organisms/settings/`: Settings page components.
+    - `src/ui/organisms/workspace/`: Workspace management components.
+  - `src/ui/layouts/`: Layout structure definitions (MainLayout, SettingsLayout, ChatLayout).
+  - `src/ui/screens/`: Full screen compositions (ChatScreen, SettingsScreen, WorkspaceSettingsScreen, WelcomeScreen).
 
 ## Backend (`src-tauri/src/`)
 
