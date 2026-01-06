@@ -13,6 +13,7 @@ pub fn create_message(
     timestamp: Option<i64>,
     assistant_message_id: Option<String>,
     tool_call_id: Option<String>,
+    metadata: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<Message, AppError> {
     state
@@ -25,6 +26,7 @@ pub fn create_message(
             timestamp,
             assistant_message_id,
             tool_call_id,
+            metadata,
         )
         .map_err(|e| AppError::Generic(e.to_string()))
 }

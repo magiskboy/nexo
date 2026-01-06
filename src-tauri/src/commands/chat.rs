@@ -12,7 +12,20 @@ pub fn create_chat(
 ) -> Result<Chat, AppError> {
     state
         .chat_service
-        .create(id, workspace_id, title)
+        .create(id, workspace_id, title, None, None)
+        .map_err(|e| AppError::Generic(e.to_string()))
+}
+
+#[tauri::command]
+pub fn get_or_create_specialist_session(
+    parent_chat_id: String,
+    agent_id: String,
+    workspace_id: String,
+    state: State<'_, AppState>,
+) -> Result<Chat, AppError> {
+    state
+        .chat_service
+        .get_or_create_specialist_session(parent_chat_id, agent_id, workspace_id)
         .map_err(|e| AppError::Generic(e.to_string()))
 }
 
@@ -70,10 +83,12 @@ pub async fn send_message(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<SendMessageResult, AppError> {
-    let (assistant_message_id, _) = state
+    let result = state
         .chat_service
-        .send_message(chat_id, content, selected_model, reasoning_effort, app)
-        .await
+        .send_message(chat_id.clone(), content.clone(), selected_model, reasoning_effort, app)
+        .await;
+
+    let (assistant_message_id, _) = result
         .map_err(|e| AppError::Generic(e.to_string()))?;
 
     Ok(SendMessageResult {

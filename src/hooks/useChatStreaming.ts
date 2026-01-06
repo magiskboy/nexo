@@ -251,6 +251,33 @@ export function useChatStreaming() {
       }
     );
 
+    // Listen to message metadata updated events (for agent card updates)
+    interface MessageMetadataUpdatedEvent {
+      chat_id: string;
+      message_id: string;
+    }
+    const unlistenMetadataUpdated = listenToEvent<MessageMetadataUpdatedEvent>(
+      TauriEvents.MESSAGE_METADATA_UPDATED,
+      async (payload) => {
+        // Fetch messages to get updated metadata
+        await dispatch(fetchMessages(payload.chat_id));
+
+        // Clear streaming state for agent card messages
+        // Agent cards don't stream content, so we should clear streaming state
+        // when metadata is updated (indicating the agent task has completed)
+        dispatch(
+          setStreamingByChatId({
+            chatId: payload.chat_id,
+            messageId: null,
+          })
+        );
+        dispatch(clearStreamingMessageId());
+
+        // Clear streaming start time
+        dispatch(clearStreamingStartTime(payload.chat_id));
+      }
+    );
+
     // Listen to tool calls detected events
     const unlistenToolCalls = listenToEvent<ToolCallsDetectedEvent>(
       TauriEvents.TOOL_CALLS_DETECTED,
@@ -366,6 +393,7 @@ export function useChatStreaming() {
       unlistenToolExecutionError.then((fn) => fn());
       unlistenAgentLoopIteration.then((fn) => fn());
       unlistenToolPermissionRequest.then((fn) => fn());
+      unlistenMetadataUpdated.then((fn) => fn());
     };
   }, [dispatch]);
 }

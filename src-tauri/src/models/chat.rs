@@ -8,4 +8,6 @@ pub struct Chat {
     pub last_message: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
+    pub agent_id: Option<String>,
+    pub parent_id: Option<String>,
 }

@@ -13,6 +13,7 @@ interface DbMessage {
   assistant_message_id: string | null;
   tool_call_id: string | null;
   reasoning: string | null;
+  metadata: string | null;
 }
 
 export const fetchMessages = createAsyncThunk<
@@ -36,6 +37,7 @@ export const fetchMessages = createAsyncThunk<
         assistantMessageId: m.assistant_message_id ?? undefined,
         codeBlocks: codeBlocks.length > 0 ? codeBlocks : undefined,
         reasoning: m.reasoning ?? undefined,
+        metadata: m.metadata ?? undefined,
       };
     }),
   };

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use rust_mcp_sdk::mcp_client::ClientRuntime;
 // State to manage persistent MCP client connections
 // Store clients as boxed trait objects to handle different transport types
 pub struct MCPClientState {
@@ -10,12 +11,16 @@ pub struct MCPClientState {
     #[allow(clippy::type_complexity)]
     pub connection_info:
         Arc<Mutex<HashMap<String, (String, String, Option<String>, Option<String>)>>>,
+
+    // Store active clients
+    pub active_clients: Arc<Mutex<HashMap<String, Arc<ClientRuntime>>>>,
 }
 
 impl MCPClientState {
     pub fn new() -> Self {
         Self {
             connection_info: Arc::new(Mutex::new(HashMap::new())),
+            active_clients: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 }

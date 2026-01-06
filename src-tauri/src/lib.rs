@@ -62,6 +62,7 @@ pub fn run() {
             commands::chat::get_chats,
             commands::chat::update_chat,
             commands::chat::delete_chat,
+            commands::chat::get_or_create_specialist_session,
             commands::chat::delete_all_chats_by_workspace,
             commands::chat::send_message,
             commands::chat::edit_and_resend_message,

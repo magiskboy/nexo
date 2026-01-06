@@ -50,8 +50,9 @@ export function ChatArea() {
   } = useMessages(selectedChatId);
 
   const handleSend = async () => {
-    if (!input.trim() || isStreaming || !selectedWorkspace || !selectedChatId)
+    if (!input.trim() || isStreaming || !selectedWorkspace || !selectedChatId) {
       return;
+    }
 
     if (input.length > MAX_MESSAGE_LENGTH) {
       dispatch(

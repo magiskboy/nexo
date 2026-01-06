@@ -12,6 +12,7 @@ export const TauriEvents = {
   MESSAGE_COMPLETE: 'message-complete',
   MESSAGE_ERROR: 'message-error',
   MESSAGE_CANCELLED: 'message-cancelled',
+  MESSAGE_METADATA_UPDATED: 'message-metadata-updated',
 
   // Tool call events
   TOOL_CALL_REQUEST: 'tool-call-request',

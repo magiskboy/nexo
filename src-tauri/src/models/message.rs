@@ -10,4 +10,5 @@ pub struct Message {
     pub timestamp: i64,
     pub assistant_message_id: Option<String>, // For tool_call messages: ID of the assistant message
     pub tool_call_id: Option<String>,         // For tool messages: ID of the tool call
+    pub metadata: Option<String>,             // JSON metadata including agent info
 }

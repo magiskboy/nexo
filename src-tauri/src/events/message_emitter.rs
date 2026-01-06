@@ -1,8 +1,8 @@
 use crate::constants::TauriEvents;
 use crate::error::AppError;
 use crate::events::{
-    MessageChunkEvent, MessageCompleteEvent, MessageErrorEvent, MessageStartedEvent,
-    ThinkingChunkEvent,
+    MessageChunkEvent, MessageCompleteEvent, MessageErrorEvent, MessageMetadataUpdatedEvent,
+    MessageStartedEvent, ThinkingChunkEvent,
 };
 use tauri::{AppHandle, Emitter};
 
@@ -105,5 +105,21 @@ impl MessageEmitter {
                 },
             )
             .map_err(|e| AppError::Generic(format!("Failed to emit message-error event: {e}")))
+    }
+
+    pub fn emit_message_metadata_updated(
+        &self,
+        chat_id: String,
+        message_id: String,
+    ) -> Result<(), AppError> {
+        self.app
+            .emit(
+                TauriEvents::MESSAGE_METADATA_UPDATED,
+                MessageMetadataUpdatedEvent {
+                    chat_id,
+                    message_id,
+                },
+            )
+            .map_err(|e| AppError::Generic(format!("Failed to emit message-metadata-updated event: {e}")))
     }
 }

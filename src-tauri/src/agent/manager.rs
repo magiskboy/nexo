@@ -211,4 +211,90 @@ impl AgentManager {
         }
         Ok(())
     }
+
+    /// Get or start an MCP client for the given agent
+    pub async fn get_agent_client(
+        &self,
+        app: &tauri::AppHandle,
+        agent_id: &str,
+    ) -> Result<std::sync::Arc<rust_mcp_sdk::mcp_client::ClientRuntime>> {
+        use crate::services::MCPClientService;
+        use crate::state::MCPClientState;
+        use tauri::Manager;
+
+        // 1. Check if client exists
+        let client_state = app.state::<MCPClientState>();
+        let client_key = format!("agent:{}", agent_id);
+
+        {
+            let clients = client_state.active_clients.lock().await;
+            if let Some(client) = clients.get(&client_key) {
+                return Ok(client.clone());
+            }
+        }
+
+        // 2. Start new client
+        // Find agent path
+        let agent_path = self.agents_dir().join(agent_id).join("current");
+        if !agent_path.exists() {
+            anyhow::bail!("Agent not found: {}", agent_id);
+        }
+
+        // Read Manifest
+        let _manifest = common::verify_agent_directory(&agent_path)?;
+        let entrypoint = "tools/main.py"; // Relative to agent_path
+        let entrypoint_path = agent_path.join(entrypoint); // Absolute path
+
+        if !entrypoint_path.exists() {
+            anyhow::bail!("Entrypoint not found: {}", entrypoint_path.display());
+        }
+
+        // Construct command
+        // Use the python executable from the virtual environment directly
+        #[cfg(not(windows))]
+        let python_exe = agent_path.join(".venv").join("bin").join("python");
+        #[cfg(windows)]
+        let python_exe = agent_path.join(".venv").join("Scripts").join("python.exe");
+
+        // Construct command using shell_words to handle spaces properly
+        let cmd_str = shell_words::join(vec![
+            python_exe.to_string_lossy().to_string(),
+            entrypoint_path.to_string_lossy().to_string(),
+        ]);
+
+        // We invoke python directly, so no need to pass "uv" runtime path
+        let client = MCPClientService::create_and_start_client(
+            app,
+            cmd_str,
+            "stdio".to_string(),
+            None,
+            None,
+        )
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+        // 3. Store client
+        {
+            let mut clients = client_state.active_clients.lock().await;
+            clients.insert(client_key, client.clone());
+        }
+
+        Ok(client)
+    }
+
+    /// Get the instruction (persona) for the given agent
+    pub fn get_agent_instructions(&self, agent_id: &str) -> Result<String> {
+        let agent_path = self.agents_dir().join(agent_id).join("current");
+        if !agent_path.exists() {
+            anyhow::bail!("Agent not found: {}", agent_id);
+        }
+
+        let persona_path = agent_path.join("instructions/persona.md");
+        if !persona_path.exists() {
+            anyhow::bail!("Persona file not found for agent: {}", agent_id);
+        }
+
+        let content = std::fs::read_to_string(persona_path)?;
+        Ok(content)
+    }
 }

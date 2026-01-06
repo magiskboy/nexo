@@ -67,6 +67,7 @@ export interface Message {
   assistantMessageId?: string; // For tool_call messages: ID of the assistant message that contains these tool calls
   tokenUsage?: TokenUsage; // Token usage information for assistant messages
   codeBlocks?: CodeBlock[]; // Extracted code blocks (python, mermaid, etc.)
+  metadata?: string; // JSON metadata string (e.g. for agent cards)
   // For tool_call messages, content is JSON string with: { name, arguments, result?, error?, status: "calling" | "completed" | "error" }
 }
 
@@ -87,4 +88,18 @@ export interface Prompt {
   content: string;
   created_at: number;
   updated_at: number;
+}
+
+export interface AgentManifest {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  schema_version: number;
+}
+
+export interface InstalledAgent {
+  manifest: AgentManifest;
+  version_ref: string;
+  path: string;
 }

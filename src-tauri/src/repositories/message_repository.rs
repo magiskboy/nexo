@@ -17,6 +17,7 @@ pub trait MessageRepository: Send + Sync {
     ) -> Result<(), AppError>;
     fn delete(&self, id: &str) -> Result<(), AppError>;
     fn delete_messages_after(&self, chat_id: &str, message_id: &str) -> Result<(), AppError>;
+    fn update_metadata(&self, id: &str, metadata: Option<&str>) -> Result<(), AppError>;
 }
 
 pub struct SqliteMessageRepository {
@@ -33,8 +34,8 @@ impl MessageRepository for SqliteMessageRepository {
     fn create(&self, message: &Message) -> Result<(), AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         conn.execute(
-            "INSERT INTO messages (id, chat_id, role, content, reasoning, timestamp, assistant_message_id, tool_call_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![message.id, message.chat_id, message.role, message.content, message.reasoning, message.timestamp, message.assistant_message_id, message.tool_call_id],
+            "INSERT INTO messages (id, chat_id, role, content, reasoning, timestamp, assistant_message_id, tool_call_id, metadata) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![message.id, message.chat_id, message.role, message.content, message.reasoning, message.timestamp, message.assistant_message_id, message.tool_call_id, message.metadata],
         )?;
         Ok(())
     }
@@ -42,7 +43,7 @@ impl MessageRepository for SqliteMessageRepository {
     fn get_by_chat_id(&self, chat_id: &str) -> Result<Vec<Message>, AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         let mut stmt = conn.prepare(
-            "SELECT id, chat_id, role, content, reasoning, timestamp, assistant_message_id, tool_call_id FROM messages WHERE chat_id = ?1 ORDER BY timestamp ASC"
+            "SELECT id, chat_id, role, content, reasoning, timestamp, assistant_message_id, tool_call_id, metadata FROM messages WHERE chat_id = ?1 ORDER BY timestamp ASC"
         )?;
 
         let messages = stmt
@@ -58,6 +59,7 @@ impl MessageRepository for SqliteMessageRepository {
                     timestamp: row.get(5)?,
                     assistant_message_id: row.get(6)?,
                     tool_call_id: row.get(7)?,
+                    metadata: row.get(8)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -68,7 +70,7 @@ impl MessageRepository for SqliteMessageRepository {
     fn get_by_id(&self, id: &str) -> Result<Option<Message>, AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         let result = conn.query_row(
-            "SELECT id, chat_id, role, content, reasoning, timestamp, assistant_message_id, tool_call_id FROM messages WHERE id = ?1",
+            "SELECT id, chat_id, role, content, reasoning, timestamp, assistant_message_id, tool_call_id, metadata FROM messages WHERE id = ?1",
             params![id],
             |row| {
                 Ok(Message {
@@ -80,6 +82,7 @@ impl MessageRepository for SqliteMessageRepository {
                     timestamp: row.get(5)?,
                     assistant_message_id: row.get(6)?,
                     tool_call_id: row.get(7)?,
+                    metadata: row.get(8)?,
                 })
             },
         );
@@ -144,6 +147,15 @@ impl MessageRepository for SqliteMessageRepository {
             conn.execute("DELETE FROM messages WHERE id = ?1", params![id])?;
         }
 
+        Ok(())
+    }
+
+    fn update_metadata(&self, id: &str, metadata: Option<&str>) -> Result<(), AppError> {
+        let conn = crate::db::get_connection(&self.app)?;
+        conn.execute(
+            "UPDATE messages SET metadata = ?1 WHERE id = ?2",
+            params![metadata, id],
+        )?;
         Ok(())
     }
 }

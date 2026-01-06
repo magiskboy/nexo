@@ -14,6 +14,7 @@ impl TauriEvents {
     pub const MESSAGE_COMPLETE: &'static str = "message-complete";
     pub const MESSAGE_ERROR: &'static str = "message-error";
     pub const MESSAGE_CANCELLED: &'static str = "message-cancelled";
+    pub const MESSAGE_METADATA_UPDATED: &'static str = "message-metadata-updated";
 
     // Tool call events
     pub const TOOL_CALL_REQUEST: &'static str = "tool-call-request";

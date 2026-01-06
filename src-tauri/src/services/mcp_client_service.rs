@@ -75,7 +75,7 @@ impl MCPClientService {
 
     /// Create and start MCP client based on transport type
     /// Create and start MCP client based on transport type
-    async fn create_and_start_client(
+    pub async fn create_and_start_client(
         app: &AppHandle,
         url: String,
         r#type: String,
@@ -119,15 +119,20 @@ impl MCPClientService {
             // - "command" (just the command)
             // - "command arg1 arg2" (command with space-separated arguments)
             // - "/path/to/command" (absolute path)
-            let parts: Vec<&str> = url.split_whitespace().collect();
+            // - "/path/to/command" (absolute path)
+            // Use shell-words to parse command and arguments, respecting quotes
+            let parts = shell_words::split(&url).map_err(|e| {
+                AppError::Validation(format!("Invalid stdio URL: parse error: {}", e))
+            })?;
+
             if parts.is_empty() {
                 return Err(AppError::Validation(
                     "Invalid stdio URL: command cannot be empty".to_string(),
                 ));
             }
 
-            let mut command = parts[0].to_string();
-            let args: Vec<String> = parts[1..].iter().map(|s| s.to_string()).collect();
+            let mut command = parts[0].clone();
+            let args: Vec<String> = parts[1..].to_vec();
 
             // Handle runtime configuration
             if let Some(rt_path) = runtime_path {

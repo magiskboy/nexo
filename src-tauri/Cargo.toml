@@ -43,6 +43,7 @@ chrono = { version = "0.4.42", features = ["serde"] }
 regex = "1.12.2"
 sha2 = "0.10.9"
 hex = "0.4.3"
+shell-words = "1.1.1"
 
 [lints.clippy]
 pedantic = "warn"

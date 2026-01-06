@@ -7,10 +7,12 @@ use crate::services::{
     LLMConnectionService, LLMService, MessageService, ToolService, UsageService,
     WorkspaceSettingsService,
 };
+use rust_mcp_sdk::{schema::CallToolRequestParams, McpClient};
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::AppHandle;
+use tauri::Manager;
 
 pub struct ChatService {
     repository: Arc<dyn ChatRepository>,
@@ -20,6 +22,7 @@ pub struct ChatService {
     llm_connection_service: Arc<LLMConnectionService>,
     tool_service: Arc<ToolService>,
     usage_service: Arc<UsageService>,
+    agent_manager: Arc<crate::agent::manager::AgentManager>,
 }
 
 impl ChatService {
@@ -31,6 +34,7 @@ impl ChatService {
         llm_connection_service: Arc<LLMConnectionService>,
         tool_service: Arc<ToolService>,
         usage_service: Arc<UsageService>,
+        agent_manager: Arc<crate::agent::manager::AgentManager>,
     ) -> Self {
         Self {
             repository,
@@ -40,6 +44,7 @@ impl ChatService {
             llm_connection_service,
             tool_service,
             usage_service,
+            agent_manager,
         }
     }
 
@@ -48,6 +53,8 @@ impl ChatService {
         id: String,
         workspace_id: String,
         title: String,
+        agent_id: Option<String>,
+        parent_id: Option<String>,
     ) -> Result<Chat, AppError> {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -61,10 +68,52 @@ impl ChatService {
             last_message: None,
             created_at: now,
             updated_at: now,
+            agent_id,
+            parent_id,
         };
 
         self.repository.create(&chat)?;
         Ok(chat)
+    }
+
+    pub fn get_or_create_specialist_session(
+        &self,
+        parent_chat_id: String,
+        agent_id: String,
+        workspace_id: String,
+    ) -> Result<Chat, AppError> {
+        // 1. Check if session exists
+        if let Some(chat) = self
+            .repository
+            .get_specialist_session(&parent_chat_id, &agent_id)?
+        {
+            return Ok(chat);
+        }
+
+        // 2. Get Agent details for title
+        // TODO: Could fetch agent name from manager if needed, for now use agent_id
+        // Better: self.agent_manager.get_agent(&agent_id)? ... but manager might not be cheap to query or implemented yet efficiently.
+        // For MVP, just use Agent ID as title suffix or similar.
+        let agents = self
+            .agent_manager
+            .list_installed()
+            .map_err(|e| AppError::Generic(e.to_string()))?;
+        let agent = agents
+            .iter()
+            .find(|a| a.manifest.id == agent_id)
+            .ok_or_else(|| AppError::NotFound(format!("Agent not installed: {agent_id}")))?;
+
+        let title = format!("Specialist: {}", agent.manifest.name);
+        let id = uuid::Uuid::new_v4().to_string();
+
+        // 3. Create new session
+        self.create(
+            id,
+            workspace_id,
+            title,
+            Some(agent_id),
+            Some(parent_chat_id),
+        )
     }
 
     pub fn get_by_workspace_id(&self, workspace_id: &str) -> Result<Vec<Chat>, AppError> {
@@ -94,6 +143,21 @@ impl ChatService {
         self.repository.delete_by_workspace_id(&workspace_id)
     }
 
+    /// Process an agent request in a separate task context
+    /// Process an agent request in a separate task context
+    pub fn process_agent_request(
+        self: Arc<Self>,
+        chat_id: String,
+        prompt: String,
+        app: AppHandle,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, AppError>> + Send>> {
+        Box::pin(async move {
+            let result = self.send_message(chat_id.clone(), prompt.clone(), None, None, app.clone()).await;
+            result.map(|(_, content)| content)
+        })
+    }
+
+    /// Send a message to a chat
     pub async fn send_message(
         &self,
         chat_id: String,
@@ -146,7 +210,7 @@ impl ChatService {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs() as i64;
-        let user_message_id = format!("msg_{chat_id}_{user_timestamp}");
+        let user_message_id = uuid::Uuid::new_v4().to_string();
 
         self.message_service.create(
             user_message_id.clone(),
@@ -156,11 +220,125 @@ impl ChatService {
             Some(user_timestamp),
             None,
             None,
+            None,
         )?;
+
+        // 6.5 Check for Agent Mention (Routing)
+        let agent_regex = regex::Regex::new(r"^@([a-zA-Z0-9\.\-_]+)\s+(.*)").unwrap();
+        if let Some(captures) = agent_regex.captures(&content) {
+            let agent_id = captures.get(1).unwrap().as_str();
+            let agent_prompt = captures.get(2).unwrap().as_str();
+
+            // Check if agent exists (using get_agent_instructions as proxy for existence check)
+            let agent_check_result = self.agent_manager.get_agent_instructions(agent_id);
+            if agent_check_result.is_ok() {
+                // 1. Create Specialist Session
+                let specialist_chat = self.get_or_create_specialist_session(
+                    chat_id.clone(),
+                    agent_id.to_string(),
+                    workspace_id.clone(),
+                )?;
+
+                // 2. Create Assistant Message (Agent Card Placeholder)
+                let assistant_timestamp = user_timestamp + 1;
+                let assistant_message_id = uuid::Uuid::new_v4().to_string();
+
+                // Metadata for Card
+                let metadata = serde_json::json!({
+                    "type": "agent_card",
+                    "agent_id": agent_id,
+                    "session_id": specialist_chat.id,
+                    "status": "running"
+                });
+
+                self.message_service.create(
+                    assistant_message_id.clone(),
+                    chat_id.clone(),
+                    "assistant".to_string(),
+                    "Agent Task Started".to_string(),
+                    Some(assistant_timestamp),
+                    None,
+                    None,
+                    Some(metadata.to_string()),
+                )?;
+
+                // 2.5. Emit message-started event so frontend knows about the new message
+                let message_emitter = MessageEmitter::new(app.clone());
+                message_emitter.emit_message_started(
+                    chat_id.clone(),
+                    user_message_id.clone(),
+                    assistant_message_id.clone(),
+                )?;
+
+                // 3. Spawn Task to run Agent
+                let agent_prompt_owner = agent_prompt.to_string();
+                let specialist_chat_id = specialist_chat.id.clone();
+                let parent_chat_id = chat_id.clone(); // Main chat ID for emitting events
+                let app_handle = app.clone();
+                let app_handle_for_emit = app.clone(); // Clone for emitting events later
+                let status_message_id = assistant_message_id.clone();
+                let agent_id_owned = agent_id.to_string();
+
+                tokio::spawn(async move {
+
+                    let chat_service = {
+                        let state = app_handle.state::<crate::state::AppState>();
+                        state.chat_service.clone()
+                    };
+
+                    let result = chat_service
+                        .clone()
+                        .process_agent_request(
+                            specialist_chat_id.clone(),
+                            agent_prompt_owner.clone(),
+                            app_handle,
+                        )
+                        .await;
+
+                    if let Err(e) = &result {
+                        eprintln!("Agent request failed: {}", e);
+                    }
+
+                    let status = if result.is_ok() {
+                        "completed"
+                    } else {
+                        "failed"
+                    };
+                    let summary = result.as_ref().ok().cloned().unwrap_or_default();
+
+                    let metadata = serde_json::json!({
+                        "type": "agent_card",
+                        "agent_id": agent_id_owned,
+                        "session_id": specialist_chat_id,
+                        "status": status,
+                        "summary": summary
+                    });
+
+                    let update_result = chat_service
+                        .message_service
+                        .update_metadata(status_message_id.clone(), Some(metadata.to_string()));
+
+                    if let Err(e) = update_result {
+                        eprintln!("Failed to update agent status: {}", e);
+                    } else {
+                        // Emit event to notify frontend that metadata was updated
+                        let message_emitter = MessageEmitter::new(app_handle_for_emit.clone());
+                        if let Err(e) = message_emitter.emit_message_metadata_updated(
+                            parent_chat_id.clone(),
+                            status_message_id.clone(),
+                        ) {
+                            eprintln!("Failed to emit metadata-updated event: {}", e);
+                        }
+                    }
+                });
+
+                return Ok((assistant_message_id, "Agent Task Started".to_string()));
+            }
+        }
 
         // 7. Create assistant message placeholder
         let assistant_timestamp = user_timestamp + 1;
-        let assistant_message_id = format!("msg_{chat_id}_{assistant_timestamp}");
+        let assistant_message_id = uuid::Uuid::new_v4().to_string();
 
         self.message_service.create(
             assistant_message_id.clone(),
@@ -168,6 +346,7 @@ impl ChatService {
             "assistant".to_string(),
             "".to_string(),
             Some(assistant_timestamp),
+            None,
             None,
             None,
         )?;
@@ -183,31 +362,75 @@ impl ChatService {
             assistant_message_id.clone(),
         )?;
 
-        // 8. Prepare messages for API
-        let api_messages =
-            self.prepare_messages(&existing_messages, &workspace_settings, &content)?;
+        // 8. Prepare Agent Context or Standard Tools
+        let (tools, system_prompt_override) = if let Some(agent_id) = &chat.agent_id {
+            // Get Agent Client
+            let client = self
+                .agent_manager
+                .get_agent_client(&app, agent_id)
+                .await
+                .map_err(|e| AppError::Generic(e.to_string()))?;
 
-        // 9. Determine if streaming is enabled
+            // Get Tools
+            let tool_result = client
+                .list_tools(None)
+                .await
+                .map_err(|e| AppError::Generic(e.to_string()))?;
+
+            let agent_tools: Vec<ChatCompletionTool> = tool_result
+                .tools
+                .into_iter()
+                .map(|t| ChatCompletionTool {
+                    r#type: "function".to_string(),
+                    function: crate::models::llm_types::ChatCompletionToolFunction {
+                        name: t.name,
+                        description: t.description,
+                        parameters: Some(
+                            serde_json::to_value(&t.input_schema).unwrap_or(serde_json::json!({})),
+                        ),
+                    },
+                })
+                .collect();
+
+            // Get Instructions
+            let instructions = self
+                .agent_manager
+                .get_agent_instructions(agent_id)
+                .map_err(|e| AppError::Generic(e.to_string()))?;
+
+            (Some(agent_tools), Some(instructions))
+        } else {
+            // Standard Workspace Tools
+            let tools = self.tool_service.get_tools_for_workspace(&workspace_id)?;
+            let tools = if tools.is_empty() { None } else { Some(tools) };
+            (tools, None)
+        };
+
+        // 9. Prepare messages for API
+        let api_messages = self.prepare_messages(
+            &existing_messages,
+            &workspace_settings,
+            &content,
+            system_prompt_override.clone(),
+        )?;
+
+        // 10. Determine if streaming is enabled
         let stream_enabled = workspace_settings
             .stream_enabled
             .map(|v| v == 1)
             .unwrap_or(true); // Default to true
 
-        // 10. Prepare tools from MCP connections
-        let tools = self.tool_service.get_tools_for_workspace(&workspace_id)?;
-        let tools: Option<Vec<ChatCompletionTool>> =
-            if tools.is_empty() { None } else { Some(tools) };
         let tool_choice: Option<ToolChoice> = None; // Use "auto" by default
 
         // 11. Create LLM request
         let model_for_usage = model.clone();
         let llm_request = LLMChatRequest {
-            model,
+            model: model.clone(), // Clone here since we use it below
             messages: api_messages,
             temperature: Some(0.7),
             max_tokens: None,
             stream: stream_enabled,
-            tools,
+            tools: tools.clone(),
             tool_choice,
             reasoning_effort: reasoning_effort.clone(),
             stream_options: None,
@@ -305,6 +528,8 @@ impl ChatService {
                         assistant_message_id,
                         Some(llm_response),
                         app,
+                        tools,
+                        system_prompt_override,
                     )
                     .await;
             }
@@ -364,6 +589,8 @@ impl ChatService {
         initial_assistant_message_id: String,
         mut initial_llm_response: Option<LLMChatResponse>,
         app: AppHandle,
+        active_tools: Option<Vec<ChatCompletionTool>>,
+        system_prompt_override: Option<String>,
     ) -> Result<(String, String), AppError> {
         const MAX_ITERATIONS: usize = 25;
 
@@ -404,13 +631,25 @@ impl ChatService {
             .unwrap_or(true);
 
         // Get tools
-        let tools = self.tool_service.get_tools_for_workspace(&workspace_id)?;
-        let tools: Option<Vec<ChatCompletionTool>> =
-            if tools.is_empty() { None } else { Some(tools) };
+        // Get tools if not provided
+        let tools = if active_tools.is_some() {
+            active_tools
+        } else {
+            let t = self.tool_service.get_tools_for_workspace(&workspace_id)?;
+            if t.is_empty() {
+                None
+            } else {
+                Some(t)
+            }
+        };
 
         let mut assistant_message_id = initial_assistant_message_id;
-        let mut current_messages =
-            self.prepare_messages_for_agent_loop(&chat_id, &workspace_settings, &user_content)?;
+        let mut current_messages = self.prepare_messages_for_agent_loop(
+            &chat_id,
+            &workspace_settings,
+            &user_content,
+            system_prompt_override,
+        )?;
 
         // Create emitters once for agent loop
         let agent_emitter = AgentEmitter::new(app.clone());
@@ -432,7 +671,7 @@ impl ChatService {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_secs() as i64;
-                let new_assistant_message_id = format!("msg_{chat_id}_{timestamp}");
+                let new_assistant_message_id = uuid::Uuid::new_v4().to_string();
 
                 self.message_service.create(
                     new_assistant_message_id.clone(),
@@ -440,6 +679,7 @@ impl ChatService {
                     "assistant".to_string(),
                     "".to_string(),
                     Some(timestamp),
+                    None,
                     None,
                     None,
                 )?;
@@ -714,16 +954,31 @@ impl ChatService {
         let mut failed_count = 0;
 
         // Get MCP connections to find which connection each tool belongs to
-        let workspace_id = self
+        // Get chat info to determine context (Workspace or Agent)
+        let chat = self
             .repository
             .get_by_id(chat_id)?
-            .ok_or_else(|| AppError::NotFound(format!("Chat not found: {chat_id}")))?
-            .workspace_id;
+            .ok_or_else(|| AppError::NotFound(format!("Chat not found: {chat_id}")))?;
 
-        // Get tool to connection mapping using helper method
-        let tool_to_connection = self
-            .tool_service
-            .get_tool_to_connection_map(&workspace_id)?;
+        let workspace_id = chat.workspace_id;
+        let agent_id = chat.agent_id;
+
+        // Prepare execution context
+        let (tool_to_connection, agent_client) = if let Some(aid) = &agent_id {
+            // Agent Context: Get agent client
+            let client = self
+                .agent_manager
+                .get_agent_client(app, aid)
+                .await
+                .map_err(|e| AppError::Generic(e.to_string()))?;
+            (HashMap::new(), Some(client))
+        } else {
+            // Workspace Context: Get tool mapping
+            let map = self
+                .tool_service
+                .get_tool_to_connection_map(&workspace_id)?;
+            (map, None)
+        };
 
         // Execute each tool call
         for tool_call in tool_calls {
@@ -748,6 +1003,7 @@ impl ChatService {
                 Some(tool_call_timestamp),
                 Some(assistant_message_id.to_string()),
                 None,
+                None,
             )?;
 
             // Emit progress event immediately after creating tool_call message (before execution)
@@ -763,37 +1019,70 @@ impl ChatService {
             )?;
 
             // Find connection for this tool
-            let connection_id = tool_to_connection
-                .get(&tool_call.function.name)
-                .ok_or_else(|| {
-                    AppError::Validation(format!(
-                        "Tool {} not found in any MCP connection",
-                        tool_call.function.name
-                    ))
-                })?;
+            // Execute tool logic
+            let execution_result = if let Some(client) = &agent_client {
+                // Agent Execution
+                let arguments_str = tool_call.function.arguments.trim();
+                let arguments_map = if arguments_str.is_empty() {
+                    Some(serde_json::Map::new())
+                } else {
+                    match serde_json::from_str::<serde_json::Value>(arguments_str) {
+                        Ok(serde_json::Value::Object(map)) => Some(map),
+                        Ok(_) => Some(serde_json::Map::new()),
+                        Err(e) => {
+                            return Err(AppError::Validation(format!("Invalid arguments: {}", e)));
+                        }
+                    }
+                };
 
-            // Parse arguments
-            // Trim whitespace to avoid "trailing characters" errors
-            let arguments_str = tool_call.function.arguments.trim();
+                let params = CallToolRequestParams {
+                    name: tool_call.function.name.clone(),
+                    arguments: arguments_map,
+                };
 
-            // Handle empty or invalid arguments
-            let arguments: serde_json::Value = if arguments_str.is_empty() {
-                serde_json::json!({})
+                // Call tool on agent client
+                match client.call_tool(params).await {
+                    Ok(res) => {
+                        // Serialize content to match expected generic JSON
+                        match serde_json::to_string(&res.content) {
+                            Ok(s) => match serde_json::from_str(&s) {
+                                Ok(v) => Ok(v),
+                                Err(e) => Err(AppError::Generic(e.to_string())),
+                            },
+                            Err(e) => Err(AppError::Generic(e.to_string())),
+                        }
+                    }
+                    Err(e) => Err(AppError::Generic(e.to_string())),
+                }
             } else {
-                serde_json::from_str(arguments_str).map_err(|e| {
-                    AppError::Validation(format!(
-                        "Failed to parse tool arguments for '{}': {} (arguments: '{}')",
-                        tool_call.function.name, e, arguments_str
-                    ))
-                })?
+                // Standard Execution
+                let connection_id = tool_to_connection
+                    .get(&tool_call.function.name)
+                    .ok_or_else(|| {
+                        AppError::Validation(format!(
+                            "Tool {} not found in any MCP connection",
+                            tool_call.function.name
+                        ))
+                    })?;
+
+                let arguments_str = tool_call.function.arguments.trim();
+                let arguments: serde_json::Value = if arguments_str.is_empty() {
+                    serde_json::json!({})
+                } else {
+                    serde_json::from_str(arguments_str).map_err(|e| {
+                        AppError::Validation(format!(
+                            "Failed to parse tool arguments for '{}': {} (arguments: '{}')",
+                            tool_call.function.name, e, arguments_str
+                        ))
+                    })?
+                };
+
+                self.tool_service
+                    .execute_tool(connection_id, &tool_call.function.name, arguments)
+                    .await
             };
 
-            // Execute tool
-            let result = match self
-                .tool_service
-                .execute_tool(connection_id, &tool_call.function.name, arguments)
-                .await
-            {
+            let result = match execution_result {
                 Ok(result) => {
                     successful_count += 1;
 
@@ -878,6 +1167,7 @@ impl ChatService {
                 Some(tool_result_timestamp),
                 None,
                 Some(tool_call.id.clone()),
+                None,
             )?;
 
             // Add tool result to conversation
@@ -905,9 +1195,15 @@ impl ChatService {
         chat_id: &str,
         workspace_settings: &crate::models::WorkspaceSettings,
         user_content: &str,
+        system_prompt_override: Option<String>,
     ) -> Result<Vec<ChatMessage>, AppError> {
         let existing_messages = self.message_service.get_by_chat_id(chat_id)?;
-        self.prepare_messages(&existing_messages, workspace_settings, user_content)
+        self.prepare_messages(
+            &existing_messages,
+            workspace_settings,
+            user_content,
+            system_prompt_override,
+        )
     }
 
     fn prepare_messages(
@@ -915,11 +1211,15 @@ impl ChatService {
         existing_messages: &[Message],
         workspace_settings: &crate::models::WorkspaceSettings,
         user_content: &str,
+        system_prompt_override: Option<String>,
     ) -> Result<Vec<ChatMessage>, AppError> {
         let mut api_messages: Vec<ChatMessage> = Vec::new();
 
-        // Add system message if available
-        if let Some(system_message) = &workspace_settings.system_message {
+        // Add system message if available (allow override)
+        let system_message =
+            system_prompt_override.or_else(|| workspace_settings.system_message.clone());
+
+        if let Some(system_message) = system_message {
             if !system_message.trim().is_empty() {
                 api_messages.push(ChatMessage::System {
                     content: system_message.clone(),

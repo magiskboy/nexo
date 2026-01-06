@@ -22,6 +22,7 @@ impl MessageService {
         timestamp: Option<i64>,
         assistant_message_id: Option<String>,
         tool_call_id: Option<String>,
+        metadata: Option<String>,
     ) -> Result<Message, AppError> {
         let timestamp = timestamp.unwrap_or_else(|| {
             std::time::SystemTime::now()
@@ -38,6 +39,7 @@ impl MessageService {
             timestamp,
             assistant_message_id,
             tool_call_id,
+            metadata,
             reasoning: None,
         };
 
@@ -62,6 +64,10 @@ impl MessageService {
     ) -> Result<(), AppError> {
         self.repository
             .update(&id, &content, reasoning.as_deref(), timestamp)
+    }
+
+    pub fn update_metadata(&self, id: String, metadata: Option<String>) -> Result<(), AppError> {
+        self.repository.update_metadata(&id, metadata.as_deref())
     }
 
     pub fn delete(&self, id: String) -> Result<(), AppError> {

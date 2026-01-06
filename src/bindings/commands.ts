@@ -81,6 +81,11 @@ export const TauriCommands = {
   GET_NODE_RUNTIMES_STATUS: 'get_node_runtimes_status',
   INSTALL_NODE_RUNTIME: 'install_node_runtime',
   UNINSTALL_NODE_RUNTIME: 'uninstall_node_runtime',
+
+  // Agent commands
+  INSTALL_AGENT: 'install_agent',
+  GET_INSTALLED_AGENTS: 'get_installed_agents',
+  GET_OR_CREATE_SPECIALIST_SESSION: 'get_or_create_specialist_session',
 } as const;
 
 export type TauriCommand = (typeof TauriCommands)[keyof typeof TauriCommands];

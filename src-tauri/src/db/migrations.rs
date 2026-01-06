@@ -35,6 +35,7 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
             reasoning TEXT,
             timestamp INTEGER NOT NULL,
             assistant_message_id TEXT,
+            metadata TEXT,
             FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
         )",
         [],
@@ -53,6 +54,10 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
 
     // Add reasoning column if it doesn't exist (migration for existing databases)
     conn.execute("ALTER TABLE messages ADD COLUMN reasoning TEXT", [])
+        .ok(); // Ignore error if column already exists
+
+    // Add metadata column if it doesn't exist (migration for existing database)
+    conn.execute("ALTER TABLE messages ADD COLUMN metadata TEXT", [])
         .ok(); // Ignore error if column already exists
 
     // Create workspace_settings table
@@ -270,6 +275,20 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
     )?;
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_usage_stats_timestamp ON usage_stats(timestamp)",
+        [],
+    )?;
+
+    // Add agent_id column to chats if it doesn't exist
+    conn.execute("ALTER TABLE chats ADD COLUMN agent_id TEXT", [])
+        .ok();
+
+    // Add parent_id column to chats if it doesn't exist
+    conn.execute("ALTER TABLE chats ADD COLUMN parent_id TEXT", [])
+        .ok();
+
+    // Create index for parent_id
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_chats_parent_id ON chats(parent_id)",
         [],
     )?;
 

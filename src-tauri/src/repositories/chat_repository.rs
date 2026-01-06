@@ -8,6 +8,11 @@ pub trait ChatRepository: Send + Sync {
     fn create(&self, chat: &Chat) -> Result<(), AppError>;
     fn get_by_workspace_id(&self, workspace_id: &str) -> Result<Vec<Chat>, AppError>;
     fn get_by_id(&self, id: &str) -> Result<Option<Chat>, AppError>;
+    fn get_specialist_session(
+        &self,
+        parent_id: &str,
+        agent_id: &str,
+    ) -> Result<Option<Chat>, AppError>;
     fn update(
         &self,
         id: &str,
@@ -32,8 +37,8 @@ impl ChatRepository for SqliteChatRepository {
     fn create(&self, chat: &Chat) -> Result<(), AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         conn.execute(
-            "INSERT INTO chats (id, workspace_id, title, last_message, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![chat.id, chat.workspace_id, chat.title, chat.last_message, chat.created_at, chat.updated_at],
+            "INSERT INTO chats (id, workspace_id, title, last_message, created_at, updated_at, agent_id, parent_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![chat.id, chat.workspace_id, chat.title, chat.last_message, chat.created_at, chat.updated_at, chat.agent_id, chat.parent_id],
         )?;
         Ok(())
     }
@@ -41,7 +46,7 @@ impl ChatRepository for SqliteChatRepository {
     fn get_by_workspace_id(&self, workspace_id: &str) -> Result<Vec<Chat>, AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         let mut stmt = conn.prepare(
-            "SELECT id, workspace_id, title, last_message, created_at, updated_at FROM chats WHERE workspace_id = ?1 ORDER BY updated_at DESC"
+            "SELECT id, workspace_id, title, last_message, created_at, updated_at, agent_id, parent_id FROM chats WHERE workspace_id = ?1 ORDER BY updated_at DESC"
         )?;
 
         let chats = stmt
@@ -53,6 +58,8 @@ impl ChatRepository for SqliteChatRepository {
                     last_message: row.get(3)?,
                     created_at: row.get(4)?,
                     updated_at: row.get(5)?,
+                    agent_id: row.get(6)?,
+                    parent_id: row.get(7)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -63,7 +70,7 @@ impl ChatRepository for SqliteChatRepository {
     fn get_by_id(&self, id: &str) -> Result<Option<Chat>, AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         let result = conn.query_row(
-            "SELECT id, workspace_id, title, last_message, created_at, updated_at FROM chats WHERE id = ?1",
+            "SELECT id, workspace_id, title, last_message, created_at, updated_at, agent_id, parent_id FROM chats WHERE id = ?1",
             params![id],
             |row| {
                 Ok(Chat {
@@ -73,6 +80,38 @@ impl ChatRepository for SqliteChatRepository {
                     last_message: row.get(3)?,
                     created_at: row.get(4)?,
                     updated_at: row.get(5)?,
+                    agent_id: row.get(6)?,
+                    parent_id: row.get(7)?,
+                })
+            },
+        );
+
+        match result {
+            Ok(chat) => Ok(Some(chat)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    fn get_specialist_session(
+        &self,
+        parent_id: &str,
+        agent_id: &str,
+    ) -> Result<Option<Chat>, AppError> {
+        let conn = crate::db::get_connection(&self.app)?;
+        let result = conn.query_row(
+            "SELECT id, workspace_id, title, last_message, created_at, updated_at, agent_id, parent_id FROM chats WHERE parent_id = ?1 AND agent_id = ?2",
+            params![parent_id, agent_id],
+            |row| {
+                Ok(Chat {
+                    id: row.get(0)?,
+                    workspace_id: row.get(1)?,
+                    title: row.get(2)?,
+                    last_message: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                    agent_id: row.get(6)?,
+                    parent_id: row.get(7)?,
                 })
             },
         );

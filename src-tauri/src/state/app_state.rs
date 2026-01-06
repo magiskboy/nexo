@@ -67,6 +67,12 @@ impl AppState {
         let usage_repo: Arc<dyn UsageRepository> =
             Arc::new(SqliteUsageRepository::new(app.clone()));
 
+        // Initialize Agent Manager first as it's needed by ChatService
+        let agent_manager = Arc::new(crate::agent::manager::AgentManager::new(
+            (*app).path().app_data_dir().unwrap(),
+            crate::services::python_runtime::get_bundled_uv_path(&app)?,
+        ));
+
         // Create services
         let workspace_service = Arc::new(WorkspaceService::new(workspace_repo));
         let message_service = Arc::new(MessageService::new(message_repo));
@@ -90,6 +96,7 @@ impl AppState {
             llm_connection_service.clone(),
             tool_service.clone(),
             usage_service.clone(),
+            agent_manager.clone(),
         ));
         let app_settings_service = Arc::new(AppSettingsService::new(app_settings_repo));
         let prompt_service = Arc::new(PromptService::new(prompt_repo));
@@ -116,14 +123,7 @@ impl AppState {
             app_settings_service,
             prompt_service,
             pending_tool_permissions: Arc::new(Mutex::new(HashMap::new())),
-            agent_manager: Arc::new(crate::agent::manager::AgentManager::new(
-                (*app).path().app_data_dir().unwrap(),
-                // Use bundled UV path, or fallback to "uv" literal if resolution fails (though it propagates error in runtime service)
-                // For simplicity, verify_uv might fail, so we handle it.
-                // But AppState::new usually returns Error on failure initialization. with ? this is handled.
-                // However, get_bundled_uv_path returns AppError. AppState::new returns AppError.
-                crate::services::python_runtime::get_bundled_uv_path(&app)?,
-            )),
+            agent_manager,
         })
     }
 }

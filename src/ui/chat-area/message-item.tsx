@@ -14,6 +14,7 @@ import { Button } from '@/ui/atoms/button/button';
 import { Textarea } from '@/ui/atoms/textarea';
 import { cn } from '@/lib/utils';
 import { MarkdownContent } from '@/ui/markdown-content';
+import { AgentCard } from '@/ui/molecules/AgentCard';
 import type { Message } from '@/store/types';
 
 export interface MessageItemProps {
@@ -126,21 +127,38 @@ export const MessageItem = memo(
       [handleSave, onCancelEdit]
     );
 
-    // Auto-focus and resize textarea when editing starts
-    useEffect(() => {
-      if (isEditing && textareaRef.current) {
-        textareaRef.current.focus();
-        textareaRef.current.style.height = 'auto';
-        const scrollHeight = textareaRef.current.scrollHeight;
-        const minHeight = 40;
-        const maxHeight = 200;
-        const newHeight = Math.max(
-          minHeight,
-          Math.min(scrollHeight, maxHeight)
-        );
-        textareaRef.current.style.height = `${newHeight}px`;
+    // Check for Agent Card metadata
+    let agentCardData = null;
+    if (message.metadata) {
+      try {
+        const parsed = JSON.parse(message.metadata);
+        if (parsed && parsed.type === 'agent_card') {
+          agentCardData = parsed;
+        }
+      } catch (_) {
+        // Ignore JSON parse errors
       }
-    }, [isEditing]);
+    }
+
+    if (agentCardData) {
+      return (
+        <div className="flex w-full justify-start my-2">
+          <AgentCard
+            agentId={agentCardData.agent_id}
+            sessionId={agentCardData.session_id}
+            status={agentCardData.status}
+            // onViewDetails={(sid) => console.log('View details', sid)}
+          >
+            {agentCardData.summary && (
+              <MarkdownContent
+                content={agentCardData.summary}
+                messageId={message.id}
+              />
+            )}
+          </AgentCard>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -376,6 +394,7 @@ export const MessageItem = memo(
       prevProps.message.reasoning === nextProps.message.reasoning &&
       prevProps.message.codeBlocks === nextProps.message.codeBlocks &&
       prevProps.message.tokenUsage === nextProps.message.tokenUsage &&
+      prevProps.message.metadata === nextProps.message.metadata && // Include metadata for agent card updates
       prevProps.userMode === nextProps.userMode &&
       prevProps.markdownEnabled === nextProps.markdownEnabled &&
       prevProps.isCopied === nextProps.isCopied &&

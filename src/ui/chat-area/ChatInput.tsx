@@ -30,10 +30,12 @@ import { isVisionModel } from '@/lib/model-utils';
 import { useChatInput } from '@/hooks/useChatInput';
 import { useMessages } from '@/hooks/useMessages';
 import { useSlashCommand } from '@/hooks/useSlashCommand';
+import { useAgentMention } from '@/hooks/useAgentMention';
 import { SlashCommandDropdown } from './SlashCommandDropdown';
+import { AgentMentionDropdown } from './AgentMentionDropdown';
 import { VariableInputDialog } from './VariableInputDialog';
 import { parsePromptVariables, renderPrompt } from '@/lib/prompt-utils';
-import type { Prompt } from '@/store/types';
+import type { Prompt, InstalledAgent } from '@/store/types';
 
 interface ChatInputProps {
   selectedWorkspaceId: string | null;
@@ -183,6 +185,32 @@ export function ChatInput({
     onSelectPrompt: handleSelectPrompt,
   });
 
+  const handleSelectAgent = (agent: InstalledAgent) => {
+    // query is what user typed after @
+    const queryLength = agentMention.query.length;
+
+    const suffix = input.substring(1 + queryLength);
+    // Add space after ID
+    const newInput = `@${agent.manifest.id} ${suffix.trimStart()}`;
+
+    handleInputChange(newInput);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const pos = agent.manifest.id.length + 2; // @ + id + space
+        textareaRef.current.setSelectionRange(pos, pos);
+      }
+    }, 0);
+
+    agentMention.close();
+  };
+
+  const agentMention = useAgentMention({
+    input,
+    onSelectAgent: handleSelectAgent,
+  });
+
   const handleVariableDialogSubmit = () => {
     if (!selectedPrompt) return;
     const renderedContent = renderPrompt(
@@ -252,8 +280,24 @@ export function ChatInput({
       }
     }
 
+    if (agentMention.isActive) {
+      const handled = agentMention.handleKeyDown(e);
+      if (handled) {
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        agentMention.close();
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       if (slashCommand.isActive && slashCommand.filteredPrompts.length > 0) {
+        return;
+      }
+      if (agentMention.isActive && agentMention.filteredAgents.length > 0) {
         return;
       }
       e.preventDefault();
@@ -532,6 +576,17 @@ export function ChatInput({
                     selectedIndex={slashCommand.selectedIndex}
                     onSelect={slashCommand.handleSelect}
                     direction={dropdownDirection}
+                  />
+                )}
+              {/* Agent Mention Dropdown */}
+              {agentMention.isActive &&
+                agentMention.filteredAgents.length > 0 && (
+                  <AgentMentionDropdown
+                    agents={agentMention.filteredAgents}
+                    selectedIndex={agentMention.selectedIndex}
+                    onSelect={agentMention.handleSelect}
+                    direction={dropdownDirection}
+                    position={{ top: 0, left: 0 }} // Position handled by dropdown logic mostly
                   />
                 )}
             </div>
