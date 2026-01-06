@@ -184,7 +184,7 @@ export function useChatStreaming() {
     // Listen to message complete events
     const unlistenComplete = listenToEvent<MessageCompleteEvent>(
       TauriEvents.MESSAGE_COMPLETE,
-      (payload) => {
+      async (payload) => {
         // Update message with final content
         dispatch(
           updateMessage({
@@ -207,6 +207,19 @@ export function useChatStreaming() {
               messageId: payload.message_id,
               tokenUsage,
             })
+          );
+
+          // Track streaming performance
+          const { trackStreamingPerformance } =
+            await import('@/lib/sentry-utils');
+          // Calculate duration from start time if available
+          const startTime = Date.now(); // This should come from state
+          const duration = Date.now() - startTime;
+          trackStreamingPerformance(
+            payload.chat_id,
+            duration,
+            1, // chunk count - would need to track this
+            payload.token_usage.total_tokens
           );
         }
 

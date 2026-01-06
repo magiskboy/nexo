@@ -115,6 +115,15 @@ impl ToolService {
         tool_name: &str,
         arguments: serde_json::Value,
     ) -> Result<serde_json::Value, AppError> {
+        // Track tool execution start
+        crate::lib::sentry_helpers::add_breadcrumb(
+            "mcp.tool",
+            format!("Executing tool {} via connection {}", tool_name, connection_id),
+            sentry::Level::Info,
+        );
+
+        let start_time = std::time::Instant::now();
+
         // Get MCP connection
         let connection = self
             .mcp_connection_service
@@ -152,6 +161,15 @@ impl ToolService {
         // Parse result JSON
         let result: serde_json::Value = serde_json::from_str(&result_json)
             .map_err(|e| AppError::Generic(format!("Failed to parse tool result: {e}")))?;
+
+        // Track tool execution completion
+        let duration = start_time.elapsed().as_millis() as u64;
+        crate::lib::sentry_helpers::track_tool_execution(
+            tool_name,
+            connection_id,
+            duration,
+            &Ok::<(), Box<dyn std::error::Error>>(()),
+        );
 
         Ok(result)
     }

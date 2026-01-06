@@ -10,11 +10,58 @@ mod repositories;
 mod services;
 mod state;
 
+// Sentry helper macros and functions
+#[macro_use]
+mod lib {
+    pub mod sentry_helpers;
+}
+
 use std::sync::Arc;
 use tauri::Manager;
 
+/// Initialize Sentry for error tracking and performance monitoring
+/// DSN is embedded at compile time via build.rs
+fn init_sentry() -> sentry::ClientInitGuard {
+    // Use env!() macro to get DSN embedded at compile time
+    // This reads the value set by build.rs during build
+    let dsn = option_env!("RUST_SENTRY_DSN")
+        .and_then(|s| if s.is_empty() { None } else { Some(s) })
+        .and_then(|s| s.parse().ok());
+    
+    let guard = sentry::init(sentry::ClientOptions {
+        dsn,
+        release: sentry::release_name!(),
+        environment: Some(
+            if cfg!(debug_assertions) {
+                "development"
+            } else {
+                "production"
+            }
+            .into(),
+        ),
+        sample_rate: 1.0,
+        traces_sample_rate: if cfg!(debug_assertions) { 1.0 } else { 0.1 },
+        attach_stacktrace: true,
+        ..Default::default()
+    });
+
+    // Panic handler is automatically registered when sentry is initialized
+    // No need to call register_panic_handler() separately in sentry 0.34
+
+    // Set global context
+    sentry::configure_scope(|scope| {
+        scope.set_tag("app.version", env!("CARGO_PKG_VERSION"));
+        scope.set_tag("app.name", "nexo");
+    });
+
+    guard
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize Sentry
+    let _sentry_guard = init_sentry();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
@@ -23,8 +70,16 @@ pub fn run() {
         .setup(|app| {
             // Initialize AppState
             let app_handle = Arc::new(app.handle().clone());
-            let app_state = state::AppState::new(app_handle)
-                .map_err(|e| anyhow::anyhow!("Failed to initialize app state: {e}"))?;
+            let app_state = state::AppState::new(app_handle).map_err(|e| {
+                // Report initialization error to Sentry
+                sentry::capture_error(&e);
+                sentry::add_breadcrumb(sentry::Breadcrumb {
+                    message: Some("Failed to initialize app state".to_string()),
+                    level: sentry::Level::Error,
+                    ..Default::default()
+                });
+                anyhow::anyhow!("Failed to initialize app state: {e}")
+            })?;
 
             app.manage(app_state);
 

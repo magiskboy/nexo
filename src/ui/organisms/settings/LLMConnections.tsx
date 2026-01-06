@@ -300,6 +300,8 @@ function LLMConnectionDialog({
     setTestStatus(null);
     setTestError('');
 
+    const startTime = performance.now();
+
     try {
       const fetchedModels = await invokeCommand<LLMModel[]>(
         TauriCommands.TEST_LLM_CONNECTION,
@@ -312,13 +314,35 @@ function LLMConnectionDialog({
       setModels(fetchedModels);
       setTestStatus('success');
       setHasTested(true);
+
+      // Track successful connection test
+      const duration = performance.now() - startTime;
+      const { trackConnectionOperation } = await import('@/lib/sentry-utils');
+      trackConnectionOperation('llm', 'test', connection?.id || 'new', true);
+
+      // Track API call performance
+      const { trackAPICall } = await import('@/lib/sentry-utils');
+      trackAPICall(baseUrl.trim(), 'GET', duration, true);
     } catch (error: unknown) {
-      setTestError(
-        error instanceof Error ? error.message : t('cannotConnectToAPI')
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : t('cannotConnectToAPI');
+      setTestError(errorMessage);
       setTestStatus('error');
       setModels([]);
       setHasTested(true);
+
+      // Track failed connection test
+      const duration = performance.now() - startTime;
+      const { trackConnectionOperation, trackAPICall } =
+        await import('@/lib/sentry-utils');
+      trackConnectionOperation(
+        'llm',
+        'test',
+        connection?.id || 'new',
+        false,
+        errorMessage
+      );
+      trackAPICall(baseUrl.trim(), 'GET', duration, false);
     } finally {
       setIsTesting(false);
     }

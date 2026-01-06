@@ -55,9 +55,20 @@ jobs:
         # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
         run: yarn install # change this to npm or pnpm depending on which one you use.
 
+      - name: Set up Sentry DSN
+        # Set Sentry DSN as environment variables for build
+        # These will be embedded into the binary at compile time
+        run: |
+          echo "VITE_SENTRY_DSN=${{ vars.SENTRY_DSN }}" >> $GITHUB_ENV
+          echo "RUST_SENTRY_DSN=${{ vars.SENTRY_DSN }}" >> $GITHUB_ENV
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Sentry DSN - embedded at build time
+          # Use repository variable SENTRY_DSN for both frontend and backend
+          VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+          RUST_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           # APPLE_ID: ${{ secrets.APPLE_ID }}
           # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

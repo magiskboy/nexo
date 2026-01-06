@@ -15,6 +15,7 @@ import { Textarea } from '@/ui/atoms/textarea';
 import { cn } from '@/lib/utils';
 import { MarkdownContent } from '@/ui/organisms/markdown/MarkdownContent';
 import { AgentCard } from '@/ui/organisms/chat/AgentCard';
+import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import type { Message } from '@/store/types';
 
 export interface MessageItemProps {
@@ -53,6 +54,11 @@ export const MessageItem = memo(
     onViewAgentDetails,
     t,
   }: MessageItemProps) {
+    // Track render performance
+    useComponentPerformance({
+      componentName: 'MessageItem',
+      threshold: 30,
+    });
     // Determine if message is long (more than 500 characters or more than 10 lines)
     const isLongMessage =
       message.content.length > 500 || message.content.split('\n').length > 10;

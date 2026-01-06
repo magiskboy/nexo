@@ -166,6 +166,13 @@ impl ChatService {
         reasoning_effort: Option<String>,
         app: AppHandle,
     ) -> Result<(String, String), AppError> {
+        // Track chat message operation
+        crate::lib::sentry_helpers::add_breadcrumb(
+            "chat",
+            format!("Sending message to chat {}", chat_id),
+            sentry::Level::Info,
+        );
+
         // 1. Get chat to find workspace_id
         let chat = self
             .repository
@@ -173,6 +180,9 @@ impl ChatService {
             .ok_or_else(|| AppError::NotFound(format!("Chat not found: {chat_id}")))?;
 
         let workspace_id = chat.workspace_id;
+
+        // Track workspace context
+        crate::lib::sentry_helpers::track_workspace_operation(&workspace_id, "send_message");
 
         // 2. Get workspace settings
         let workspace_settings = self
@@ -450,6 +460,15 @@ impl ChatService {
             )
             .await?;
         let latency = start_time.elapsed().as_millis() as u64;
+
+        // Track LLM call performance
+        crate::lib::sentry_helpers::track_llm_call(
+            &llm_connection.provider,
+            &model,
+            "chat_completion",
+            latency,
+            &Ok::<(), Box<dyn std::error::Error>>(()),
+        );
 
         // Record usage
         let usage_service = self.usage_service.clone();

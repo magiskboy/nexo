@@ -1,6 +1,7 @@
 use serde::Serializer;
 use thiserror::Error;
 
+/// Application error types with Sentry integration
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("[Database] {0}")]
@@ -47,6 +48,42 @@ pub enum AppError {
 
     #[error("[Error] {0}")]
     Generic(String),
+}
+
+impl AppError {
+    /// Report this error to Sentry with optional context
+    #[allow(dead_code)]
+    pub fn report_to_sentry(&self, context: Option<&str>) {
+        // Only report in production or when explicitly enabled
+        if cfg!(not(debug_assertions)) || std::env::var("SENTRY_ENABLED").is_ok() {
+            sentry::capture_error(self);
+
+            if let Some(ctx) = context {
+                sentry::add_breadcrumb(sentry::Breadcrumb {
+                    message: Some(ctx.to_string()),
+                    level: sentry::Level::Error,
+                    ..Default::default()
+                });
+            }
+        }
+    }
+
+    /// Report with additional tags
+    #[allow(dead_code)]
+    pub fn report_with_tags(&self, tags: Vec<(&str, &str)>) {
+        if cfg!(not(debug_assertions)) || std::env::var("SENTRY_ENABLED").is_ok() {
+            sentry::with_scope(
+                |scope| {
+                    for (key, value) in tags {
+                        scope.set_tag(key, value);
+                    }
+                },
+                || {
+                    sentry::capture_error(self);
+                },
+            );
+        }
+    }
 }
 
 // Manual Serialize implementation to ensure Tauri receives a proper JSON error object

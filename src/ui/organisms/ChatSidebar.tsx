@@ -33,6 +33,7 @@ import {
 } from '@/ui/atoms/dialog/component';
 import { ContextMenu } from '@/ui/atoms/context-menu';
 import { cn } from '@/lib/utils';
+import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import type { Message } from '@/store/types';
 import { useChats } from '@/hooks/useChats';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -48,6 +49,12 @@ export interface ChatItem {
 }
 
 export function ChatSidebar() {
+  // Track render performance
+  useComponentPerformance({
+    componentName: 'ChatSidebar',
+    threshold: 100,
+  });
+
   // Use workspaces hook to get selectedWorkspaceId
   const { selectedWorkspaceId } = useWorkspaces();
 

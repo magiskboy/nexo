@@ -45,6 +45,17 @@ fn main() {
         println!("cargo:warning=Binaries directory does not exist!");
     }
 
+    // Embed Sentry DSN at compile time
+    // This will be included in the binary during build
+    if let Ok(dsn) = env::var("RUST_SENTRY_DSN") {
+        if !dsn.is_empty() {
+            println!("cargo:rustc-env=RUST_SENTRY_DSN={}", dsn);
+            println!("cargo:warning=Sentry DSN embedded in binary");
+        }
+    } else {
+        println!("cargo:warning=RUST_SENTRY_DSN not set - Sentry will be disabled");
+    }
+
     tauri_build::build();
 }
 

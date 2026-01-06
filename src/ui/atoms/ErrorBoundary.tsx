@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import { Button } from '@/ui/atoms/button/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -9,24 +10,47 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  eventId: string | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
+    eventId: null,
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, eventId: null };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
+
+    // Report to Sentry with React context
+    Sentry.withScope((scope) => {
+      scope.setContext('react', {
+        componentStack: errorInfo.componentStack,
+      });
+      scope.setLevel('error');
+      const eventId = Sentry.captureException(error);
+      this.setState({ eventId });
+    });
   }
 
   private handleReload = () => {
     window.location.reload();
+  };
+
+  private handleReportFeedback = () => {
+    if (this.state.eventId) {
+      Sentry.showReportDialog({
+        eventId: this.state.eventId,
+        title: 'Report Error',
+        subtitle: 'Help us improve by reporting this error',
+        subtitle2: 'Our team will be notified.',
+      });
+    }
   };
 
   public render() {
@@ -50,10 +74,22 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
           )}
 
-          <Button onClick={this.handleReload} className="gap-2">
-            <RefreshCw className="size-4" />
-            Reload Application
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={this.handleReload} className="gap-2">
+              <RefreshCw className="size-4" />
+              Reload Application
+            </Button>
+            {this.state.eventId && (
+              <Button
+                onClick={this.handleReportFeedback}
+                variant="outline"
+                className="gap-2"
+              >
+                <AlertCircle className="size-4" />
+                Report Issue
+              </Button>
+            )}
+          </div>
         </div>
       );
     }

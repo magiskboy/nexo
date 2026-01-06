@@ -31,6 +31,7 @@ import { useChatInput } from '@/hooks/useChatInput';
 import { useMessages } from '@/hooks/useMessages';
 import { useSlashCommand } from '@/hooks/useSlashCommand';
 import { useAgentMention } from '@/hooks/useAgentMention';
+import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import { SlashCommandDropdown } from '@/ui/molecules/SlashCommandDropdown';
 import { AgentMentionDropdown } from '@/ui/molecules/AgentMentionDropdown';
 import { VariableInputDialog } from '@/ui/molecules/VariableInputDialog';
@@ -60,6 +61,11 @@ export function ChatInput({
   streamingError,
   onRetryStreaming,
 }: ChatInputProps) {
+  // Track render performance
+  useComponentPerformance({
+    componentName: 'ChatInput',
+    threshold: 50,
+  });
   const { t } = useTranslation(['chat', 'common', 'settings']);
   const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);

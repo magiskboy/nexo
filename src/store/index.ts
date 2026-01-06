@@ -10,6 +10,7 @@ import chatInputReducer from './slices/chatInputSlice';
 import notificationReducer from './slices/notificationSlice';
 import chatSearchReducer from './slices/chatSearchSlice';
 import toolPermissionReducer from './slices/toolPermissionSlice';
+import { sentryMiddleware } from './sentryMiddleware';
 
 export const store = configureStore({
   reducer: {
@@ -25,6 +26,8 @@ export const store = configureStore({
     chatSearch: chatSearchReducer,
     toolPermission: toolPermissionReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(sentryMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

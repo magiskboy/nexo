@@ -44,6 +44,9 @@ regex = "1.12.2"
 sha2 = "0.10.9"
 hex = "0.4.3"
 shell-words = "1.1.1"
+sentry = { version = "0.34", features = ["backtrace", "contexts", "panic", "anyhow", "debug-images"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [lints.clippy]
 pedantic = "warn"

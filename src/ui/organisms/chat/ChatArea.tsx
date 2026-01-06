@@ -101,6 +101,17 @@ export function ChatArea() {
       return;
     }
 
+    // Track message send
+    const { trackMessageSend, setLLMContext, setChatContext } =
+      await import('@/lib/sentry-utils');
+    trackMessageSend(
+      selectedChatId,
+      input.trim().length,
+      attachedFiles.length > 0
+    );
+    setLLMContext(llmConnection.provider, selectedModel);
+    setChatContext(selectedChatId);
+
     // Log attached files for debugging
     if (attachedFiles.length > 0) {
     }

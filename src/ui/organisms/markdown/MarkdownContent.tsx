@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Streamdown } from '@/ui/atoms/streamdown';
 import { useAppSelector } from '@/store/hooks';
 import { cn } from '@/lib/utils';
+import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import { CustomCodeComponent } from './CustomCodeComponent';
 
 export function MarkdownContent({
@@ -18,6 +19,12 @@ export function MarkdownContent({
   className,
   messageId,
 }: MarkdownContentProps) {
+  // Track render performance for markdown rendering
+  useComponentPerformance({
+    componentName: 'MarkdownContent',
+    threshold: 200,
+  });
+
   const { t } = useTranslation('common');
   const sanitizedContent =
     typeof content === 'string' ? content : String(content || '');

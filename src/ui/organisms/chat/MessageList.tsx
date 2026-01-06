@@ -5,6 +5,7 @@ import type { PermissionRequest } from '@/store/slices/toolPermissionSlice';
 import { ToolCallItem } from '@/ui/organisms/chat/ToolCallItem';
 import { ThinkingItem } from '@/ui/organisms/chat/ThinkingItem';
 import { MessageItem } from '@/ui/organisms/chat/MessageItem';
+import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import { sortMessages } from './utils/messageSorting';
 
 interface MessageListProps {
@@ -80,6 +81,12 @@ export function MessageList({
   userMode,
   t,
 }: MessageListProps) {
+  // Track render performance
+  useComponentPerformance({
+    componentName: 'MessageList',
+    threshold: 100,
+  });
+
   // Internal state management (if not controlled from parent)
   const [internalMarkdownEnabled, setInternalMarkdownEnabled] = useState<
     Record<string, boolean>
@@ -265,7 +272,7 @@ export function MessageList({
     : undefined;
 
   return (
-    <div ref={finalContentRef}>
+    <div ref={finalContentRef} className="flex flex-col gap-2">
       {sortedMessages.map((message) => {
         // Skip tool result messages (role="tool") - they are only used internally
         // Tool results are displayed within tool_call messages

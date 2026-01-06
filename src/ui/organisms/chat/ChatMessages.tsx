@@ -10,6 +10,7 @@ import { showError } from '@/store/slices/notificationSlice';
 import { setAgentChatHistoryDrawerOpen } from '@/store/slices/uiSlice';
 import { MessageList } from '@/ui/organisms/chat/MessageList';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
+import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import type { Message } from '@/store/types';
 
 interface ChatMessagesProps {
@@ -23,6 +24,12 @@ export function ChatMessages({
   isLoading,
   streamingMessageId,
 }: ChatMessagesProps) {
+  // Track render performance
+  useComponentPerformance({
+    componentName: 'ChatMessages',
+    threshold: 50,
+  });
+
   const { t } = useTranslation('chat');
   const { userMode } = useAppSettings();
   const dispatch = useAppDispatch();
@@ -263,7 +270,7 @@ export function ChatMessages({
     >
       <div
         ref={contentWrapperRef}
-        className="mx-auto w-full max-w-3xl px-4 pt-6 gap-2 flex flex-col"
+        className="mx-auto w-full max-w-3xl px-4 pt-6 pb-6 gap-2 flex flex-col"
       >
         <MessageList
           messages={messages}

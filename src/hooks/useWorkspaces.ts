@@ -59,13 +59,24 @@ export function useWorkspaces() {
   }, [selectedWorkspace, dispatch]);
 
   // Handlers
-  const handleWorkspaceChange = (workspace: Workspace) => {
+  const handleWorkspaceChange = async (workspace: Workspace) => {
     dispatch(setSelectedWorkspace(workspace.id));
+
+    // Track workspace switch
+    const { trackWorkspaceOperation, setWorkspaceContext } =
+      await import('@/lib/sentry-utils');
+    trackWorkspaceOperation('switch', workspace.id);
+    setWorkspaceContext(workspace.id, workspace.name);
   };
 
   const handleAddWorkspace = async (name: string) => {
     try {
+      // Track workspace creation
+      const { trackWorkspaceOperation } = await import('@/lib/sentry-utils');
+
       const workspace = await dispatch(createWorkspace(name)).unwrap();
+      trackWorkspaceOperation('create', workspace.id);
+
       await dispatch(
         createChat({
           workspaceId: workspace.id,
@@ -75,6 +86,13 @@ export function useWorkspaces() {
     } catch (error) {
       console.error('Error creating workspace:', error);
       dispatch(showError(t('cannotCreateWorkspace', { ns: 'settings' })));
+
+      // Track error
+      const { trackError } = await import('@/lib/sentry-utils');
+      trackError(error as Error, {
+        component: 'useWorkspaces',
+        action: 'createWorkspace',
+      });
     }
   };
 
