@@ -8,6 +8,7 @@ import { editAndResendMessage, addMessage } from '@/store/slices/messages';
 import { removePermissionRequest } from '@/store/slices/toolPermissionSlice';
 import { setLoading } from '@/store/slices/chatInputSlice';
 import { showError } from '@/store/slices/notificationSlice';
+import { setAgentChatHistoryDrawerOpen } from '@/store/slices/uiSlice';
 import type { Message } from '@/store/types';
 import { ToolCallItem } from '@/ui/organisms/ToolCallItem';
 import { ThinkingItem } from '@/ui/organisms/ThinkingItem';
@@ -247,6 +248,19 @@ export function ChatMessages({
     setEditingContent(content);
   }, []);
 
+  const handleViewAgentDetails = useCallback(
+    (sessionId: string, agentId: string) => {
+      dispatch(
+        setAgentChatHistoryDrawerOpen({
+          open: true,
+          sessionId,
+          agentId,
+        })
+      );
+    },
+    [dispatch]
+  );
+
   const handleSaveEdit = useCallback(
     async (messageId: string, content: string) => {
       if (!selectedChatId) return;
@@ -416,6 +430,7 @@ export function ChatMessages({
                   onCancelEdit={handleCancelEdit}
                   onEditContentChange={handleEditContentChange}
                   onSaveEdit={handleSaveEdit}
+                  onViewAgentDetails={handleViewAgentDetails}
                   isStreaming={streamingMessageId === message.id}
                   t={t}
                 />

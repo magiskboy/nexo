@@ -1,5 +1,6 @@
 import { ChatMessages } from '@/ui/organisms/ChatMessages';
 import { ChatInput } from '@/ui/organisms/ChatInput';
+import { AgentChatHistoryDialog } from '@/ui/organisms/AgentChatHistoryDialog';
 import { useMessages } from '@/hooks/useMessages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -9,6 +10,7 @@ import { Sparkles } from 'lucide-react';
 import { sendMessage } from '@/store/slices/messages';
 import { setLoading, clearInput } from '@/store/slices/chatInputSlice';
 import { showError } from '@/store/slices/notificationSlice';
+import { setAgentChatHistoryDrawerOpen } from '@/store/slices/uiSlice';
 
 export function ChatArea() {
   const { t } = useTranslation(['common', 'settings']);
@@ -20,6 +22,17 @@ export function ChatArea() {
 
   // Get selectedChatId from Redux state
   const selectedChatId = useAppSelector((state) => state.chats.selectedChatId);
+
+  // Get agent chat history drawer state
+  const agentChatHistoryDrawerOpen = useAppSelector(
+    (state) => state.ui.agentChatHistoryDrawerOpen
+  );
+  const agentChatHistorySessionId = useAppSelector(
+    (state) => state.ui.agentChatHistorySessionId
+  );
+  const agentChatHistoryAgentId = useAppSelector(
+    (state) => state.ui.agentChatHistoryAgentId
+  );
 
   const selectedLLMConnectionId = selectedWorkspace
     ? workspaceSettings[selectedWorkspace.id]?.llmConnectionId
@@ -170,6 +183,22 @@ export function ChatArea() {
         timeLeft={timeLeft}
         streamingError={selectedChatId ? streamingError : undefined}
         onRetryStreaming={handleRetryStreaming}
+      />
+
+      {/* Agent Chat History Dialog */}
+      <AgentChatHistoryDialog
+        open={agentChatHistoryDrawerOpen}
+        onOpenChange={(open) =>
+          dispatch(
+            setAgentChatHistoryDrawerOpen({
+              open,
+              sessionId: null,
+              agentId: null,
+            })
+          )
+        }
+        sessionId={agentChatHistorySessionId}
+        agentId={agentChatHistoryAgentId}
       />
     </>
   );

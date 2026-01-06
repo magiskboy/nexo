@@ -31,6 +31,7 @@ export interface MessageItemProps {
   onCancelEdit: () => void;
   onEditContentChange: (content: string) => void;
   onSaveEdit: (messageId: string, content: string) => void;
+  onViewAgentDetails?: (sessionId: string, agentId: string) => void;
   t: (key: string) => string;
 }
 
@@ -49,6 +50,7 @@ export const MessageItem = memo(
     onCancelEdit,
     onEditContentChange,
     onSaveEdit,
+    onViewAgentDetails,
     t,
   }: MessageItemProps) {
     // Determine if message is long (more than 500 characters or more than 10 lines)
@@ -147,7 +149,9 @@ export const MessageItem = memo(
             agentId={agentCardData.agent_id}
             sessionId={agentCardData.session_id}
             status={agentCardData.status}
-            // onViewDetails={(sid) => console.log('View details', sid)}
+            onViewDetails={(sessionId) => {
+              onViewAgentDetails?.(sessionId, agentCardData.agent_id);
+            }}
           >
             {agentCardData.summary && (
               <MarkdownContent

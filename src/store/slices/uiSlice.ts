@@ -31,6 +31,9 @@ interface UIState {
     | 'dracula';
 
   loading: boolean;
+  agentChatHistoryDrawerOpen: boolean;
+  agentChatHistorySessionId: string | null;
+  agentChatHistoryAgentId: string | null;
 }
 
 // Load all app settings from database
@@ -189,6 +192,9 @@ const initialState: UIState = {
   userMode: 'normal',
   theme: 'light',
   loading: false,
+  agentChatHistoryDrawerOpen: false,
+  agentChatHistorySessionId: null,
+  agentChatHistoryAgentId: null,
 };
 
 const uiSlice = createSlice({
@@ -261,6 +267,23 @@ const uiSlice = createSlice({
         console.error('Failed to save theme to database:', error);
       });
     },
+    setAgentChatHistoryDrawerOpen: (
+      state,
+      action: PayloadAction<{
+        open: boolean;
+        sessionId?: string | null;
+        agentId?: string | null;
+      }>
+    ) => {
+      state.agentChatHistoryDrawerOpen = action.payload.open;
+      if (action.payload.open) {
+        state.agentChatHistorySessionId = action.payload.sessionId ?? null;
+        state.agentChatHistoryAgentId = action.payload.agentId ?? null;
+      } else {
+        state.agentChatHistorySessionId = null;
+        state.agentChatHistoryAgentId = null;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -315,5 +338,6 @@ export const {
   setLanguage,
   setUserMode,
   setTheme,
+  setAgentChatHistoryDrawerOpen,
 } = uiSlice.actions;
 export default uiSlice.reducer;
