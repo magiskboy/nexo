@@ -19,6 +19,10 @@ import { showError, showSuccess } from '@/store/slices/notificationSlice';
 import { setSelectedModel } from '@/store/slices/chatInputSlice';
 import { clearAllChats, createChat } from '@/store/slices/chatsSlice';
 
+// Module-level flag to track if initial data has been fetched
+// This ensures we only fetch once across all instances of this hook
+let hasFetchedInitialData = false;
+
 /**
  * Hook to access and manage workspaces
  */
@@ -39,16 +43,22 @@ export function useWorkspaces() {
     (state) => state.workspaceSettings.settingsByWorkspaceId
   );
 
-  // Load connections and workspaces on mount
+  // Load connections and workspaces on mount - only once per app lifecycle
   useEffect(() => {
-    dispatch(fetchLLMConnections());
-    dispatch(fetchMCPConnections());
-    dispatch(fetchWorkspaces());
+    // Only fetch if we haven't fetched initial data yet
+    // This prevents duplicate fetches when multiple components use this hook
+    if (!hasFetchedInitialData) {
+      hasFetchedInitialData = true;
+      dispatch(fetchLLMConnections());
+      dispatch(fetchMCPConnections());
+      dispatch(fetchWorkspaces());
+    }
   }, [dispatch]);
 
   // Load workspace settings when workspace changes
+  // Use selectedWorkspaceId instead of selectedWorkspace object to avoid unnecessary re-fetches
   useEffect(() => {
-    if (!selectedWorkspace) return;
+    if (!selectedWorkspaceId || !selectedWorkspace) return;
 
     dispatch(
       fetchWorkspaceSettings({
@@ -56,7 +66,12 @@ export function useWorkspaces() {
         workspaceName: selectedWorkspace.name,
       })
     );
-  }, [selectedWorkspace, dispatch]);
+  }, [
+    selectedWorkspaceId,
+    selectedWorkspace?.id,
+    selectedWorkspace?.name,
+    dispatch,
+  ]);
 
   // Handlers
   const handleWorkspaceChange = async (workspace: Workspace) => {

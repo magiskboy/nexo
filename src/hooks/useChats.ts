@@ -45,6 +45,14 @@ export function useChats(selectedWorkspaceId: string | null) {
   useEffect(() => {
     if (!selectedWorkspaceId) return;
 
+    // Check if chats already exist for this workspace to avoid duplicate fetches
+    // Check if key exists in object (not just value) to handle empty arrays correctly
+    if (selectedWorkspaceId in chatsByWorkspaceId) {
+      // Chats already loaded for this workspace (even if empty array), skip fetch
+      // This prevents duplicate fetches when multiple components use this hook
+      return;
+    }
+
     let isMounted = true;
     dispatch(fetchChats(selectedWorkspaceId)).then((result) => {
       if (!isMounted) return;
@@ -56,7 +64,7 @@ export function useChats(selectedWorkspaceId: string | null) {
     return () => {
       isMounted = false;
     };
-  }, [selectedWorkspaceId, dispatch, t]);
+  }, [selectedWorkspaceId, dispatch, chatsByWorkspaceId]);
 
   // Handlers
   const handleNewChat = async () => {

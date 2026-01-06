@@ -259,10 +259,10 @@ const loadKatexCSS = (): void => {
 
   const katexCssVersion = katexVersionMap[katexVersion] || '0.16.22';
 
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = `/cdn/katex/${katexCssVersion}/katex.min.css`;
-  document.head.appendChild(link);
+  // const link = document.createElement('link');
+  // link.rel = 'stylesheet';
+  // link.href = `/cdn/katex/${katexCssVersion}/katex.min.css`;
+  // document.head.appendChild(link);
 };
 
 export const Streamdown = memo(

@@ -39,28 +39,33 @@ export function useChatInput(selectedWorkspaceId: string | null) {
     (state) => state.chatInput.reasoningEffort
   );
 
+  // Get current workspace settings - memoize to avoid unnecessary re-renders
+  const currentWorkspaceSettings = useMemo(() => {
+    if (!selectedWorkspaceId) return null;
+    return workspaceSettings[selectedWorkspaceId] || null;
+  }, [selectedWorkspaceId, workspaceSettings]);
+
   // Get streamEnabled from workspace settings
   const streamEnabled = useMemo(() => {
     if (!selectedWorkspaceId) return true; // Default to true
-    const settings = workspaceSettings[selectedWorkspaceId];
-    return settings?.streamEnabled ?? true;
-  }, [selectedWorkspaceId, workspaceSettings]);
+    return currentWorkspaceSettings?.streamEnabled ?? true;
+  }, [selectedWorkspaceId, currentWorkspaceSettings?.streamEnabled]);
 
   // Load chat input settings when workspace changes
   useEffect(() => {
     if (!selectedWorkspaceId) return;
 
     isLoadingSettingsRef.current = true;
-    const currentSettings = workspaceSettings[selectedWorkspaceId];
     const savedSettings = loadChatInputSettings(selectedWorkspaceId);
 
     // Priority: saved model > default model from workspace settings
     // This ensures user's model selection persists across app restarts and message edits
     const modelToUse =
-      savedSettings?.selectedModel || currentSettings?.defaultModel;
+      savedSettings?.selectedModel || currentWorkspaceSettings?.defaultModel;
 
     // Calculate streamEnabled from workspace settings
-    const workspaceStreamEnabled = currentSettings?.streamEnabled ?? true;
+    const workspaceStreamEnabled =
+      currentWorkspaceSettings?.streamEnabled ?? true;
 
     // Restore settings with priority: default model > saved model
     dispatch(
@@ -74,7 +79,12 @@ export function useChatInput(selectedWorkspaceId: string | null) {
     setTimeout(() => {
       isLoadingSettingsRef.current = false;
     }, 100);
-  }, [selectedWorkspaceId, dispatch, workspaceSettings]);
+  }, [
+    selectedWorkspaceId,
+    dispatch,
+    currentWorkspaceSettings?.defaultModel,
+    currentWorkspaceSettings?.streamEnabled,
+  ]);
 
   // Save chat input settings when they change (within same workspace)
   // Skip saving if we're currently loading settings to avoid overwriting

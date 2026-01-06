@@ -26,24 +26,34 @@ export function useSlashCommand({
   const [, setIsLoading] = useState(false);
   const [forceClosed, setForceClosed] = useState(false);
   const prevInputRef = useRef<string>('');
+  const hasLoadedPromptsRef = useRef(false);
 
-  // Load prompts function
+  // Load prompts function - only load once
   const loadPrompts = useCallback(async () => {
+    // Skip if already loaded
+    if (hasLoadedPromptsRef.current && prompts.length > 0) {
+      return;
+    }
+
     setIsLoading(true);
     try {
       const data = await invokeCommand<Prompt[]>(TauriCommands.GET_PROMPTS);
       setPrompts(data);
+      hasLoadedPromptsRef.current = true;
     } catch (error) {
       console.error('Error loading prompts:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [prompts.length]);
 
-  // Load prompts on mount
+  // Load prompts on mount - only once
   useEffect(() => {
-    loadPrompts();
-  }, [loadPrompts]);
+    if (!hasLoadedPromptsRef.current) {
+      loadPrompts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   // Reset forceClosed when input changes and starts with "/" followed by non-whitespace
   // Only reset if this is a NEW slash command (input changed from not having valid slash to having valid slash)
@@ -99,12 +109,13 @@ export function useSlashCommand({
     return { isActive: true, query };
   }, [input, forceClosed]);
 
-  // Reload prompts when slash command becomes active
+  // Only load prompts if not loaded yet and slash command becomes active
   useEffect(() => {
-    if (isActive) {
+    if (isActive && !hasLoadedPromptsRef.current) {
       loadPrompts();
     }
-  }, [isActive, loadPrompts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]); // Only depend on isActive, not loadPrompts
 
   // Filter prompts based on query
   const filteredPrompts = useMemo(() => {

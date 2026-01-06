@@ -55,6 +55,7 @@ export function useMessages(selectedChatId: string | null) {
     : undefined;
 
   // Load messages when chat changes
+  // Only depend on selectedChatId to avoid infinite loops when messagesByChatId reference changes
   useEffect(() => {
     if (!selectedChatId) return;
 
@@ -63,10 +64,17 @@ export function useMessages(selectedChatId: string | null) {
 
     const loadMessages = async () => {
       try {
-        await dispatch(fetchMessages(selectedChatId)).unwrap();
+        const result = await dispatch(fetchMessages(selectedChatId));
 
-        // If cancelled (user switched chat), don't do anything
-        // The reducer will also validate chatId to be safe
+        // Check if this effect was cancelled (user switched chat)
+        if (cancelled) {
+          return;
+        }
+
+        // Messages loaded successfully (or error handled in reducer)
+        if (fetchMessages.fulfilled.match(result)) {
+          // Success - messages are now in Redux state
+        }
       } catch (error) {
         if (!cancelled) {
           console.error('Failed to load messages:', error);
@@ -80,7 +88,7 @@ export function useMessages(selectedChatId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [selectedChatId, dispatch]);
+  }, [selectedChatId, dispatch]); // Only depend on selectedChatId - this prevents infinite loops
 
   // Timeout mechanism for streaming
   useEffect(() => {
