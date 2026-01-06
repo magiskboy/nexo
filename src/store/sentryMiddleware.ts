@@ -4,7 +4,7 @@
  */
 
 import * as Sentry from '@sentry/react';
-import { Middleware } from '@reduxjs/toolkit';
+import { Middleware, UnknownAction } from '@reduxjs/toolkit';
 
 // Actions that should not be tracked (too noisy or contain sensitive data)
 const IGNORED_ACTIONS = [
@@ -67,9 +67,28 @@ function sanitizePayload(payload: unknown): unknown {
 }
 
 /**
+ * Type guard to check if action has a type property
+ */
+function isAction(
+  action: unknown
+): action is UnknownAction & { type: string; payload?: unknown } {
+  return (
+    typeof action === 'object' &&
+    action !== null &&
+    'type' in action &&
+    typeof (action as { type: unknown }).type === 'string'
+  );
+}
+
+/**
  * Redux middleware for Sentry tracking
  */
 export const sentryMiddleware: Middleware = () => (next) => (action) => {
+  // Type guard: ensure action has type property
+  if (!isAction(action)) {
+    return next(action);
+  }
+
   // Check if action should be ignored
   if (IGNORED_ACTIONS.some((ignored) => action.type.includes(ignored))) {
     return next(action);
