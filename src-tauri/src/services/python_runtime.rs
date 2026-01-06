@@ -28,7 +28,14 @@ pub fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
     };
 
     // Try production bundle path first (in resource_dir)
+    // In production, binaries are named simply "uv" or "uv.exe" (not architecture-specific)
     if let Ok(resource_path) = app.path().resource_dir() {
+        let simple_name = if cfg!(windows) { "uv.exe" } else { "uv" };
+        let uv_path = resource_path.join("binaries").join(simple_name);
+        if uv_path.exists() {
+            return Ok(uv_path);
+        }
+        // Fallback: try architecture-specific name (for backwards compatibility)
         let uv_path = resource_path.join("binaries").join(uv_name);
         if uv_path.exists() {
             return Ok(uv_path);

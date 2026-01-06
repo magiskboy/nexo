@@ -42,7 +42,9 @@ impl AppState {
         // Initialize database if needed
         let db_state = Arc::new(Mutex::new(None));
         {
-            let mut db_guard = db_state.lock().unwrap();
+            let mut db_guard = db_state.lock().map_err(|e| {
+                crate::error::AppError::Generic(format!("Failed to acquire database lock: {e}"))
+            })?;
             if db_guard.is_none() {
                 *db_guard = Some(crate::db::init_db(&app)?);
             }
@@ -69,7 +71,7 @@ impl AppState {
 
         // Initialize Agent Manager first as it's needed by ChatService
         let agent_manager = Arc::new(crate::agent::manager::AgentManager::new(
-            (*app).path().app_data_dir().unwrap(),
+            (*app).path().app_data_dir().map_err(crate::error::AppError::Tauri)?,
             crate::services::python_runtime::get_bundled_uv_path(&app)?,
         ));
 
