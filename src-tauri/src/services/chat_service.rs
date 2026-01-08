@@ -444,7 +444,9 @@ impl ChatService {
             tools: tools.clone(),
             tool_choice,
             reasoning_effort: reasoning_effort.clone(),
-            stream_options: None,
+            stream_options: Some(serde_json::json!({
+                "include_usage": true
+            })),
         };
 
         // 12. Call LLM service
@@ -729,7 +731,9 @@ impl ChatService {
                     tools: tools.clone(),
                     tool_choice: None,
                     reasoning_effort: reasoning_effort.clone(),
-                    stream_options: None,
+                    stream_options: Some(serde_json::json!({
+                        "include_usage": true
+                    })),
                 };
 
                 let start_time = std::time::Instant::now();

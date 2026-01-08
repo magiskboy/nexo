@@ -199,6 +199,7 @@ pub fn run() {
             commands::usage::get_usage_summary,
             commands::usage::get_usage_chart,
             commands::usage::get_usage_logs,
+            commands::usage::clear_usage,
             // Agent commands
             agent::commands::install_agent,
             agent::commands::get_installed_agents,

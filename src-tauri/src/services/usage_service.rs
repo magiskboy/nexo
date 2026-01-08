@@ -103,4 +103,8 @@ impl UsageService {
         let offset = (page - 1) * limit;
         self.repo.get_logs(filter, limit, offset)
     }
+
+    pub fn clear_usage(&self) -> Result<()> {
+        self.repo.delete_all()
+    }
 }

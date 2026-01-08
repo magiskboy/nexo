@@ -33,8 +33,9 @@ export interface UsageSummary {
 }
 
 export interface UsageChartPoint {
-  timestamp: string;
+  timestamp: number;
   requests: number;
   cost: number;
-  tokens: number;
+  input_tokens: number;
+  output_tokens: number;
 }

@@ -8,6 +8,7 @@ pub trait UsageRepository: Send + Sync {
     fn get_logs(&self, filter: UsageFilter, limit: u32, offset: u32) -> Result<Vec<UsageStat>>;
     fn get_summary(&self, filter: UsageFilter) -> Result<UsageSummary>;
     fn get_chart_data(&self, filter: UsageFilter, interval: &str) -> Result<Vec<UsageChartPoint>>;
+    fn delete_all(&self) -> Result<()>;
 }
 
 pub struct SqliteUsageRepository {
@@ -203,5 +204,11 @@ impl UsageRepository for SqliteUsageRepository {
             points.push(row?);
         }
         Ok(points)
+    }
+    fn delete_all(&self) -> Result<()> {
+        let conn = crate::db::get_connection(&self.app)
+            .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+        conn.execute("DELETE FROM usage_stats", [])?;
+        Ok(())
     }
 }

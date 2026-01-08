@@ -209,6 +209,7 @@ impl LLMService {
         let mut finish_reason: Option<String> = None;
         let mut buffer = String::new();
         let mut tool_calls_emitted = false; // Track if we've already emitted tool calls
+        let mut final_usage: Option<TokenUsage> = None;
 
         while let Some(item) = stream.next().await {
             let chunk = item.map_err(|e| AppError::Generic(format!("Stream error: {e}")))?;
@@ -227,6 +228,11 @@ impl LLMService {
 
                     match serde_json::from_str::<SSEChunk>(data) {
                         Ok(sse_chunk) => {
+                            // Check for usage
+                            if let Some(usage) = sse_chunk.usage {
+                                final_usage = Some(usage);
+                            }
+
                             // println!("DEBUG: Parsed SSE chunk: {:?}", sse_chunk);
                             if let Some(choices) = sse_chunk.choices {
                                 for choice in choices {
@@ -368,7 +374,11 @@ impl LLMService {
             chat_id.clone(),
             message_id.clone(),
             full_content.clone(),
-            None,
+            final_usage.as_ref().map(|u| EventTokenUsage {
+                prompt_tokens: u.prompt_tokens,
+                completion_tokens: u.completion_tokens,
+                total_tokens: u.total_tokens,
+            }),
         )?;
 
         Ok(LLMChatResponse {
@@ -379,7 +389,7 @@ impl LLMService {
             } else {
                 Some(tool_calls)
             },
-            usage: None,
+            usage: final_usage,
             reasoning: if full_reasoning.is_empty() {
                 None
             } else {

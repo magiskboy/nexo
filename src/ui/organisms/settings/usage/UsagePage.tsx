@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { UsageHeader } from './UsageHeader';
 import { UsageOverview } from './UsageOverview';
 import { UsageChart } from './UsageChart';
@@ -11,7 +11,11 @@ import {
 } from '@/models/usage';
 import { invoke } from '@tauri-apps/api/core';
 
+import { useAppDispatch } from '@/store/hooks';
+import { showSuccess, showError } from '@/store/slices/notificationSlice';
+
 export function UsagePage() {
+  const dispatch = useAppDispatch();
   const [filter, setFilter] = useState<UsageFilter>({});
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [chartData, setChartData] = useState<UsageChartPoint[]>([]);
@@ -21,38 +25,49 @@ export function UsagePage() {
   const [page, setPage] = useState(1);
   const LIMIT = 20;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const summaryData = await invoke<UsageSummary>('get_usage_summary', {
-          filter,
-        });
-        setSummary(summaryData);
+  // Function to refresh data
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const summaryData = await invoke<UsageSummary>('get_usage_summary', {
+        filter,
+      });
+      setSummary(summaryData);
 
-        const chartDataRes = await invoke<UsageChartPoint[]>(
-          'get_usage_chart',
-          {
-            filter,
-            interval,
-          }
-        );
-        setChartData(chartDataRes);
+      const chartDataRes = await invoke<UsageChartPoint[]>('get_usage_chart', {
+        filter,
+        interval,
+      });
+      setChartData(chartDataRes);
 
-        const logsRes = await invoke<UsageStat[]>('get_usage_logs', {
-          filter,
-          page,
-          limit: LIMIT,
-        });
-        setLogs(logsRes);
-      } catch (error) {
-        console.error('Failed to fetch usage data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+      const logsRes = await invoke<UsageStat[]>('get_usage_logs', {
+        filter,
+        page,
+        limit: LIMIT,
+      });
+      setLogs(logsRes);
+    } catch (error) {
+      console.error('Failed to fetch usage data:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [filter, interval, page]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleClearUsage = async () => {
+    try {
+      await invoke('clear_usage');
+      dispatch(showSuccess('Usage data cleared successfully'));
+      // Refresh data
+      fetchData();
+    } catch (error) {
+      console.error('Failed to clear usage data:', error);
+      dispatch(showError('Failed to clear usage data'));
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -61,6 +76,7 @@ export function UsagePage() {
         onFilterChange={setFilter}
         interval={interval}
         onIntervalChange={setInterval}
+        onClearUsage={handleClearUsage}
       />
 
       <div

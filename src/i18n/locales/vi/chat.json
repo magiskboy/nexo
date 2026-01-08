@@ -6,7 +6,7 @@
   "daysAgo": "{{count}} ngày trước",
   "enableStreamMode": "Bật chế độ stream để nhận phản hồi từng phần",
   "enableTools": "Bật tính năng tools cho model",
-  "enterMessage": "Nhập tin nhắn... (Enter để gửi, Shift+Enter để xuống dòng)",
+  "enterMessage": "Hỏi bất cứ điều gì... (@ cho agent, / cho template)",
   "enterMessageCentered": "Tôi có thể giúp gì cho bạn hôm nay?",
   "enterVariableValues": "Nhập giá trị cho các biến sau:",
   "hoursAgo": "{{count}} giờ trước",

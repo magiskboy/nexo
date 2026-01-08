@@ -34,57 +34,89 @@ export function UsageOverview({ summary, loading }: UsageOverviewProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card className="hover:bg-accent/50 transition-colors">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm">Total Cost</CardTitle>
-          <Coins className="h-4 w-4 text-muted-foreground" />
+      <Card className="relative overflow-hidden border-none ring-1 ring-border shadow-md bg-gradient-to-br from-background to-muted/20 hover:shadow-lg transition-all duration-300 group">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-amber-500/20 transition-colors" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Total Cost
+          </CardTitle>
+          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300">
+            <Coins className="h-4 w-4" />
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-semibold">
-            ${summary.total_cost.toFixed(4)}
+        <CardContent className="relative z-10">
+          <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+            {new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 4,
+            }).format(summary.total_cost)}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="hover:bg-accent/50 transition-colors">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm">Total Tokens</CardTitle>
-          <Zap className="h-4 w-4 text-muted-foreground" />
+      <Card className="relative overflow-hidden border-none ring-1 ring-border shadow-md bg-gradient-to-br from-background to-muted/20 hover:shadow-lg transition-all duration-300 group">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-violet-500/20 transition-colors" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Total Tokens
+          </CardTitle>
+          <div className="p-2 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform duration-300">
+            <Zap className="h-4 w-4" />
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-semibold">
+        <CardContent className="relative z-10">
+          <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
             {(
               summary.total_input_tokens + summary.total_output_tokens
             ).toLocaleString()}
           </div>
-          <p className="text-xs text-muted-foreground mt-1.5">
-            {summary.total_input_tokens.toLocaleString()} in /{' '}
-            {summary.total_output_tokens.toLocaleString()} out
+          <p className="text-xs font-medium text-muted-foreground mt-2 flex gap-3">
+            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <span className="text-[10px]">IN</span>
+              {summary.total_input_tokens.toLocaleString()}
+            </span>
+            <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+              <span className="text-[10px]">OUT</span>
+              {summary.total_output_tokens.toLocaleString()}
+            </span>
           </p>
         </CardContent>
       </Card>
 
-      <Card className="hover:bg-accent/50 transition-colors">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm">Total Requests</CardTitle>
-          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+      <Card className="relative overflow-hidden border-none ring-1 ring-border shadow-md bg-gradient-to-br from-background to-muted/20 hover:shadow-lg transition-all duration-300 group">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-blue-500/20 transition-colors" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Total Requests
+          </CardTitle>
+          <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
+            <MessageSquare className="h-4 w-4" />
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-semibold">
+        <CardContent className="relative z-10">
+          <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
             {summary.total_requests.toLocaleString()}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="hover:bg-accent/50 transition-colors">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm">Avg Latency</CardTitle>
-          <Activity className="h-4 w-4 text-muted-foreground" />
+      <Card className="relative overflow-hidden border-none ring-1 ring-border shadow-md bg-gradient-to-br from-background to-muted/20 hover:shadow-lg transition-all duration-300 group">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-emerald-500/20 transition-colors" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Avg Latency
+          </CardTitle>
+          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-300">
+            <Activity className="h-4 w-4" />
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-semibold">
+        <CardContent className="relative z-10">
+          <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
             {summary.average_latency.toFixed(0)}
-            <span className="text-lg font-normal ml-1">ms</span>
+            <span className="text-sm font-medium text-muted-foreground ml-1">
+              ms
+            </span>
           </div>
         </CardContent>
       </Card>

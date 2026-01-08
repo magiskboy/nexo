@@ -38,3 +38,11 @@ pub fn get_usage_logs(
         .get_logs(filter, page, limit)
         .map_err(|e| AppError::Generic(e.to_string()))
 }
+
+#[tauri::command]
+pub fn clear_usage(state: State<'_, AppState>) -> Result<(), AppError> {
+    state
+        .usage_service
+        .clear_usage()
+        .map_err(|e| AppError::Generic(e.to_string()))
+}

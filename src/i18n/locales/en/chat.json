@@ -6,7 +6,7 @@
   "daysAgo": "{{count}} days ago",
   "enableStreamMode": "Enable stream mode to receive responses incrementally",
   "enableTools": "Enable tools feature for model",
-  "enterMessage": "Enter message... (Enter to send, Shift+Enter for new line)",
+  "enterMessage": "Ask anything... (@ for agents, / for templates)",
   "enterMessageCentered": "How can I help you today?",
   "enterVariableValues": "Enter values for the following variables:",
   "hoursAgo": "{{count}} hours ago",
