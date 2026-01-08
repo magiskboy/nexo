@@ -15,7 +15,9 @@ import {
   clearStreamingStartTime,
 } from '@/store/slices/messages';
 import type { TokenUsage } from '@/store/types';
+import { showSuccess } from '@/store/slices/notificationSlice';
 import { addPermissionRequest } from '@/store/slices/toolPermissionSlice';
+import { useTranslation } from 'react-i18next';
 
 // Event types matching Rust events
 interface MessageStartedEvent {
@@ -123,6 +125,7 @@ interface ToolPermissionRequestEvent {
  */
 export function useChatStreaming() {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation('chat');
   // Track messsage IDs that have associated tool calls
   const hasToolCallsRef = useRef<Record<string, boolean>>({});
 
@@ -288,6 +291,11 @@ export function useChatStreaming() {
 
         // Clear streaming start time
         dispatch(clearStreamingStartTime(payload.chat_id));
+
+        // Show notification
+        dispatch(
+          showSuccess(t('agentTaskCompleted') || 'Agent task completed')
+        );
       }
     );
 
@@ -408,5 +416,5 @@ export function useChatStreaming() {
       unlistenToolPermissionRequest.then((fn) => fn());
       unlistenMetadataUpdated.then((fn) => fn());
     };
-  }, [dispatch]);
+  }, [dispatch, t]);
 }

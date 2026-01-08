@@ -101,13 +101,31 @@ export function buildExtraReducers(
         (m) => mergedMessages.find((merged) => merged.id === m.id) || m
       );
 
-      // If there are any streaming/new messages not in fetchedMessages, append them
-      // This is less likely with the map approach but good for safety
-      mergedMessages.forEach((m) => {
-        if (!finalMessages.find((final) => final.id === m.id)) {
-          finalMessages.push(m);
-        }
-      });
+      // Identify newer messages that might be missing from the fetch (race condition protection)
+      // e.g. User sent a message while fetch was in progress, or backend index lag
+      if (currentMessages.length > 0) {
+        const fetchedIds = new Set(fetchedMessages.map((m) => m.id));
+        const maxFetchedTimestamp =
+          fetchedMessages.length > 0
+            ? Math.max(...fetchedMessages.map((m) => m.timestamp))
+            : 0;
+
+        const orphans = currentMessages.filter((m) => !fetchedIds.has(m.id));
+
+        orphans.forEach((orphan) => {
+          // Keep orphan if it's newer than the latest fetched message
+          // OR if it's the currently streaming message (safety net)
+          if (
+            orphan.timestamp >= maxFetchedTimestamp ||
+            orphan.id === state.streamingByChatId[chatId]
+          ) {
+            // Check provided again to avoid duplicates if somehow logic overlaps
+            if (!finalMessages.find((m) => m.id === orphan.id)) {
+              finalMessages.push(orphan);
+            }
+          }
+        });
+      }
 
       state.messagesByChatId[chatId] = finalMessages.sort(
         (a, b) => a.timestamp - b.timestamp

@@ -63,7 +63,7 @@ export function ChatArea() {
   } = useMessages(selectedChatId);
 
   const handleSend = async () => {
-    if (!input.trim() || isStreaming || !selectedWorkspace || !selectedChatId) {
+    if (!input.trim() || !selectedWorkspace || !selectedChatId) {
       return;
     }
 
@@ -163,7 +163,7 @@ export function ChatArea() {
             selectedChatId={selectedChatId}
             selectedLLMConnectionId={selectedLLMConnectionId}
             onSend={handleSend}
-            disabled={isStreaming}
+            disabled={false}
             timeLeft={timeLeft}
             streamingError={selectedChatId ? streamingError : undefined}
             onRetryStreaming={handleRetryStreaming}
@@ -189,7 +189,7 @@ export function ChatArea() {
         selectedChatId={selectedChatId}
         selectedLLMConnectionId={selectedLLMConnectionId}
         onSend={handleSend}
-        disabled={isStreaming}
+        disabled={false}
         dropdownDirection="up"
         timeLeft={timeLeft}
         streamingError={selectedChatId ? streamingError : undefined}

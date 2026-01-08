@@ -788,29 +788,35 @@ export function ChatInput({
 
                 {/* Send/Stop Button */}
                 <Button
-                  onClick={isStreaming ? handleStopStreaming : onSend}
+                  onClick={
+                    input.trim()
+                      ? onSend
+                      : isStreaming
+                        ? handleStopStreaming
+                        : onSend
+                  }
                   disabled={
-                    isStreaming
-                      ? false
-                      : !input.trim() ||
-                        disabled ||
-                        input.length > MAX_MESSAGE_LENGTH
+                    input.trim()
+                      ? disabled || input.length > MAX_MESSAGE_LENGTH
+                      : !isStreaming
                   }
                   size="icon"
-                  variant={isStreaming ? 'destructive' : 'ghost'}
+                  variant={
+                    isStreaming && !input.trim() ? 'destructive' : 'ghost'
+                  }
                   className={cn(
                     'h-7 w-7 shrink-0',
-                    isStreaming
+                    isStreaming && !input.trim()
                       ? 'hover:bg-destructive/90'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   )}
                   aria-label={
-                    isStreaming
+                    isStreaming && !input.trim()
                       ? t('stopStreaming', { ns: 'chat' })
                       : t('sendMessage', { ns: 'common' })
                   }
                 >
-                  {isStreaming ? (
+                  {isStreaming && !input.trim() ? (
                     <Square className="size-4" />
                   ) : (
                     <Send className="size-4" />
