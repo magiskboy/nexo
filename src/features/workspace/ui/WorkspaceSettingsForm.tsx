@@ -21,6 +21,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
 } from '@/ui/atoms/select';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { Switch } from '@/ui/atoms/switch';
@@ -295,221 +296,91 @@ export function WorkspaceSettingsForm({
 
               {/* Connections Section */}
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <Label htmlFor="llm-connection">
-                        {t('llmConnections')}
-                      </Label>
-                      <Tooltip content={t('llmConnectionDescription')} />
-                    </div>
-                    <Select
-                      value={llmConnectionId}
-                      onValueChange={(value) => {
-                        setLlmConnectionId(value || undefined);
-                        // Clear default model when LLM connection changes
-                        if (value !== llmConnectionId) {
-                          setDefaultModel('');
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={t('llmConnectionOptional')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {llmConnections.length === 0 ? (
-                          <SelectGroup>
-                            <SelectLabel className="text-muted-foreground">
-                              {t('noLLMConnections')}
-                            </SelectLabel>
-                          </SelectGroup>
-                        ) : (
-                          llmConnections.map((conn) => (
-                            <SelectItem key={conn.id} value={conn.id}>
-                              {conn.name} ({conn.provider})
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-2 w-full">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="default-model">{t('defaultModel')}</Label>
+                    <Tooltip content={t('defaultModelDescription')} />
                   </div>
-                  {/* Default Model Selector - only show when LLM connection is selected */}
-                  {llmConnectionId &&
-                    (() => {
-                      try {
-                        const selectedConnection = llmConnections.find(
-                          (conn) => conn?.id === llmConnectionId
-                        );
-
-                        // Safely get models array
-                        let availableModels: Array<{
-                          id: string;
-                          name?: string;
-                        }> = [];
-                        if (selectedConnection?.models) {
-                          if (Array.isArray(selectedConnection.models)) {
-                            availableModels = selectedConnection.models.filter(
-                              (m) => m && typeof m === 'object' && m.id
-                            );
-                          }
-                        }
-
-                        // Safely get model name
-                        const getModelName = (
-                          modelId: string | undefined | null
-                        ): string => {
-                          if (
-                            !modelId ||
-                            modelId === '__none__' ||
-                            availableModels.length === 0
-                          ) {
+                  <Select
+                    value={
+                      llmConnectionId && defaultModel
+                        ? `${llmConnectionId}::${defaultModel}`
+                        : '__none__'
+                    }
+                    onValueChange={(value) => {
+                      if (value === '__none__') {
+                        setLlmConnectionId(undefined);
+                        setDefaultModel('');
+                      } else {
+                        const [connId, ...modelIdParts] = value.split('::');
+                        // Re-join just in case model ID contains "::" (unlikely but safe)
+                        const modelId = modelIdParts.join('::');
+                        setLlmConnectionId(connId);
+                        setDefaultModel(modelId);
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="default-model" className="w-full">
+                      <SelectValue placeholder={t('selectDefaultModel')}>
+                        {(() => {
+                          if (!llmConnectionId || !defaultModel) {
                             return t('noDefaultModel');
                           }
-                          try {
-                            const model = availableModels.find(
-                              (m) => m?.id === modelId
-                            );
-                            return (
-                              model?.name || modelId || t('noDefaultModel')
-                            );
-                          } catch {
-                            return modelId || t('noDefaultModel');
-                          }
-                        };
-
-                        // Safely get current value - ensure it exists in available models or use __none__
-                        let currentValue = '__none__';
-                        if (
-                          defaultModel &&
-                          defaultModel !== '' &&
-                          defaultModel !== '__none__'
-                        ) {
-                          // Only use defaultModel if it exists in availableModels
-                          const modelExists = availableModels.some(
-                            (m) => m?.id === defaultModel
+                          const conn = llmConnections.find(
+                            (c) => c.id === llmConnectionId
                           );
-                          currentValue = modelExists
-                            ? defaultModel
-                            : '__none__';
-                          // Clear invalid defaultModel
-                          if (!modelExists && defaultModel) {
-                            setTimeout(() => setDefaultModel(''), 0);
-                          }
+                          if (!conn) return t('noDefaultModel');
+                          const model = Array.isArray(conn.models)
+                            ? conn.models.find((m) => m?.id === defaultModel)
+                            : null;
+                          return (
+                            <span>
+                              <span className="font-semibold mr-2 text-muted-foreground">
+                                {conn.name}:
+                              </span>
+                              {model?.name || defaultModel}
+                            </span>
+                          );
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">
+                        {t('noDefaultModel')}
+                      </SelectItem>
+                      {llmConnections.map((conn, index) => {
+                        if (
+                          !conn.models ||
+                          !Array.isArray(conn.models) ||
+                          conn.models.length === 0
+                        ) {
+                          return null;
                         }
 
                         return (
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <Label htmlFor="default-model">
-                                {t('defaultModel')}
-                              </Label>
-                              <Tooltip content={t('defaultModelDescription')} />
-                            </div>
-                            <Select
-                              value={currentValue}
-                              onValueChange={(value) => {
-                                try {
-                                  setDefaultModel(
-                                    value === '__none__' ? '' : value
-                                  );
-                                } catch (error) {
-                                  console.error(
-                                    'Error setting default model:',
-                                    error
-                                  );
-                                  setDefaultModel('');
-                                }
-                              }}
-                            >
-                              <SelectTrigger
-                                className="w-full"
-                                id="default-model"
-                              >
-                                <SelectValue
-                                  placeholder={t('selectDefaultModel')}
-                                >
-                                  {getModelName(defaultModel)}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__">
-                                  {t('noDefaultModel')}
-                                </SelectItem>
-                                {availableModels.length > 0 ? (
-                                  availableModels
-                                    .map((model) => {
-                                      if (!model || !model.id) return null;
-                                      return (
-                                        <SelectItem
-                                          key={model.id}
-                                          value={model.id}
-                                        >
-                                          {model.name || model.id}
-                                        </SelectItem>
-                                      );
-                                    })
-                                    .filter(Boolean)
-                                ) : (
-                                  <SelectGroup>
-                                    <SelectLabel className="text-muted-foreground">
-                                      {t('noModels', { ns: 'chat' }) ||
-                                        'No models available'}
-                                    </SelectLabel>
-                                  </SelectGroup>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        );
-                      } catch (error) {
-                        console.error(
-                          'Error rendering default model selector:',
-                          error
-                        );
-                        // Fallback: show empty component
-                        return (
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <Label htmlFor="default-model">
-                                {t('defaultModel')}
-                              </Label>
-                              <Tooltip content={t('defaultModelDescription')} />
-                            </div>
-                            <Select
-                              value="__none__"
-                              onValueChange={(value) => {
-                                setDefaultModel(
-                                  value === '__none__' ? '' : value
+                          <React.Fragment key={conn.id}>
+                            {index > 0 && <SelectSeparator className="my-1" />}
+                            <SelectGroup>
+                              <SelectLabel className="px-3 py-2 text-[10px] uppercase tracking-widest font-extrabold text-foreground bg-muted/40 border-y border-border/50 mt-1 mb-1 first:mt-0">
+                                {conn.name} ({conn.provider})
+                              </SelectLabel>
+                              {conn.models.map((model) => {
+                                if (!model || !model.id) return null;
+                                return (
+                                  <SelectItem
+                                    key={`${conn.id}::${model.id}`}
+                                    value={`${conn.id}::${model.id}`}
+                                  >
+                                    {model.name || model.id}
+                                  </SelectItem>
                                 );
-                              }}
-                            >
-                              <SelectTrigger
-                                className="w-full"
-                                id="default-model"
-                                disabled
-                              >
-                                <SelectValue
-                                  placeholder={t('selectDefaultModel')}
-                                >
-                                  {t('noDefaultModel')}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__">
-                                  {t('noDefaultModel')}
-                                </SelectItem>
-                                <SelectGroup>
-                                  <SelectLabel className="text-muted-foreground">
-                                    {t('noModels', { ns: 'chat' }) ||
-                                      'No models available'}
-                                  </SelectLabel>
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                              })}
+                            </SelectGroup>
+                          </React.Fragment>
                         );
-                      }
-                    })()}
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2 w-full">
                   <div className="flex items-center justify-between">
