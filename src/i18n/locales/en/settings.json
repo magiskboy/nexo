@@ -207,5 +207,19 @@
   "installing": "Installing...",
   "promptInstalled": "Prompt installed successfully",
   "promptInstalledDescription": "The prompt has been added to your collection",
-  "variablesWillBeFilledInChat": "Variables ({{variables}}) will be filled when using this prompt in chat."
+  "variablesWillBeFilledInChat": "Variables ({{variables}}) will be filled when using this prompt in chat.",
+  "installedConnections": "Installed Connections",
+  "communityServers": "Community Servers",
+  "loadingHubMCPServers": "Loading MCP servers...",
+  "noHubMCPServers": "No MCP servers available",
+  "noHubMCPServersDescription": "No MCP servers found in the hub.",
+  "installMCPServer": "Install MCP Server",
+  "serverType": "Server Type",
+  "serverConfig": "Server Configuration",
+  "variablesWillBeFilledInUse": "Variables will be filled when using this connection.",
+  "variablesList": "Variables: {{variables}}",
+  "mcpServerInstalled": "MCP server installed successfully",
+  "mcpServerInstalledDescription": "The MCP server has been added to your connections",
+  "refreshHubIndex": "Refresh Hub Index",
+  "hubIndexRefreshed": "Hub index refreshed successfully"
 }

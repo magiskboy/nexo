@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::models::{HubIndex, HubPrompt};
+use crate::models::{HubIndex, HubMCPServer, HubPrompt};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
@@ -45,6 +45,12 @@ impl HubService {
     pub async fn get_prompts(&self) -> Result<Vec<HubPrompt>, AppError> {
         let index = self.get_index().await?;
         Ok(index.resources.prompts)
+    }
+
+    /// Get only MCP servers from hub index
+    pub async fn get_mcp_servers(&self) -> Result<Vec<HubMCPServer>, AppError> {
+        let index = self.get_index().await?;
+        Ok(index.resources.mcp_servers)
     }
 
     fn get_from_cache(&self) -> Option<HubIndex> {

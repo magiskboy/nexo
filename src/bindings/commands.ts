@@ -65,6 +65,9 @@ export const TauriCommands = {
   FETCH_HUB_PROMPTS: 'fetch_hub_prompts',
   FETCH_PROMPT_TEMPLATE: 'fetch_prompt_template',
   INSTALL_PROMPT_FROM_HUB: 'install_prompt_from_hub',
+  FETCH_HUB_MCP_SERVERS: 'fetch_hub_mcp_servers',
+  INSTALL_MCP_SERVER_FROM_HUB: 'install_mcp_server_from_hub',
+  REFRESH_HUB_INDEX: 'refresh_hub_index',
 
   // MCP Tools commands
   TEST_MCP_CONNECTION_AND_FETCH_TOOLS: 'test_mcp_connection_and_fetch_tools',

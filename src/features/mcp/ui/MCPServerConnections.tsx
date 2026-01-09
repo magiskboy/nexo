@@ -12,6 +12,7 @@ import { Button } from '@/ui/atoms/button/button';
 import { EmptyState } from '@/ui/atoms/empty-state';
 import { Input } from '@/ui/atoms/input';
 import { Label } from '@/ui/atoms/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/atoms/tabs';
 import {
   Select,
   SelectContent,
@@ -43,7 +44,9 @@ import {
   showError,
   showSuccess,
 } from '@/features/notifications/state/notificationSlice';
-import type { MCPToolType, MCPServerConnection } from '../types';
+import { CommunityMCPServersSection } from './CommunityMCPServersSection';
+import { InstallMCPServerDialog } from './InstallMCPServerDialog';
+import type { HubMCPServer, MCPToolType, MCPServerConnection } from '../types';
 
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
 
@@ -64,7 +67,8 @@ export function MCPServerConnections() {
   const dispatch = useAppDispatch();
 
   // RTK Query Hooks
-  const { data: mcpConnections = [] } = useGetMCPConnectionsQuery();
+  const { data: mcpConnections = [], refetch: refetchConnections } =
+    useGetMCPConnectionsQuery();
   const [createConnection] = useCreateMCPConnectionMutation();
   const [connectConnection] = useConnectMCPConnectionMutation();
   const [disconnectConnection] = useDisconnectMCPConnectionMutation();
@@ -82,6 +86,10 @@ export function MCPServerConnections() {
     []
   );
   const [nodeRuntimes, setNodeRuntimes] = useState<NodeRuntimeStatus[]>([]);
+  const [installDialogOpen, setInstallDialogOpen] = useState(false);
+  const [serverToInstall, setServerToInstall] = useState<HubMCPServer | null>(
+    null
+  );
 
   React.useEffect(() => {
     const loadRuntimes = async () => {
@@ -240,131 +248,165 @@ export function MCPServerConnections() {
     }
   };
 
+  const handleInstallClick = (server: HubMCPServer) => {
+    setServerToInstall(server);
+    setInstallDialogOpen(true);
+  };
+
+  const handleInstalled = () => {
+    // Refetch connections to update the list immediately
+    refetchConnections();
+  };
+
+  const installedServerIds = mcpConnections.map((c) => c.id);
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {t('manageMCPServerConnections')}
-        </p>
-        <Button onClick={handleAdd} size="sm">
-          <Plus className="mr-2 size-4" />
-          {t('addConnection')}
-        </Button>
-      </div>
+      <Tabs defaultValue="installed" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="installed">
+            {t('installedConnections', {
+              defaultValue: 'Installed Connections',
+            })}
+          </TabsTrigger>
+          <TabsTrigger value="community">
+            {t('communityServers', { defaultValue: 'Community Servers' })}
+          </TabsTrigger>
+        </TabsList>
 
-      {mcpConnections.length === 0 ? (
-        <EmptyState
-          icon={Server}
-          title={t('noConnections')}
-          action={
+        <TabsContent value="installed" className="mt-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {t('manageMCPServerConnections')}
+            </p>
             <Button onClick={handleAdd} size="sm">
               <Plus className="mr-2 size-4" />
               {t('addConnection')}
             </Button>
-          }
-        />
-      ) : (
-        <ScrollArea className="h-full [&_[data-slot='scroll-area-scrollbar']]:hidden">
-          <div className="space-y-2">
-            {mcpConnections.map((connection) => (
-              <div
-                key={connection.id}
-                onClick={() => handleEdit(connection)}
-                className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer"
-              >
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium">{connection.name}</h4>
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                      {connection.type}
-                    </span>
-                    {connection.status && (
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
-                          connection.status === 'connected'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : connection.status === 'connecting'
-                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                              : 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                        }`}
-                      >
-                        {connection.status === 'connected'
-                          ? t('connected')
-                          : connection.status === 'connecting'
-                            ? t('connecting')
-                            : t('disconnected')}
-                      </span>
-                    )}
-                    {connection.tools && connection.tools.length > 0 && (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {connection.tools.length} {t('tools')}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {connection.url}
-                  </p>
-                  {connection.errorMessage && (
-                    <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-destructive/10 border border-destructive/20">
-                      <AlertCircle className="size-4 text-destructive mt-0.5 shrink-0" />
-                      <p className="text-sm text-destructive">
-                        {connection.errorMessage}
-                      </p>
-                    </div>
-                  )}
-                  {connection.tools && connection.tools.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {connection.tools
-                        .slice(0, 5)
-                        .map((tool: MCPToolType, index: number) => (
-                          <span
-                            key={index}
-                            className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-                          >
-                            {tool.name}
-                          </span>
-                        ))}
-                      {connection.tools.length > 5 && (
-                        <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                          {t('moreTools', {
-                            count: connection.tools.length - 5,
-                          })}
+          </div>
+
+          {mcpConnections.length === 0 ? (
+            <EmptyState
+              icon={Server}
+              title={t('noConnections')}
+              action={
+                <Button onClick={handleAdd} size="sm">
+                  <Plus className="mr-2 size-4" />
+                  {t('addConnection')}
+                </Button>
+              }
+            />
+          ) : (
+            <ScrollArea className="h-full [&_[data-slot='scroll-area-scrollbar']]:hidden">
+              <div className="space-y-2">
+                {mcpConnections.map((connection) => (
+                  <div
+                    key={connection.id}
+                    onClick={() => handleEdit(connection)}
+                    className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{connection.name}</h4>
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                          {connection.type}
                         </span>
+                        {connection.status && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs ${
+                              connection.status === 'connected'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : connection.status === 'connecting'
+                                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                  : 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                            }`}
+                          >
+                            {connection.status === 'connected'
+                              ? t('connected')
+                              : connection.status === 'connecting'
+                                ? t('connecting')
+                                : t('disconnected')}
+                          </span>
+                        )}
+                        {connection.tools && connection.tools.length > 0 && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                            {connection.tools.length} {t('tools')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {connection.url}
+                      </p>
+                      {connection.errorMessage && (
+                        <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-destructive/10 border border-destructive/20">
+                          <AlertCircle className="size-4 text-destructive mt-0.5 shrink-0" />
+                          <p className="text-sm text-destructive">
+                            {connection.errorMessage}
+                          </p>
+                        </div>
+                      )}
+                      {connection.tools && connection.tools.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {connection.tools
+                            .slice(0, 5)
+                            .map((tool: MCPToolType, index: number) => (
+                              <span
+                                key={index}
+                                className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                              >
+                                {tool.name}
+                              </span>
+                            ))}
+                          {connection.tools.length > 5 && (
+                            <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                              {t('moreTools', {
+                                count: connection.tools.length - 5,
+                              })}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-                <div
-                  className="flex gap-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {connection.status === 'connected' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDisconnect(connection)}
-                      title={t('disconnectConnection')}
+                    <div
+                      className="flex gap-2"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <PowerOff className="size-4" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleReload(connection)}
-                    title={t('reloadConnection')}
-                    disabled={connection.status === 'connecting'}
-                  >
-                    <RefreshCw
-                      className={`size-4 ${connection.status === 'connecting' ? 'animate-spin' : ''}`}
-                    />
-                  </Button>
-                </div>
+                      {connection.status === 'connected' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDisconnect(connection)}
+                          title={t('disconnectConnection')}
+                        >
+                          <PowerOff className="size-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleReload(connection)}
+                        title={t('reloadConnection')}
+                        disabled={connection.status === 'connecting'}
+                      >
+                        <RefreshCw
+                          className={`size-4 ${connection.status === 'connecting' ? 'animate-spin' : ''}`}
+                        />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </ScrollArea>
-      )}
+            </ScrollArea>
+          )}
+        </TabsContent>
+
+        <TabsContent value="community" className="mt-6 space-y-4">
+          <CommunityMCPServersSection
+            installedServerIds={installedServerIds}
+            onInstall={handleInstallClick}
+          />
+        </TabsContent>
+      </Tabs>
 
       <MCPServerConnectionDialog
         open={dialogOpen}
@@ -391,6 +433,13 @@ export function MCPServerConnections() {
         connectionName={
           mcpConnections.find((c) => c.id === connectionToDelete)?.name
         }
+      />
+
+      <InstallMCPServerDialog
+        open={installDialogOpen}
+        onOpenChange={setInstallDialogOpen}
+        server={serverToInstall}
+        onInstalled={handleInstalled}
       />
     </div>
   );

@@ -15,7 +15,9 @@ pub mod workspace_settings;
 pub use addon_config::AddonIndex;
 pub use app_setting::AppSetting;
 pub use chat::Chat;
-pub use hub_index::{HubIndex, HubPrompt};
+pub use hub_index::{
+    HubIndex, HubMCPServer, HubMCPServerConfig, HubPrompt,
+};
 pub use llm_connection::LLMConnection;
 pub use mcp_connection::MCPServerConnection;
 pub use message::Message;

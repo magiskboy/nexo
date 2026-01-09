@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Loader2, FileText, RefreshCw } from 'lucide-react';
+import { Download, Loader2, Server, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
 import {
@@ -16,41 +16,43 @@ import {
   showError,
   showSuccess,
 } from '@/features/notifications/state/notificationSlice';
-import type { HubPrompt } from '../types';
+import type { HubMCPServer } from '../types';
 
-interface CommunityPromptsSectionProps {
-  installedPromptIds: string[];
-  onInstall: (prompt: HubPrompt) => void;
+interface CommunityMCPServersSectionProps {
+  installedServerIds: string[];
+  onInstall: (server: HubMCPServer) => void;
 }
 
-export function CommunityPromptsSection({
-  installedPromptIds,
+export function CommunityMCPServersSection({
+  installedServerIds,
   onInstall,
-}: CommunityPromptsSectionProps) {
+}: CommunityMCPServersSectionProps) {
   const { t } = useTranslation('settings');
   const dispatch = useAppDispatch();
-  const [prompts, setPrompts] = useState<HubPrompt[]>([]);
+  const [servers, setServers] = useState<HubMCPServer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadPrompts();
+    loadServers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadPrompts = async () => {
+  const loadServers = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await invokeCommand<HubPrompt[]>(
-        TauriCommands.FETCH_HUB_PROMPTS
+      const data = await invokeCommand<HubMCPServer[]>(
+        TauriCommands.FETCH_HUB_MCP_SERVERS
       );
-      setPrompts(data);
+      setServers(data);
     } catch (err) {
-      console.error('Error loading hub prompts:', err);
+      console.error('Error loading hub MCP servers:', err);
       const errorMessage =
-        err instanceof Error ? err.message : 'Failed to load prompts from hub';
+        err instanceof Error
+          ? err.message
+          : 'Failed to load MCP servers from hub';
       setError(errorMessage);
       dispatch(showError(errorMessage));
     } finally {
@@ -58,8 +60,8 @@ export function CommunityPromptsSection({
     }
   };
 
-  const handleInstall = (prompt: HubPrompt) => {
-    onInstall(prompt);
+  const handleInstall = (server: HubMCPServer) => {
+    onInstall(server);
   };
 
   const handleRefresh = async () => {
@@ -67,8 +69,8 @@ export function CommunityPromptsSection({
       setRefreshing(true);
       // Refresh hub index first
       await invokeCommand(TauriCommands.REFRESH_HUB_INDEX);
-      // Then reload prompts
-      await loadPrompts();
+      // Then reload servers
+      await loadServers();
       dispatch(
         showSuccess(
           t('hubIndexRefreshed', {
@@ -91,7 +93,9 @@ export function CommunityPromptsSection({
       <div className="flex items-center justify-center py-12">
         <Loader2 className="mr-2 size-4 animate-spin" />
         <p className="text-sm text-muted-foreground">
-          {t('loadingHubPrompts', { defaultValue: 'Loading prompts...' })}
+          {t('loadingHubMCPServers', {
+            defaultValue: 'Loading MCP servers...',
+          })}
         </p>
       </div>
     );
@@ -101,20 +105,22 @@ export function CommunityPromptsSection({
     return (
       <div className="text-center py-12 border rounded-lg bg-muted/10">
         <p className="text-sm text-destructive mb-4">{error}</p>
-        <Button onClick={loadPrompts} size="sm" variant="outline">
+        <Button onClick={loadServers} size="sm" variant="outline">
           {t('retry', { ns: 'common', defaultValue: 'Retry' })}
         </Button>
       </div>
     );
   }
 
-  if (prompts.length === 0) {
+  if (servers.length === 0) {
     return (
       <EmptyState
-        icon={FileText}
-        title={t('noHubPrompts', { defaultValue: 'No prompts available' })}
-        description={t('noHubPromptsDescription', {
-          defaultValue: 'No prompt templates found in the hub.',
+        icon={Server}
+        title={t('noHubMCPServers', {
+          defaultValue: 'No MCP servers available',
+        })}
+        description={t('noHubMCPServersDescription', {
+          defaultValue: 'No MCP servers found in the hub.',
         })}
       />
     );
@@ -136,40 +142,42 @@ export function CommunityPromptsSection({
         </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        {prompts.map((prompt) => {
-          const isInstalled = installedPromptIds.includes(prompt.id);
+        {servers.map((server) => {
+          const isInstalled = installedServerIds.includes(server.id);
           return (
             <Card
-              key={prompt.id}
+              key={server.id}
               className="hover:bg-accent/50 transition-colors"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start gap-3">
-                  {prompt.icon && (
+                  {server.icon && (
                     <img
-                      src={prompt.icon}
-                      alt={prompt.name}
+                      src={server.icon}
+                      alt={server.name}
                       className="size-8 rounded object-cover"
                       onError={(e) => {
-                        // Hide image on error
                         e.currentTarget.style.display = 'none';
                       }}
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base">{prompt.name}</CardTitle>
+                    <CardTitle className="text-base">{server.name}</CardTitle>
                     <CardDescription className="text-xs mt-1">
-                      {prompt.id}
+                      {server.id}
                     </CardDescription>
                   </div>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    {server.type.toUpperCase()}
+                  </span>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4 h-10 overflow-hidden text-ellipsis line-clamp-2">
-                  {prompt.description}
+                  {server.description}
                 </p>
                 <Button
-                  onClick={() => handleInstall(prompt)}
+                  onClick={() => handleInstall(server)}
                   disabled={isInstalled}
                   className="w-full"
                   size="sm"
@@ -177,7 +185,7 @@ export function CommunityPromptsSection({
                 >
                   {isInstalled ? (
                     <>
-                      <FileText className="mr-2 size-4" />
+                      <Server className="mr-2 size-4" />
                       {t('installed', { defaultValue: 'Installed' })}
                     </>
                   ) : (
@@ -196,4 +204,4 @@ export function CommunityPromptsSection({
   );
 }
 
-export type { CommunityPromptsSectionProps };
+export type { CommunityMCPServersSectionProps };

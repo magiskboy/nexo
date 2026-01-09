@@ -31,3 +31,20 @@ export interface MCPServerConnection {
   tools?: MCPToolType[];
   errorMessage?: string;
 }
+
+export interface HubMCPServer {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  type: 'stdio' | 'sse';
+  config: HubMCPServerConfig;
+}
+
+export interface HubMCPServerConfig {
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url?: string;
+  headers?: Record<string, string>;
+}

@@ -59,6 +59,9 @@ impl TauriCommands {
     pub const FETCH_HUB_PROMPTS: &'static str = "fetch_hub_prompts";
     pub const FETCH_PROMPT_TEMPLATE: &'static str = "fetch_prompt_template";
     pub const INSTALL_PROMPT_FROM_HUB: &'static str = "install_prompt_from_hub";
+    pub const FETCH_HUB_MCP_SERVERS: &'static str = "fetch_hub_mcp_servers";
+    pub const INSTALL_MCP_SERVER_FROM_HUB: &'static str = "install_mcp_server_from_hub";
+    pub const REFRESH_HUB_INDEX: &'static str = "refresh_hub_index";
 
     // MCP Tools commands
     pub const TEST_MCP_CONNECTION_AND_FETCH_TOOLS: &'static str =
