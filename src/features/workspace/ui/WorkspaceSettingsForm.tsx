@@ -97,6 +97,9 @@ export function WorkspaceSettingsForm({
   const [streamEnabled, setStreamEnabled] = useState<boolean>(
     initialSettings?.streamEnabled ?? true
   );
+  const [maxAgentIterations, setMaxAgentIterations] = useState<number>(
+    initialSettings?.maxAgentIterations ?? 25
+  );
 
   const [toolPermissionConfig, setToolPermissionConfig] = useState<
     Record<string, 'require' | 'auto'>
@@ -127,6 +130,7 @@ export function WorkspaceSettingsForm({
           Object.keys(toolPermissionConfig).length > 0
             ? toolPermissionConfig
             : undefined,
+        maxAgentIterations,
       };
       await onSave(newSettings);
       onOpenChange(false);
@@ -878,6 +882,36 @@ export function WorkspaceSettingsForm({
                       checked={streamEnabled}
                       onCheckedChange={setStreamEnabled}
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-2 w-full">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="max-iterations">
+                          Agent Max Iterations
+                        </Label>
+                        <Tooltip content="Số lần tối đa Agent có thể lặp (gọi Tool) trong một yêu cầu." />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Giá trị mặc định là 25. Tăng giá trị này nếu Agent cần
+                        giải quyết các tác vụ phức tạp hơn.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="max-iterations"
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={maxAgentIterations}
+                        onChange={(e) =>
+                          setMaxAgentIterations(parseInt(e.target.value) || 1)
+                        }
+                        className="w-20 h-8 text-right"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

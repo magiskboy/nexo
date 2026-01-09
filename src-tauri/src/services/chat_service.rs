@@ -646,8 +646,6 @@ impl ChatService {
         active_tools: Option<Vec<ChatCompletionTool>>,
         system_prompt_override: Option<String>,
     ) -> Result<(String, String), AppError> {
-        const MAX_ITERATIONS: usize = 25;
-
         // Get workspace settings
         let chat = self
             .repository
@@ -659,6 +657,8 @@ impl ChatService {
             .workspace_settings_service
             .get_by_workspace_id(&workspace_id)?
             .ok_or_else(|| AppError::Validation("Workspace settings not found".to_string()))?;
+
+        let max_iterations = workspace_settings.max_agent_iterations.unwrap_or(25) as usize;
 
         let llm_connection_id = workspace_settings
             .llm_connection_id
@@ -702,7 +702,7 @@ impl ChatService {
             &chat_id,
             &workspace_settings,
             &user_content,
-            system_prompt_override,
+            system_prompt_override.clone(),
         )?;
 
         // Create emitters once for agent loop
@@ -712,13 +712,15 @@ impl ChatService {
         // Get cancellation receiver for this chat (reused across iterations)
         let mut cancellation_rx = self.get_cancellation_receiver(&chat_id).await;
 
-        // Agent loop
-        for iteration in 0..MAX_ITERATIONS {
+        // Agent loop - allow up to max_iterations + 1 (last one for final summary)
+        for iteration in 0..=max_iterations {
+            let is_last_iteration = iteration == max_iterations;
+
             // Emit iteration event
             agent_emitter.emit_agent_loop_iteration(
                 chat_id.clone(),
                 iteration + 1,
-                MAX_ITERATIONS,
+                max_iterations + 1,
                 false, // Will be updated if tool calls detected
             )?;
 
@@ -755,6 +757,13 @@ impl ChatService {
             let llm_response = if iteration == 0 && initial_llm_response.is_some() {
                 initial_llm_response.take().unwrap()
             } else {
+                // Determine tools for this LLM call. If it's the last iteration, no tools.
+                let llm_tools = if is_last_iteration {
+                    None
+                } else {
+                    tools.clone()
+                };
+
                 // Call LLM
                 let model_for_usage = model.clone();
                 let llm_request = LLMChatRequest {
@@ -763,7 +772,7 @@ impl ChatService {
                     temperature: Some(0.7),
                     max_tokens: None,
                     stream: stream_enabled,
-                    tools: tools.clone(),
+                    tools: llm_tools,
                     tool_choice: None,
                     reasoning_effort: reasoning_effort.clone(),
                     stream_options: Some(serde_json::json!({
@@ -831,7 +840,7 @@ impl ChatService {
                     agent_emitter.emit_agent_loop_iteration(
                         chat_id.clone(),
                         iteration + 1,
-                        MAX_ITERATIONS,
+                        max_iterations + 1,
                         true,
                     )?;
 
@@ -889,6 +898,14 @@ impl ChatService {
                     // Add tool result messages
                     current_messages.extend(tool_results);
 
+                    // If this was the last allowed tool iteration (max_iterations - 1),
+                    // add a warning for LLM to wrap up.
+                    if iteration == max_iterations - 1 {
+                        current_messages.push(ChatMessage::User {
+                            content: "Limit reached. You have reached the maximum number of tool calls allowed for this turn. Please provide your final response summarizing what you have found so far without calling any more tools.".to_string(),
+                        });
+                    }
+
                     // Continue to next iteration
                     continue;
                 }
@@ -907,10 +924,11 @@ impl ChatService {
             return Ok((assistant_message_id, llm_response.content));
         }
 
-        // Reached MAX_ITERATIONS
-        Err(AppError::Generic(format!(
-            "Reached maximum iterations ({MAX_ITERATIONS})"
-        )))
+        // This part should technically only be reached if the loop finishes without returning,
+        // which would happen if max_iterations was reached and the last iteration ended.
+        let fallback_content =
+            "Iteration limit reached. Please try asking for more specific information.".to_string();
+        Ok((assistant_message_id, fallback_content))
     }
 
     /// Check tool permissions and filter allowed tools

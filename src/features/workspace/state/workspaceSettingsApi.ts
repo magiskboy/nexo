@@ -10,6 +10,7 @@ interface DbWorkspaceSettings {
   stream_enabled: number | null;
   default_model: string | null;
   tool_permission_config: string | null;
+  max_agent_iterations: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -74,6 +75,7 @@ export const workspaceSettingsApi = baseApi.injectEndpoints({
           streamEnabled,
           defaultModel: dbSettings.default_model || undefined,
           toolPermissionConfig,
+          maxAgentIterations: dbSettings.max_agent_iterations || undefined,
         };
 
         return { data: settings };
@@ -111,6 +113,7 @@ export const workspaceSettingsApi = baseApi.injectEndpoints({
             streamEnabled,
             defaultModel: settings.defaultModel || null,
             toolPermissionConfig: toolPermissionConfigJson,
+            maxAgentIterations: settings.maxAgentIterations || null,
           },
         });
 

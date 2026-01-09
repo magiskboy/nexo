@@ -12,4 +12,5 @@ export interface WorkspaceSettings {
   streamEnabled?: boolean;
   defaultModel?: string; // Default model ID for this workspace
   toolPermissionConfig?: Record<string, 'require' | 'auto'>; // Per-tool permission configuration
+  maxAgentIterations?: number;
 }

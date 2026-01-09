@@ -12,6 +12,7 @@ pub fn save_workspace_settings(
     stream_enabled: Option<bool>,
     default_model: Option<String>,
     tool_permission_config: Option<String>,
+    max_agent_iterations: Option<i64>,
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
     state
@@ -24,6 +25,7 @@ pub fn save_workspace_settings(
             stream_enabled,
             default_model,
             tool_permission_config,
+            max_agent_iterations,
         )
         .map_err(|e| AppError::Generic(e.to_string()))
 }

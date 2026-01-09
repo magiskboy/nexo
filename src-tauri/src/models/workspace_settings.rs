@@ -10,6 +10,7 @@ pub struct WorkspaceSettings {
     pub default_model: Option<String>, // Default model ID for this workspace
 
     pub tool_permission_config: Option<String>, // JSON object: { "tool_name": "require" | "auto", ... }
+    pub max_agent_iterations: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }

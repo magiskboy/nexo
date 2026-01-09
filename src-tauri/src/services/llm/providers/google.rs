@@ -2,6 +2,7 @@ use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage};
 use crate::models::llm_types::*;
+use crate::models::llm_types::{ToolCall, ToolCallFunction};
 use async_trait::async_trait;
 use futures::StreamExt;
 use reqwest::Client;
@@ -71,9 +72,11 @@ impl GoogleProvider {
         }
 
         let mut stream = response.bytes_stream();
+
         let mut full_content = String::new();
         let mut buffer = String::new();
         let mut final_usage: Option<TokenUsage> = None;
+        let mut final_tool_calls: Vec<ToolCall> = Vec::new();
 
         // Need to parse a JSON array stream essentially.
         // But Google sends valid JSON array chunks? No, usually it sends partial JSON or a stream of JSON objects.
@@ -158,6 +161,44 @@ impl GoogleProvider {
                             }
                         }
 
+                        // Parse tool calls if any
+                        if let Some(candidates) =
+                            json_val.get("candidates").and_then(|c| c.as_array())
+                        {
+                            for candidate in candidates {
+                                if let Some(content) = candidate.get("content") {
+                                    if let Some(parts) =
+                                        content.get("parts").and_then(|p| p.as_array())
+                                    {
+                                        for part in parts {
+                                            if let Some(function_call) = part.get("functionCall") {
+                                                let name = function_call
+                                                    .get("name")
+                                                    .and_then(|n| n.as_str())
+                                                    .unwrap_or_default();
+                                                let default_args = json!({});
+                                                let args = function_call
+                                                    .get("args")
+                                                    .unwrap_or(&default_args);
+                                                let arguments = args.to_string();
+
+                                                let id = format!("call_{}", uuid::Uuid::new_v4());
+
+                                                final_tool_calls.push(ToolCall {
+                                                    id,
+                                                    function: ToolCallFunction {
+                                                        name: name.to_string(),
+                                                        arguments,
+                                                    },
+                                                    r#type: "function".to_string(),
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         // Parse usage
                         if let Some(usage) = json_val.get("usageMetadata") {
                             final_usage = Some(TokenUsage {
@@ -201,7 +242,12 @@ impl GoogleProvider {
         Ok(LLMChatResponse {
             content: full_content,
             finish_reason: None,
-            tool_calls: None, // Google tools in stream not fully implemented yet
+
+            tool_calls: if final_tool_calls.is_empty() {
+                None
+            } else {
+                Some(final_tool_calls)
+            },
             usage: final_usage,
             reasoning: None,
         })
@@ -244,6 +290,7 @@ impl GoogleProvider {
             .map_err(|e| AppError::Generic(format!("Failed to parse response: {e}")))?;
 
         let mut full_content = String::new();
+        let mut tool_calls = Vec::new();
 
         if let Some(candidates) = json.get("candidates").and_then(|c| c.as_array()) {
             if let Some(first_candidate) = candidates.first() {
@@ -252,6 +299,25 @@ impl GoogleProvider {
                         for part in parts {
                             if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
                                 full_content.push_str(text);
+                            }
+                            if let Some(function_call) = part.get("functionCall") {
+                                let name = function_call
+                                    .get("name")
+                                    .and_then(|n| n.as_str())
+                                    .unwrap_or_default();
+                                let default_args = json!({});
+                                let args = function_call.get("args").unwrap_or(&default_args);
+                                let arguments = args.to_string();
+                                let id = format!("call_{}", uuid::Uuid::new_v4());
+
+                                tool_calls.push(ToolCall {
+                                    id,
+                                    function: ToolCallFunction {
+                                        name: name.to_string(),
+                                        arguments,
+                                    },
+                                    r#type: "function".to_string(),
+                                });
                             }
                         }
                     }
@@ -289,7 +355,12 @@ impl GoogleProvider {
         Ok(LLMChatResponse {
             content: full_content,
             finish_reason: None,
-            tool_calls: None,
+
+            tool_calls: if tool_calls.is_empty() {
+                None
+            } else {
+                Some(tool_calls)
+            },
             usage,
             reasoning: None,
         })

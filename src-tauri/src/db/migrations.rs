@@ -104,6 +104,13 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
     )
     .ok(); // Ignore error if column already exists
 
+    // Add max_agent_iterations column if it doesn't exist
+    conn.execute(
+        "ALTER TABLE workspace_settings ADD COLUMN max_agent_iterations INTEGER",
+        [],
+    )
+    .ok(); // Ignore error if column already exists
+
     // Migrate mcp_connection_ids to mcp_tool_ids (column rename)
     // First check if old column exists and new column doesn't
     let has_old_column = conn

@@ -21,6 +21,7 @@ impl WorkspaceSettingsService {
         stream_enabled: Option<bool>,
         default_model: Option<String>,
         tool_permission_config: Option<String>,
+        max_agent_iterations: Option<i64>,
     ) -> Result<(), AppError> {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -37,6 +38,7 @@ impl WorkspaceSettingsService {
             stream_enabled: stream_enabled_i64,
             default_model,
             tool_permission_config,
+            max_agent_iterations,
             created_at: now,
             updated_at: now,
         };
