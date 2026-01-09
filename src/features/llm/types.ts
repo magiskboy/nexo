@@ -18,7 +18,8 @@ export interface LLMConnection {
     | 'openrouter'
     | 'groq'
     | 'together'
-    | 'deepinfra';
+    | 'deepinfra'
+    | 'google';
   apiKey: string;
   models?: LLMModel[];
 }

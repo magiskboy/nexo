@@ -36,7 +36,8 @@ function dbToFrontendLLMConnection(dbConn: DbLLMConnection): LLMConnection {
     dbConn.provider === 'openrouter' ||
     dbConn.provider === 'groq' ||
     dbConn.provider === 'together' ||
-    dbConn.provider === 'deepinfra'
+    dbConn.provider === 'deepinfra' ||
+    dbConn.provider === 'google'
       ? (dbConn.provider as LLMConnection['provider'])
       : 'openai';
 

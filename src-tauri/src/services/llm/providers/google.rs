@@ -73,6 +73,7 @@ impl GoogleProvider {
         let mut stream = response.bytes_stream();
         let mut full_content = String::new();
         let mut buffer = String::new();
+        let mut final_usage: Option<TokenUsage> = None;
 
         // Need to parse a JSON array stream essentially.
         // But Google sends valid JSON array chunks? No, usually it sends partial JSON or a stream of JSON objects.
@@ -156,6 +157,24 @@ impl GoogleProvider {
                                 }
                             }
                         }
+
+                        // Parse usage
+                        if let Some(usage) = json_val.get("usageMetadata") {
+                            final_usage = Some(TokenUsage {
+                                prompt_tokens: usage
+                                    .get("promptTokenCount")
+                                    .and_then(|v| v.as_u64())
+                                    .map(|v| v as u32),
+                                completion_tokens: usage
+                                    .get("candidatesTokenCount")
+                                    .and_then(|v| v.as_u64())
+                                    .map(|v| v as u32),
+                                total_tokens: usage
+                                    .get("totalTokenCount")
+                                    .and_then(|v| v.as_u64())
+                                    .map(|v| v as u32),
+                            });
+                        }
                     }
 
                     // Remove processed part
@@ -172,14 +191,18 @@ impl GoogleProvider {
             chat_id.clone(),
             message_id.clone(),
             full_content.clone(),
-            None, // Usage not always easily available in stream for Google
+            final_usage.as_ref().map(|u| EventTokenUsage {
+                prompt_tokens: u.prompt_tokens,
+                completion_tokens: u.completion_tokens,
+                total_tokens: u.total_tokens,
+            }),
         )?;
 
         Ok(LLMChatResponse {
             content: full_content,
             finish_reason: None,
             tool_calls: None, // Google tools in stream not fully implemented yet
-            usage: None,
+            usage: final_usage,
             reasoning: None,
         })
     }
@@ -295,6 +318,23 @@ impl LLMProvider for GoogleProvider {
                             let mapped_models: Vec<LLMModel> = models
                                 .iter()
                                 .filter_map(|m| {
+                                    // Filter by supportedGenerationMethods
+                                    let supports_generate = m
+                                        .get("supportedGenerationMethods")
+                                        .and_then(|v| v.as_array())
+                                        .map(|methods| {
+                                            methods.iter().any(|method| {
+                                                method
+                                                    .as_str()
+                                                    .map_or(false, |s| s == "generateContent")
+                                            })
+                                        })
+                                        .unwrap_or(false); // If field missing, assume false or check docs? Docs say it's there.
+
+                                    if !supports_generate {
+                                        return None;
+                                    }
+
                                     let id = m.get("name")?.as_str()?.to_string(); // format: "models/gemini-pro"
                                     let name = m
                                         .get("displayName")

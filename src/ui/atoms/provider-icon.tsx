@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 // Import provider icons
 import deepInfraIcon from '@/assets/provider-icons/deepinfra.svg';
 import fireworksIcon from '@/assets/provider-icons/fireworks.svg';
+import googleIcon from '@/assets/provider-icons/google.svg';
 import groqIcon from '@/assets/provider-icons/groq.svg';
 import litellmIcon from '@/assets/provider-icons/litellm.png';
 import ollamaIcon from '@/assets/provider-icons/ollama.svg';
@@ -24,6 +25,7 @@ export function ProviderIcon({ provider, className }: ProviderIconProps) {
 
   const localIcons: Record<string, string> = {
     openai: openaiIcon,
+    google: googleIcon,
     vllm: vllmIcon,
     ollama: ollamaIcon,
     litellm: litellmIcon,

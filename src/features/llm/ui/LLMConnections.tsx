@@ -370,11 +370,13 @@ function LLMConnectionDialog({
     groq: 'https://api.groq.com/openai/v1',
     together: 'https://api.together.xyz/v1',
     deepinfra: 'https://api.deepinfra.com/v1/openai',
+    google: 'https://generativelanguage.googleapis.com/v1beta',
   };
 
   const providerOptions: { value: LLMConnection['provider']; label: string }[] =
     [
       { value: 'openai', label: 'OpenAI' },
+      { value: 'google', label: 'Google Gemini' },
       { value: 'ollama', label: 'Ollama' },
       { value: 'vllm', label: 'vLLM' },
       { value: 'litellm', label: 'LiteLLM' },
