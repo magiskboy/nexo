@@ -1,0 +1,75 @@
+pub mod providers;
+
+use crate::error::AppError;
+use crate::models::llm_types::*;
+use providers::{GoogleProvider, LLMProvider, OpenAIProvider};
+use reqwest::Client;
+use std::sync::Arc;
+use tauri::AppHandle;
+
+pub struct LLMService {
+    client: Arc<Client>,
+}
+
+impl LLMService {
+    pub fn new() -> Self {
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(300))
+            .build()
+            .expect("Failed to create HTTP client");
+
+        Self {
+            client: Arc::new(client),
+        }
+    }
+
+    fn get_provider(&self, provider: &str) -> Box<dyn LLMProvider> {
+        match provider.to_lowercase().as_str() {
+            "google" | "gemini" => Box::new(GoogleProvider::new(self.client.clone())),
+            _ => Box::new(OpenAIProvider::new(self.client.clone())),
+        }
+    }
+
+    /// Fetch available models from LLM API
+    /// Used for connection testing
+    pub async fn fetch_models(
+        &self,
+        base_url: &str,
+        api_key: Option<&str>,
+        provider: &str,
+    ) -> Result<Vec<LLMModel>, AppError> {
+        let provider_impl = self.get_provider(provider);
+        provider_impl.fetch_models(base_url, api_key).await
+    }
+
+    pub async fn chat(
+        &self,
+        base_url: &str,
+        api_key: Option<&str>,
+        request: LLMChatRequest,
+        chat_id: String,
+        message_id: String,
+        app: AppHandle,
+        cancellation_rx: Option<tokio::sync::broadcast::Receiver<()>>,
+        provider: &str,
+    ) -> Result<LLMChatResponse, AppError> {
+        let provider_impl = self.get_provider(provider);
+        provider_impl
+            .chat(
+                base_url,
+                api_key,
+                request,
+                chat_id,
+                message_id,
+                app,
+                cancellation_rx,
+            )
+            .await
+    }
+}
+
+impl Default for LLMService {
+    fn default() -> Self {
+        Self::new()
+    }
+}

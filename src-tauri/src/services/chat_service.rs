@@ -491,6 +491,7 @@ impl ChatService {
                 assistant_message_id.clone(),
                 app.clone(),
                 Some(cancellation_rx),
+                &llm_connection.provider,
             )
             .await?;
         let latency = start_time.elapsed().as_millis() as u64;
@@ -781,6 +782,7 @@ impl ChatService {
                         assistant_message_id.clone(),
                         app.clone(),
                         Some(cancellation_rx.resubscribe()),
+                        &llm_connection.provider,
                     )
                     .await?;
                 let latency = start_time.elapsed().as_millis() as u64;

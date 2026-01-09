@@ -1,0 +1,438 @@
+use super::LLMProvider;
+use crate::error::AppError;
+use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage};
+use crate::models::llm_types::*;
+use async_trait::async_trait;
+use futures::StreamExt;
+use reqwest::Client;
+use serde_json::json;
+use std::sync::Arc;
+use tauri::AppHandle;
+
+#[derive(Clone)]
+pub struct GoogleProvider {
+    client: Arc<Client>,
+}
+
+impl GoogleProvider {
+    pub fn new(client: Arc<Client>) -> Self {
+        Self { client }
+    }
+
+    fn get_fallback_models() -> Vec<LLMModel> {
+        vec![
+            LLMModel {
+                id: "gemini-1.5-pro".to_string(),
+                name: "Gemini 1.5 Pro".to_string(),
+                created: None,
+                owned_by: Some("Google".to_string()),
+            },
+            LLMModel {
+                id: "gemini-1.5-flash".to_string(),
+                name: "Gemini 1.5 Flash".to_string(),
+                created: None,
+                owned_by: Some("Google".to_string()),
+            },
+            LLMModel {
+                id: "gemini-pro".to_string(),
+                name: "Gemini Pro".to_string(),
+                created: None,
+                owned_by: Some("Google".to_string()),
+            },
+        ]
+    }
+
+    async fn handle_streaming(
+        &self,
+        req_builder: reqwest::RequestBuilder,
+        chat_id: String,
+        message_id: String,
+        app: AppHandle,
+        mut cancellation_rx: Option<tokio::sync::broadcast::Receiver<()>>,
+    ) -> Result<LLMChatResponse, AppError> {
+        let response = req_builder.send().await?;
+        let message_emitter = MessageEmitter::new(app.clone());
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            let error_msg = format!("Google API error ({status}): {error_text}");
+
+            message_emitter.emit_message_error(
+                chat_id.clone(),
+                message_id.clone(),
+                error_msg.clone(),
+            )?;
+
+            return Err(AppError::Llm(error_msg));
+        }
+
+        let mut stream = response.bytes_stream();
+        let mut full_content = String::new();
+        let mut buffer = String::new();
+
+        // Need to parse a JSON array stream essentially.
+        // But Google sends valid JSON array chunks? No, usually it sends partial JSON or a stream of JSON objects.
+        // Actually Google API streaming returns a stream of `GenerateContentResponse` objects.
+        // In raw HTTP/REST, it's often a JSON array where each item is sent as a chunk.
+        // Or sometimes it's SSE-like but with just JSON objects potentially.
+        // Let's assume standard behavior of `byte_stream` receiving chunks of the JSON array.
+        // A common pattern for Google REST API streaming is that it returns a JSON array: `[{...}, {...}]`
+        // We need to robustly parse this.
+
+        while let Some(item) = tokio::select! {
+            next_item = stream.next() => next_item,
+            _ = async {
+                if let Some(ref mut rx) = cancellation_rx {
+                    let _ = rx.recv().await;
+                }
+                futures::future::pending::<()>().await
+            }, if cancellation_rx.is_some() => {
+                message_emitter.emit_message_error(
+                    chat_id.clone(),
+                    message_id.clone(),
+                    "Message cancelled by user".to_string(),
+                )?;
+                return Err(AppError::Cancelled);
+            }
+        } {
+            let chunk = item.map_err(|e| AppError::Generic(format!("Stream error: {e}")))?;
+            let text = String::from_utf8_lossy(&chunk);
+            buffer.push_str(&text);
+
+            // Simple parser for Google's JSON array stream
+            // We look for objects surrounded by `{}`
+            // This is a naive parser but might work if chunks align or we manage buffer correctly.
+            // A better way is to identify complete JSON objects.
+            // Since it is an array `[ ... , ... ]`, we can try to strip `[` at start, `]` at end, and split by `,`.
+            // But doing this on specific chunks is hard.
+
+            // Let's try to find balanced braces.
+            while let Some(start_idx) = buffer.find('{') {
+                // Find matching end brace
+                let mut brace_count = 0;
+                let mut end_idx = None;
+
+                for (i, c) in buffer[start_idx..].char_indices() {
+                    if c == '{' {
+                        brace_count += 1;
+                    } else if c == '}' {
+                        brace_count -= 1;
+                        if brace_count == 0 {
+                            end_idx = Some(start_idx + i);
+                            break;
+                        }
+                    }
+                }
+
+                if let Some(end) = end_idx {
+                    let json_str = &buffer[start_idx..=end];
+                    if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(json_str) {
+                        // Successfully parsed a candidate object
+                        if let Some(candidates) =
+                            json_val.get("candidates").and_then(|c| c.as_array())
+                        {
+                            for candidate in candidates {
+                                if let Some(content) = candidate.get("content") {
+                                    if let Some(parts) =
+                                        content.get("parts").and_then(|p| p.as_array())
+                                    {
+                                        for part in parts {
+                                            if let Some(text) =
+                                                part.get("text").and_then(|t| t.as_str())
+                                            {
+                                                full_content.push_str(text);
+                                                message_emitter.emit_message_chunk(
+                                                    chat_id.clone(),
+                                                    message_id.clone(),
+                                                    text.to_string(),
+                                                )?;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Remove processed part
+                    buffer = buffer[end + 1..].to_string();
+                } else {
+                    // Incomplete object, wait for more data
+                    break;
+                }
+            }
+        }
+
+        // Emit complete
+        message_emitter.emit_message_complete(
+            chat_id.clone(),
+            message_id.clone(),
+            full_content.clone(),
+            None, // Usage not always easily available in stream for Google
+        )?;
+
+        Ok(LLMChatResponse {
+            content: full_content,
+            finish_reason: None,
+            tool_calls: None, // Google tools in stream not fully implemented yet
+            usage: None,
+            reasoning: None,
+        })
+    }
+
+    async fn handle_non_streaming(
+        &self,
+        req_builder: reqwest::RequestBuilder,
+        chat_id: String,
+        message_id: String,
+        app: AppHandle,
+    ) -> Result<LLMChatResponse, AppError> {
+        let response = req_builder
+            .send()
+            .await
+            .map_err(|e| AppError::Generic(format!("HTTP request failed: {e}")))?;
+
+        let message_emitter = MessageEmitter::new(app.clone());
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            let error_msg = format!("Google API error ({status}): {error_text}");
+
+            message_emitter.emit_message_error(
+                chat_id.clone(),
+                message_id.clone(),
+                error_msg.clone(),
+            )?;
+
+            return Err(AppError::Generic(error_msg));
+        }
+
+        let json: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| AppError::Generic(format!("Failed to parse response: {e}")))?;
+
+        let mut full_content = String::new();
+
+        if let Some(candidates) = json.get("candidates").and_then(|c| c.as_array()) {
+            if let Some(first_candidate) = candidates.first() {
+                if let Some(content) = first_candidate.get("content") {
+                    if let Some(parts) = content.get("parts").and_then(|p| p.as_array()) {
+                        for part in parts {
+                            if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
+                                full_content.push_str(text);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Parse usage
+        let usage = json.get("usageMetadata").map(|u| TokenUsage {
+            prompt_tokens: u
+                .get("promptTokenCount")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as u32),
+            completion_tokens: u
+                .get("candidatesTokenCount")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as u32),
+            total_tokens: u
+                .get("totalTokenCount")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as u32),
+        });
+
+        message_emitter.emit_message_complete(
+            chat_id.clone(),
+            message_id.clone(),
+            full_content.clone(),
+            usage.as_ref().map(|u| EventTokenUsage {
+                prompt_tokens: u.prompt_tokens,
+                completion_tokens: u.completion_tokens,
+                total_tokens: u.total_tokens,
+            }),
+        )?;
+
+        Ok(LLMChatResponse {
+            content: full_content,
+            finish_reason: None,
+            tool_calls: None,
+            usage,
+            reasoning: None,
+        })
+    }
+}
+
+#[async_trait]
+impl LLMProvider for GoogleProvider {
+    async fn fetch_models(
+        &self,
+        base_url: &str,
+        api_key: Option<&str>,
+    ) -> Result<Vec<LLMModel>, AppError> {
+        let url = format!(
+            "{}/models?key={}",
+            base_url.trim_end_matches('/'),
+            api_key.unwrap_or("")
+        );
+
+        // Attempt to fetch from API
+        match self.client.get(&url).send().await {
+            Ok(response) => {
+                if response.status().is_success() {
+                    if let Ok(json) = response.json::<serde_json::Value>().await {
+                        if let Some(models) = json.get("models").and_then(|m| m.as_array()) {
+                            let mapped_models: Vec<LLMModel> = models
+                                .iter()
+                                .filter_map(|m| {
+                                    let id = m.get("name")?.as_str()?.to_string(); // format: "models/gemini-pro"
+                                    let name = m
+                                        .get("displayName")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or(&id)
+                                        .to_string();
+
+                                    // Clean up ID (remove "models/" prefix if present)
+                                    let clean_id =
+                                        id.strip_prefix("models/").unwrap_or(&id).to_string();
+
+                                    Some(LLMModel {
+                                        id: clean_id,
+                                        name,
+                                        created: None,
+                                        owned_by: Some("Google".to_string()),
+                                    })
+                                })
+                                .collect();
+
+                            if !mapped_models.is_empty() {
+                                return Ok(mapped_models);
+                            }
+                        }
+                    }
+                }
+            }
+            Err(_) => {
+                // Ignore error and fall back
+            }
+        }
+
+        // Fallback
+        Ok(Self::get_fallback_models())
+    }
+
+    async fn chat(
+        &self,
+        base_url: &str,
+        api_key: Option<&str>,
+        request: LLMChatRequest,
+        chat_id: String,
+        message_id: String,
+        app: AppHandle,
+        cancellation_rx: Option<tokio::sync::broadcast::Receiver<()>>,
+    ) -> Result<LLMChatResponse, AppError> {
+        // Map request to Google format
+        let mut contents = Vec::new();
+        let mut system_instruction = None;
+
+        for msg in request.messages {
+            match msg {
+                ChatMessage::System { content } => {
+                    system_instruction = Some(json!({
+                        "role": "system", // Google actually wants 'user' role for strict compat or 'system' in systemInstruction field?
+                        // Actually systemInstruction is a separate field in GenerateContentRequest.
+                        "parts": [{ "text": content }]
+                    }));
+                }
+                ChatMessage::User { content } => {
+                    contents.push(json!({
+                        "role": "user",
+                        "parts": [{ "text": content }]
+                    }));
+                }
+                ChatMessage::Assistant { content, .. } => {
+                    contents.push(json!({
+                        "role": "model",
+                        "parts": [{ "text": content }]
+                    }));
+                }
+                _ => {} // Tool messages not yet fully supported in this simple implementation
+            }
+        }
+
+        let model = request.model;
+        let action = if request.stream {
+            "streamGenerateContent"
+        } else {
+            "generateContent"
+        };
+        let url = format!(
+            "{}/models/{}:{}?key={}",
+            base_url.trim_end_matches('/'),
+            model,
+            action,
+            api_key.unwrap_or("")
+        );
+
+        let mut body = json!({
+            "contents": contents,
+            "generationConfig": {
+                "temperature": request.temperature,
+                "maxOutputTokens": request.max_tokens,
+            }
+        });
+
+        if let Some(sys) = system_instruction {
+            // Check if model supports systemInstruction (most modern ones do)
+            if let Some(obj) = body.as_object_mut() {
+                obj.insert("systemInstruction".to_string(), sys);
+            }
+        }
+
+        // Add tools if present
+        if let Some(tools) = request.tools {
+            // Map tools to Google format if needed.
+            // Start simple without tools or implement mapping.
+            // Google tools format: function_declarations inside 'tools' array.
+            let google_tools: Vec<serde_json::Value> = tools
+                .iter()
+                .map(|t| {
+                    json!({
+                        "name": t.function.name,
+                        "description": t.function.description,
+                        "parameters": t.function.parameters
+                    })
+                })
+                .collect();
+
+            if !google_tools.is_empty() {
+                if let Some(obj) = body.as_object_mut() {
+                    obj.insert(
+                        "tools".to_string(),
+                        json!([{ "function_declarations": google_tools }]),
+                    );
+                }
+            }
+        }
+
+        let req_builder = self.client.post(&url).json(&body);
+
+        if request.stream {
+            self.handle_streaming(req_builder, chat_id, message_id, app, cancellation_rx)
+                .await
+        } else {
+            self.handle_non_streaming(req_builder, chat_id, message_id, app)
+                .await
+        }
+    }
+}
