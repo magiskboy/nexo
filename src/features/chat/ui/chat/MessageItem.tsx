@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, memo, useState } from 'react';
+import { useRef, useCallback, memo, useState } from 'react';
 import {
   Copy,
   Code,
@@ -69,47 +69,26 @@ export const MessageItem = memo(
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
+    const messageRef = useRef<HTMLDivElement>(null);
+
     // Don't collapse by default if it's the last message or if streaming
     const [isCollapsed, setIsCollapsed] = useState(
       !isStreaming && !isLastMessage
     );
 
-    // Initial height state
-    const [contentHeight, setContentHeight] = useState<string | number>(
-      canCollapse && !isStreaming ? 300 : 'auto'
-    );
+    const handleToggleCollapse = useCallback(() => {
+      const newCollapsed = !isCollapsed;
+      setIsCollapsed(newCollapsed);
 
-    // Smooth collapse animation effect
-    useEffect(() => {
-      // If cannot collapse, reset to auto
-      if (!canCollapse) {
-        // Use requestAnimationFrame to prevent synchronous state update warning
-        // and ensure this runs after the current render cycle
-        requestAnimationFrame(() => setContentHeight('auto'));
-        return;
-      }
-
-      const ele = contentRef.current;
-      if (!ele) return;
-
-      if (isCollapsed) {
-        // Animate to 300px
-        // First set explicit height if currently auto to enable transition
-        // We use scrollHeight to transition FROM
-        setContentHeight(ele.scrollHeight);
-
-        // Double RAF ensures the brower paints the start height before transitioning to 300
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => setContentHeight(300));
+      // If we're collapsing the message, scroll the top of the message into view
+      if (newCollapsed && messageRef.current) {
+        messageRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
         });
-      } else {
-        // Animate to full height
-        setContentHeight(ele.scrollHeight);
-        // Reset to auto after transition finishes to allow resizing
-        const timer = setTimeout(() => setContentHeight('auto'), 300);
-        return () => clearTimeout(timer);
       }
-    }, [isCollapsed, canCollapse]);
+    }, [isCollapsed]);
+
     const handleCopy = useCallback(() => {
       onCopy(message.content, message.id);
     }, [message.content, message.id, onCopy]);
@@ -177,6 +156,7 @@ export const MessageItem = memo(
 
     return (
       <div
+        ref={messageRef}
         className={cn(
           'group flex min-w-0 w-full',
           message.role === 'user' ? 'justify-end' : 'justify-start'
@@ -241,8 +221,12 @@ export const MessageItem = memo(
                 <div className="relative">
                   <div
                     ref={contentRef}
-                    style={{ height: contentHeight }}
-                    className="overflow-hidden transition-[height] duration-300 ease-in-out"
+                    className={cn(
+                      'overflow-hidden transition-[max-height] duration-300 ease-in-out',
+                      canCollapse && isCollapsed
+                        ? 'max-h-[300px]'
+                        : 'max-h-[9999px]'
+                    )}
                   >
                     {message.role === 'assistant' ? (
                       <>
@@ -287,7 +271,7 @@ export const MessageItem = memo(
                   >
                     <button
                       className="text-xs opacity-60 hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
-                      onClick={() => setIsCollapsed(!isCollapsed)}
+                      onClick={handleToggleCollapse}
                     >
                       {isCollapsed ? (
                         <>
