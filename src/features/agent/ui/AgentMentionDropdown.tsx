@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
-import type { InstalledAgent } from '@/store/types';
+import type { InstalledAgent } from '../types';
 
 interface AgentMentionDropdownProps {
   agents: InstalledAgent[];

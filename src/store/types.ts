@@ -26,16 +26,9 @@ export interface Prompt {
   updated_at: number;
 }
 
-export interface AgentManifest {
-  id: string;
-  name: string;
-  description: string;
-  author: string;
-  schema_version: number;
-}
-
-export interface InstalledAgent {
-  manifest: AgentManifest;
-  version_ref: string;
-  path: string;
-}
+export type {
+  AgentManifest,
+  InstalledAgent,
+  AgentSource,
+  InstallInfo,
+} from '@/features/agent/types';

@@ -14,7 +14,7 @@ import { MessageList } from '@/features/chat/ui/chat/MessageList';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import type { Message } from '@/features/chat/types';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
-import { useGetInstalledAgentsQuery } from '@/store/api/agentsApi';
+import { useGetInstalledAgentsQuery } from '../state/api';
 
 interface AgentChatHistoryDialogProps {
   open: boolean;

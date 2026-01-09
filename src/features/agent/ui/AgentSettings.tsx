@@ -38,40 +38,8 @@ import {
 } from 'lucide-react';
 import { TauriCommands } from '@/bindings/commands';
 import { invokeCommand } from '@/lib/tauri';
-import { useGetInstalledAgentsQuery } from '@/store/api/agentsApi';
-
-interface Manifest {
-  id: string;
-  name: string;
-  description: string;
-  author: string;
-  schema_version: number;
-  homepage?: string;
-  repository?: string;
-  license?: string;
-  permissions?: string[];
-}
-
-interface AgentSource {
-  type: 'git' | 'local';
-  url?: string;
-  revision?: string;
-  sub_path?: string;
-  path?: string;
-}
-
-interface InstallInfo {
-  source: AgentSource;
-  installed_at: number;
-  updated_at: number;
-}
-
-interface InstalledAgent {
-  manifest: Manifest;
-  version_ref: string;
-  path: string;
-  install_info?: InstallInfo;
-}
+import { useGetInstalledAgentsQuery } from '../state/api';
+import type { InstalledAgent } from '../types';
 
 export function AgentSettings() {
   const {

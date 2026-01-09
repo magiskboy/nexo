@@ -1,6 +1,6 @@
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
-import { AgentChatHistoryDialog } from '@/ui/organisms/AgentChatHistoryDialog';
+import { AgentChatHistoryDialog } from '@/features/agent';
 import { useMessages } from '../../hooks/useMessages';
 import { useWorkspaces } from '@/features/workspace';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';

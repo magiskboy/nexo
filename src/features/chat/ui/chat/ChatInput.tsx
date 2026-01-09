@@ -35,7 +35,7 @@ import { useSlashCommand } from '@/hooks/useSlashCommand';
 import { useAgentMention } from '@/hooks/useAgentMention';
 import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import { SlashCommandDropdown } from '@/ui/molecules/SlashCommandDropdown';
-import { AgentMentionDropdown } from '@/ui/molecules/AgentMentionDropdown';
+import { AgentMentionDropdown } from '@/features/agent';
 import { VariableInputDialog } from '@/ui/molecules/VariableInputDialog';
 import { parsePromptVariables, renderPrompt } from '@/lib/prompt-utils';
 import type { Prompt, InstalledAgent } from '@/store/types';

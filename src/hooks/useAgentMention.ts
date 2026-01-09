@@ -1,6 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
-import type { InstalledAgent } from '@/store/types';
-import { useGetInstalledAgentsQuery } from '@/store/api/agentsApi';
+import {
+  useGetInstalledAgentsQuery,
+  type InstalledAgent,
+} from '@/features/agent';
 
 interface UseAgentMentionOptions {
   input: string;

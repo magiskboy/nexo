@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Bot, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/ui/atoms/button/button';
 import { cn } from '@/lib/utils';
-import { useGetInstalledAgentsQuery } from '@/store/api/agentsApi';
+import { useGetInstalledAgentsQuery } from '@/features/agent';
 
 interface AgentCardProps {
   agentId: string;

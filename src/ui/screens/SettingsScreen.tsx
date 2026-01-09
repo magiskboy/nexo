@@ -21,7 +21,7 @@ import { AppSettings } from '@/ui/organisms/settings/AppSettings';
 import { PromptManagement } from '@/ui/organisms/settings/PromptManagement';
 import AddonSettings from '@/ui/organisms/settings/AddonSettings';
 import { UsagePage } from '@/ui/organisms/settings/usage/UsagePage';
-import { AgentSettings } from '@/ui/organisms/settings/AgentSettings';
+import { AgentSettings } from '@/features/agent';
 
 export function SettingsScreen() {
   const { t } = useTranslation(['settings', 'common']);

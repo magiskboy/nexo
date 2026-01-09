@@ -1,6 +1,6 @@
-import { baseApi } from './baseApi';
+import { baseApi } from '@/store/api/baseApi';
 import { TauriCommands } from '@/bindings/commands';
-import type { InstalledAgent } from '@/store/types';
+import type { InstalledAgent } from '../types';
 
 export const agentsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
