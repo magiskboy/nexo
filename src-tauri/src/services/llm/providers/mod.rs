@@ -1,6 +1,6 @@
 pub mod anthropic;
 pub mod google;
-pub mod openai;
+pub mod openai_compat;
 
 use crate::error::AppError;
 use crate::models::llm_types::*;
@@ -9,7 +9,7 @@ use tauri::AppHandle;
 
 pub use anthropic::AnthropicProvider;
 pub use google::GoogleProvider;
-pub use openai::OpenAIProvider;
+pub use openai_compat::OpenAICompatProvider;
 
 #[async_trait]
 pub trait LLMProvider: Send + Sync {

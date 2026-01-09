@@ -8,11 +8,11 @@ use reqwest::Client;
 use std::sync::Arc;
 use tauri::AppHandle;
 
-pub struct OpenAIProvider {
+pub struct OpenAICompatProvider {
     client: Arc<Client>,
 }
 
-impl OpenAIProvider {
+impl OpenAICompatProvider {
     pub fn new(client: Arc<Client>) -> Self {
         Self { client }
     }
@@ -442,7 +442,7 @@ impl OpenAIProvider {
 }
 
 #[async_trait]
-impl LLMProvider for OpenAIProvider {
+impl LLMProvider for OpenAICompatProvider {
     async fn fetch_models(
         &self,
         base_url: &str,
