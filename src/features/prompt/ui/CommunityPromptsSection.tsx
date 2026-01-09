@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Download, Loader2, FileText, RefreshCw, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Avatar, AvatarFallback, AvatarImage } from '@/ui/atoms/avatar';
 import { Button } from '@/ui/atoms/button/button';
 import { Input } from '@/ui/atoms/input';
 import {
@@ -172,17 +173,17 @@ export function CommunityPromptsSection({
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start gap-3">
-                    {prompt.icon && (
-                      <img
+                    <Avatar className="size-8 rounded">
+                      <AvatarImage
                         src={prompt.icon}
                         alt={prompt.name}
-                        className="size-8 rounded object-cover"
-                        onError={(e) => {
-                          // Hide image on error
-                          e.currentTarget.style.display = 'none';
-                        }}
+                        className="object-cover"
                       />
-                    )}
+                      <AvatarFallback className="rounded bg-muted">
+                        <FileText className="size-4 text-muted-foreground" />
+                      </AvatarFallback>
+                    </Avatar>
+
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-base">{prompt.name}</CardTitle>
                       <CardDescription className="text-xs mt-1">
