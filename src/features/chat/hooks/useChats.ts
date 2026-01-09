@@ -13,10 +13,7 @@ import {
   resumeStreaming,
   stopStreaming,
 } from '../state/messages';
-import {
-  showError,
-  showSuccess,
-} from '@/features/notifications/state/notificationSlice';
+import { showError } from '@/features/notifications/state/notificationSlice';
 import { setAttachedFiles } from '../state/chatInputSlice';
 
 /**
@@ -122,13 +119,6 @@ export function useChats(selectedWorkspaceId: string | null) {
           await handleNewChat();
         }
       }
-
-      dispatch(
-        showSuccess(
-          t('chatDeleted', { ns: 'settings' }),
-          t('chatDeletedDescription', { ns: 'settings' })
-        )
-      );
     } catch (error) {
       console.error('Error deleting chat:', error);
       dispatch(showError(t('cannotDeleteChat', { ns: 'settings' })));

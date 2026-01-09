@@ -11,63 +11,6 @@ impl MCPConfigService {
         Self
     }
 
-    /// Detect variables in config (in args, env values, header values)
-    /// Pattern: {variable_name}
-    pub fn detect_variables_in_config(
-        &self,
-        config: &HubMCPServerConfig,
-    ) -> Result<Vec<String>, AppError> {
-        let mut variables = std::collections::HashSet::new();
-        let variable_regex = Regex::new(r"\{(\w+)\}").map_err(|e| {
-            AppError::Hub(format!("Failed to compile variable regex: {}", e))
-        })?;
-
-        // Detect in args
-        if let Some(args) = &config.args {
-            for arg in args {
-                for captures in variable_regex.captures_iter(arg) {
-                    if let Some(var_name) = captures.get(1) {
-                        variables.insert(var_name.as_str().to_string());
-                    }
-                }
-            }
-        }
-
-        // Detect in env values
-        if let Some(env) = &config.env {
-            if let Some(env_map) = env.as_object() {
-                for value in env_map.values() {
-                    if let Some(value_str) = value.as_str() {
-                        for captures in variable_regex.captures_iter(value_str) {
-                            if let Some(var_name) = captures.get(1) {
-                                variables.insert(var_name.as_str().to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Detect in header values
-        if let Some(headers) = &config.headers {
-            if let Some(headers_map) = headers.as_object() {
-                for value in headers_map.values() {
-                    if let Some(value_str) = value.as_str() {
-                        for captures in variable_regex.captures_iter(value_str) {
-                            if let Some(var_name) = captures.get(1) {
-                                variables.insert(var_name.as_str().to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        let mut result: Vec<String> = variables.into_iter().collect();
-        result.sort();
-        Ok(result)
-    }
-
     /// Replace variables in config with provided values
     /// If a variable is not provided, convert {variable_name} to {{variable_name}} format
     /// so users know they need to edit it
@@ -77,28 +20,31 @@ impl MCPConfigService {
         variables: &HashMap<String, String>,
     ) -> Result<HubMCPServerConfig, AppError> {
         let mut new_config = config.clone();
-        let variable_regex = Regex::new(r"\{(\w+)\}").map_err(|e| {
-            AppError::Hub(format!("Failed to compile variable regex: {}", e))
-        })?;
+        let variable_regex = Regex::new(r"\{(\w+)\}")
+            .map_err(|e| AppError::Hub(format!("Failed to compile variable regex: {}", e)))?;
 
         // Helper function to process a string: replace provided variables, convert others to {{...}} format
         let process_string = |text: &str| -> String {
             // Use regex to find all variables and process them
-            variable_regex.replace_all(text, |caps: &regex::Captures| {
-                if let Some(var_name_match) = caps.get(1) {
-                    let var_name = var_name_match.as_str();
-                    // If variable is provided, replace it with the value
-                    if let Some(value) = variables.get(var_name) {
-                        value.clone()
+            variable_regex
+                .replace_all(text, |caps: &regex::Captures| {
+                    if let Some(var_name_match) = caps.get(1) {
+                        let var_name = var_name_match.as_str();
+                        // If variable is provided, replace it with the value
+                        if let Some(value) = variables.get(var_name) {
+                            value.clone()
+                        } else {
+                            // Otherwise, convert to {{variable_name}} format
+                            format!("{{{{{}}}}}", var_name)
+                        }
                     } else {
-                        // Otherwise, convert to {{variable_name}} format
-                        format!("{{{{{}}}}}", var_name)
+                        // Should not happen, but return original match if it does
+                        caps.get(0)
+                            .map(|m| m.as_str().to_string())
+                            .unwrap_or_default()
                     }
-                } else {
-                    // Should not happen, but return original match if it does
-                    caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default()
-                }
-            }).to_string()
+                })
+                .to_string()
         };
 
         // Replace in args
