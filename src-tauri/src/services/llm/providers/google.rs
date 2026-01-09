@@ -74,6 +74,7 @@ impl GoogleProvider {
         let mut stream = response.bytes_stream();
 
         let mut full_content = String::new();
+        let mut full_reasoning = String::new();
         let mut buffer = String::new();
         let mut final_usage: Option<TokenUsage> = None;
         let mut final_tool_calls: Vec<ToolCall> = Vec::new();
@@ -145,15 +146,33 @@ impl GoogleProvider {
                                         content.get("parts").and_then(|p| p.as_array())
                                     {
                                         for part in parts {
+                                            // Check if this part is a thought summary
+                                            // Google API marks thought parts with "thought": true
+                                            let is_thought = part
+                                                .get("thought")
+                                                .and_then(|t| t.as_bool())
+                                                .unwrap_or(false);
+
                                             if let Some(text) =
                                                 part.get("text").and_then(|t| t.as_str())
                                             {
-                                                full_content.push_str(text);
-                                                message_emitter.emit_message_chunk(
-                                                    chat_id.clone(),
-                                                    message_id.clone(),
-                                                    text.to_string(),
-                                                )?;
+                                                if is_thought {
+                                                    // This is thinking content
+                                                    full_reasoning.push_str(text);
+                                                    message_emitter.emit_thinking_chunk(
+                                                        chat_id.clone(),
+                                                        message_id.clone(),
+                                                        text.to_string(),
+                                                    )?;
+                                                } else {
+                                                    // This is regular content
+                                                    full_content.push_str(text);
+                                                    message_emitter.emit_message_chunk(
+                                                        chat_id.clone(),
+                                                        message_id.clone(),
+                                                        text.to_string(),
+                                                    )?;
+                                                }
                                             }
                                         }
                                     }
@@ -249,7 +268,11 @@ impl GoogleProvider {
                 Some(final_tool_calls)
             },
             usage: final_usage,
-            reasoning: None,
+            reasoning: if full_reasoning.is_empty() {
+                None
+            } else {
+                Some(full_reasoning)
+            },
         })
     }
 
@@ -290,6 +313,7 @@ impl GoogleProvider {
             .map_err(|e| AppError::Generic(format!("Failed to parse response: {e}")))?;
 
         let mut full_content = String::new();
+        let mut full_reasoning = String::new();
         let mut tool_calls = Vec::new();
 
         if let Some(candidates) = json.get("candidates").and_then(|c| c.as_array()) {
@@ -297,9 +321,22 @@ impl GoogleProvider {
                 if let Some(content) = first_candidate.get("content") {
                     if let Some(parts) = content.get("parts").and_then(|p| p.as_array()) {
                         for part in parts {
+                            // Check if this part is a thought summary
+                            let is_thought = part
+                                .get("thought")
+                                .and_then(|t| t.as_bool())
+                                .unwrap_or(false);
+
                             if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
-                                full_content.push_str(text);
+                                if is_thought {
+                                    // This is thinking content
+                                    full_reasoning.push_str(text);
+                                } else {
+                                    // This is regular content
+                                    full_content.push_str(text);
+                                }
                             }
+
                             if let Some(function_call) = part.get("functionCall") {
                                 let name = function_call
                                     .get("name")
@@ -362,7 +399,11 @@ impl GoogleProvider {
                 Some(tool_calls)
             },
             usage,
-            reasoning: None,
+            reasoning: if full_reasoning.is_empty() {
+                None
+            } else {
+                Some(full_reasoning)
+            },
         })
     }
 }
@@ -502,6 +543,51 @@ impl LLMProvider for GoogleProvider {
                 "maxOutputTokens": request.max_tokens,
             }
         });
+
+        // Add thinking config if reasoning_effort is specified
+        // Different models use different thinking parameters:
+        // - Gemini 3: thinkingLevel (low, medium, high)
+        // - Gemini 2.5: thinkingBudget (number of tokens)
+        if let Some(effort) = request.reasoning_effort.as_ref() {
+            if !effort.is_empty() {
+                if let Some(gen_config) = body
+                    .get_mut("generationConfig")
+                    .and_then(|v| v.as_object_mut())
+                {
+                    // Detect if this is a Gemini 3 model (gemini-3.x or gemini-3-x)
+                    let is_gemini_3 =
+                        model.starts_with("gemini-3") || model.starts_with("gemini_3");
+
+                    if is_gemini_3 {
+                        // Gemini 3 uses thinkingLevel
+                        gen_config.insert(
+                            "thinkingConfig".to_string(),
+                            json!({
+                                "includeThoughts": true,
+                                "thinkingLevel": effort // low, medium, or high
+                            }),
+                        );
+                    } else {
+                        // Gemini 2.5 and other models use thinkingBudget
+                        // Map effort levels to token budgets
+                        let thinking_budget = match effort.as_str() {
+                            "low" => 4096,    // Minimal thinking
+                            "medium" => 8192, // Balanced thinking
+                            "high" => 16384,  // Deep thinking
+                            _ => 8192,        // Default to medium
+                        };
+
+                        gen_config.insert(
+                            "thinkingConfig".to_string(),
+                            json!({
+                                "includeThoughts": true,
+                                "thinkingBudget": thinking_budget
+                            }),
+                        );
+                    }
+                }
+            }
+        }
 
         if let Some(sys) = system_instruction {
             // Check if model supports systemInstruction (most modern ones do)
