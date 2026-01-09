@@ -1,3 +1,4 @@
+pub mod anthropic;
 pub mod google;
 pub mod openai;
 
@@ -6,6 +7,7 @@ use crate::models::llm_types::*;
 use async_trait::async_trait;
 use tauri::AppHandle;
 
+pub use anthropic::AnthropicProvider;
 pub use google::GoogleProvider;
 pub use openai::OpenAIProvider;
 
