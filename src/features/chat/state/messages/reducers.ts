@@ -1,7 +1,7 @@
 import { PayloadAction } from '@reduxjs/toolkit';
 import type { Message, ToolCall, TokenUsage } from '../../types';
 import type { MessagesState } from './state';
-import { extractCodeBlocks } from '@/lib/code-block-extractor';
+import { extractCodeBlocks } from '@/features/chat/lib/code-block-extractor';
 
 export const reducers = {
   setMessages: (

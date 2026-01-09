@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
-import { extractCodeBlocks } from '@/lib/code-block-extractor';
+import { extractCodeBlocks } from '@/features/chat/lib/code-block-extractor';
 import type { Message } from '../../../types';
 
 // Types matching Rust structs

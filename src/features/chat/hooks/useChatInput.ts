@@ -12,7 +12,7 @@ import {
 import {
   loadChatInputSettings,
   saveChatInputSettings,
-} from '@/lib/chat-input-settings-storage';
+} from '@/features/chat/lib/chat-input-settings-storage';
 import { useWorkspaces } from '@/features/workspace';
 
 /**

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
-import { parsePromptVariables } from '@/lib/prompt-utils';
+import { parsePromptVariables } from '@/features/settings/lib/prompt-utils';
 import type { Prompt } from '@/app/types';
 
 interface SlashCommandDropdownProps {

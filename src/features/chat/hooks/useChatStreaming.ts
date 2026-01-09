@@ -14,7 +14,7 @@ import { showSuccess } from '@/features/notifications/state/notificationSlice';
 import { addPermissionRequest } from '@/features/tools/state/toolPermissionSlice';
 import { useTranslation } from 'react-i18next';
 import { messagesApi } from '@/features/chat/state/messagesApi';
-import { extractCodeBlocks } from '@/lib/code-block-extractor';
+import { extractCodeBlocks } from '@/features/chat/lib/code-block-extractor';
 
 // Event types
 interface MessageStartedEvent {
