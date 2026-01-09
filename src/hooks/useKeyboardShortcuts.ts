@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setSearchOpen } from '@/store/slices/chatSearchSlice';
+import { setSearchOpen } from '@/features/chat/state/chatSearchSlice';
 import {
   navigateToSettings,
   navigateToChat,
@@ -8,10 +8,10 @@ import {
   setAboutOpen,
   setWelcomeOpen,
 } from '@/store/slices/uiSlice';
-import { closeCurrentChat } from '@/store/slices/chatsSlice';
-import { clearInput } from '@/store/slices/chatInputSlice';
-import { createChat } from '@/store/slices/chatsSlice';
-import { useWorkspaces } from './useWorkspaces';
+import { closeCurrentChat } from '@/features/chat/state/chatsSlice';
+import { clearInput } from '@/features/chat/state/chatInputSlice';
+import { createChat } from '@/features/chat/state/chatsSlice';
+import { useWorkspaces } from '@/features/workspace';
 import { useTranslation } from 'react-i18next';
 
 /**

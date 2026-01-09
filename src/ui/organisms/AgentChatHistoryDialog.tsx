@@ -10,9 +10,9 @@ import {
   DialogBody,
 } from '@/ui/atoms/dialog';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
-import { MessageList } from '@/ui/organisms/chat/MessageList';
+import { MessageList } from '@/features/chat/ui/chat/MessageList';
 import { useAppSettings } from '@/hooks/useAppSettings';
-import type { Message } from '@/store/types';
+import type { Message } from '@/features/chat/types';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
 import { useGetInstalledAgentsQuery } from '@/store/api/agentsApi';
 

@@ -6,24 +6,21 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { navigateToChat } from '@/store/slices/uiSlice';
 
 // Workspace Settings Component
-import { WorkspaceSettingsForm } from '@/ui/organisms/workspace/WorkspaceSettingsForm';
-
-// Hooks for Workspace Settings
-import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { useWorkspaces, WorkspaceSettingsForm } from '@/features/workspace';
 import {
   clearAllChats,
   createChat,
   setSelectedChat,
-} from '@/store/slices/chatsSlice';
+} from '@/features/chat/state/chatsSlice';
 import {
   clearMessages,
   clearStreamingByChatId,
   stopStreaming,
-} from '@/store/slices/messages';
+} from '@/features/chat/state/messages';
 import { showError, showSuccess } from '@/store/slices/notificationSlice';
 import { useGetLLMConnectionsQuery } from '@/features/llm';
 import { useGetMCPConnectionsQuery } from '@/features/mcp';
-import type { WorkspaceSettings } from '@/store/types';
+import type { WorkspaceSettings } from '@/features/workspace/types';
 
 export function WorkspaceSettingsScreen() {
   const { t } = useTranslation(['settings', 'common']);

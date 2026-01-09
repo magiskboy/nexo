@@ -1,5 +1,5 @@
-import { ChatSidebar } from '@/ui/organisms/ChatSidebar';
-import { ChatArea } from '@/ui/organisms/chat/ChatArea';
+import { ChatSidebar } from '@/features/chat/ui/ChatSidebar';
+import { ChatArea } from '@/features/chat/ui/chat/ChatArea';
 import { ChatLayout } from '@/ui/layouts/ChatLayout';
 
 export function ChatScreen() {

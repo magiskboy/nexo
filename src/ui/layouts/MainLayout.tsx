@@ -7,9 +7,9 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
-import { WorkspaceSelector } from '@/ui/organisms/workspace/WorkspaceSelector';
+import { WorkspaceSelector } from '@/features/workspace';
 import { About } from '@/ui/organisms/settings/About';
-import { ChatSearchDialog } from '@/ui/molecules/ChatSearchDialog';
+import { ChatSearchDialog } from '@/features/chat/ui/ChatSearchDialog';
 import { KeyboardShortcutsDialog } from '@/ui/organisms/KeyboardShortcutsDialog';
 import { TitleBar } from '@/ui/organisms/TitleBar';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';

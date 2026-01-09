@@ -102,8 +102,10 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
               errorMessage: undefined,
             },
           };
-        } catch (error: any) {
-          return { error: { message: error.message || String(error) } };
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          return { error: { message: errorMessage } };
         }
       },
       invalidatesTags: [{ type: 'MCPConnection', id: 'LIST' }],
@@ -157,7 +159,7 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
           });
 
           return { data: undefined };
-        } catch (error: any) {
+        } catch (error: unknown) {
           const errorMsg =
             error instanceof Error
               ? error.message
@@ -189,8 +191,10 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
             errorMessage: null,
           });
           return { data: undefined };
-        } catch (error: any) {
-          return { error: { message: error.message || String(error) } };
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          return { error: { message: errorMessage } };
         }
       },
       invalidatesTags: (_result, _error, id) => [
@@ -230,8 +234,10 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
           }
 
           return { data: { needsReconnect } };
-        } catch (error: any) {
-          return { error: { message: error.message || String(error) } };
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          return { error: { message: errorMessage } };
         }
       },
       invalidatesTags: (_result, _error, { id }) => [

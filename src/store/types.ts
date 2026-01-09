@@ -8,67 +8,15 @@ export type {
   MCPServerConnection,
 } from '@/features/mcp/types';
 
-export interface Workspace {
-  id: string;
-  name: string;
-}
+export type { Workspace, WorkspaceSettings } from '@/features/workspace/types';
 
-export interface ChatItem {
-  id: string;
-  title: string;
-  lastMessage?: string;
-  timestamp?: number; // Unix timestamp in milliseconds
-  agentId?: string;
-  parentId?: string;
-}
-
-export interface ToolCall {
-  id: string;
-  name: string;
-  arguments: unknown;
-  result?: unknown;
-  error?: string;
-}
-
-export interface TokenUsage {
-  promptTokens?: number;
-  completionTokens?: number;
-  totalTokens?: number;
-  tokensPerSecond?: number;
-  responseTimeMs?: number;
-}
-
-export interface CodeBlock {
-  id: string;
-  content: string;
-  language: string; // "python" | "mermaid" | "javascript" | etc.
-}
-
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'tool' | 'tool_call';
-  content: string;
-  reasoning?: string; // Content of the thinking/reasoning process
-  timestamp: number; // Unix timestamp in milliseconds
-  toolCalls?: ToolCall[];
-  toolCallId?: string; // For tool result messages
-  assistantMessageId?: string; // For tool_call messages: ID of the assistant message that contains these tool calls
-  tokenUsage?: TokenUsage; // Token usage information for assistant messages
-  codeBlocks?: CodeBlock[]; // Extracted code blocks (python, mermaid, etc.)
-  metadata?: string; // JSON metadata string (e.g. for agent cards)
-  // For tool_call messages, content is JSON string with: { name, arguments, result?, error?, status: "calling" | "completed" | "error" }
-}
-
-export interface WorkspaceSettings {
-  id: string;
-  name: string;
-  systemMessage: string;
-  mcpToolIds?: Record<string, string>; // Map of tool name to MCP connection ID
-  llmConnectionId?: string;
-  streamEnabled?: boolean;
-  defaultModel?: string; // Default model ID for this workspace
-  toolPermissionConfig?: Record<string, 'require' | 'auto'>; // Per-tool permission configuration
-}
+export type {
+  ChatItem,
+  ToolCall,
+  TokenUsage,
+  CodeBlock,
+  Message,
+} from '@/features/chat/types';
 
 export interface Prompt {
   id: string;

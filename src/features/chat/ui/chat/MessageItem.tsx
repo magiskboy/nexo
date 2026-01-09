@@ -1,0 +1,429 @@
+import { useRef, useEffect, useCallback, memo, useState } from 'react';
+import {
+  Copy,
+  Code,
+  FileText,
+  Check,
+  Pencil,
+  X,
+  Send,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+import { Button } from '@/ui/atoms/button/button';
+import { Textarea } from '@/ui/atoms/textarea';
+import { cn } from '@/lib/utils';
+import { MarkdownContent } from '@/ui/organisms/markdown/MarkdownContent';
+import { AgentCard } from './AgentCard';
+import { useComponentPerformance } from '@/hooks/useComponentPerformance';
+import type { Message } from '../../types';
+
+export interface MessageItemProps {
+  message: Message;
+  userMode: 'normal' | 'developer';
+  markdownEnabled: boolean;
+  isCopied: boolean;
+  isEditing: boolean;
+  editingContent: string;
+  isStreaming: boolean;
+  isLastMessage?: boolean;
+  onToggleMarkdown: (messageId: string) => void;
+  onCopy: (content: string, messageId: string) => void;
+  onEdit: (messageId: string) => void;
+  onCancelEdit: () => void;
+  onEditContentChange: (content: string) => void;
+  onSaveEdit: (messageId: string, content: string) => void;
+  onViewAgentDetails?: (sessionId: string, agentId: string) => void;
+  t: (key: string) => string;
+}
+
+export const MessageItem = memo(
+  function MessageItem({
+    message,
+    userMode,
+    markdownEnabled,
+    isCopied,
+    isEditing,
+    editingContent,
+    isStreaming,
+    isLastMessage = false,
+    onToggleMarkdown,
+    onCopy,
+    onEdit,
+    onCancelEdit,
+    onEditContentChange,
+    onSaveEdit,
+    onViewAgentDetails,
+    t,
+  }: MessageItemProps) {
+    // Track render performance
+    useComponentPerformance({
+      componentName: 'MessageItem',
+      threshold: 30,
+    });
+    // Determine if message is long (more than 500 characters or more than 10 lines)
+    const isLongMessage =
+      message.content.length > 500 || message.content.split('\n').length > 10;
+    // Disable collapse/expand for streaming messages
+    const canCollapse = isLongMessage && !isStreaming;
+
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    // Don't collapse by default if it's the last message or if streaming
+    const [isCollapsed, setIsCollapsed] = useState(
+      !isStreaming && !isLastMessage
+    );
+
+    // Initial height state
+    const [contentHeight, setContentHeight] = useState<string | number>(
+      canCollapse && !isStreaming ? 300 : 'auto'
+    );
+
+    // Smooth collapse animation effect
+    useEffect(() => {
+      // If cannot collapse, reset to auto
+      if (!canCollapse) {
+        // Use requestAnimationFrame to prevent synchronous state update warning
+        // and ensure this runs after the current render cycle
+        requestAnimationFrame(() => setContentHeight('auto'));
+        return;
+      }
+
+      const ele = contentRef.current;
+      if (!ele) return;
+
+      if (isCollapsed) {
+        // Animate to 300px
+        // First set explicit height if currently auto to enable transition
+        // We use scrollHeight to transition FROM
+        setContentHeight(ele.scrollHeight);
+
+        // Double RAF ensures the brower paints the start height before transitioning to 300
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setContentHeight(300));
+        });
+      } else {
+        // Animate to full height
+        setContentHeight(ele.scrollHeight);
+        // Reset to auto after transition finishes to allow resizing
+        const timer = setTimeout(() => setContentHeight('auto'), 300);
+        return () => clearTimeout(timer);
+      }
+    }, [isCollapsed, canCollapse]);
+    const handleCopy = useCallback(() => {
+      onCopy(message.content, message.id);
+    }, [message.content, message.id, onCopy]);
+
+    const handleToggleMarkdown = useCallback(() => {
+      onToggleMarkdown(message.id);
+    }, [message.id, onToggleMarkdown]);
+
+    const handleEdit = useCallback(() => {
+      onEdit(message.id);
+    }, [message.id, onEdit]);
+
+    const handleSave = useCallback(() => {
+      if (editingContent.trim()) {
+        onSaveEdit(message.id, editingContent.trim());
+      }
+    }, [message.id, editingContent, onSaveEdit]);
+
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          handleSave();
+        } else if (e.key === 'Escape') {
+          onCancelEdit();
+        }
+      },
+      [handleSave, onCancelEdit]
+    );
+
+    // Check for Agent Card metadata
+    let agentCardData = null;
+    if (message.metadata) {
+      try {
+        const parsed = JSON.parse(message.metadata);
+        if (parsed && parsed.type === 'agent_card') {
+          agentCardData = parsed;
+        }
+      } catch (_) {
+        // Ignore JSON parse errors
+      }
+    }
+
+    if (agentCardData) {
+      return (
+        <div className="flex w-full justify-start my-2">
+          <AgentCard
+            agentId={agentCardData.agent_id}
+            sessionId={agentCardData.session_id}
+            status={agentCardData.status}
+            onViewDetails={(sessionId) => {
+              onViewAgentDetails?.(sessionId, agentCardData.agent_id);
+            }}
+          >
+            {agentCardData.summary && (
+              <MarkdownContent
+                content={agentCardData.summary}
+                messageId={message.id}
+              />
+            )}
+          </AgentCard>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={cn(
+          'group flex min-w-0 w-full',
+          message.role === 'user' ? 'justify-end' : 'justify-start'
+        )}
+      >
+        <div
+          className={cn(
+            'flex min-w-0 w-full flex-col gap-2',
+            message.role === 'user' && 'items-end'
+          )}
+        >
+          {isEditing ? (
+            <div className="flex flex-col gap-2 w-full max-w-3xl">
+              <Textarea
+                ref={textareaRef}
+                value={editingContent}
+                onChange={(e) => onEditContentChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="min-h-[40px] max-h-[200px] resize-none"
+                placeholder={t('enterMessage')}
+              />
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCancelEdit}
+                  className="h-7"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  {t('cancel') || 'Cancel'}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={!editingContent.trim()}
+                  className="h-7"
+                >
+                  <Send className="h-3.5 w-3.5 mr-1" />
+                  {t('save') || 'Save'}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="relative flex flex-col gap-1 group">
+              <div
+                className={cn(
+                  'relative min-w-0 wrap-break-words rounded-2xl px-4 py-3 text-sm leading-relaxed select-text',
+
+                  isStreaming && 'will-change-contents',
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-foreground'
+                )}
+                style={
+                  isStreaming
+                    ? {
+                        contain: 'layout style',
+                      }
+                    : undefined
+                }
+              >
+                <div className="relative">
+                  <div
+                    ref={contentRef}
+                    style={{ height: contentHeight }}
+                    className="overflow-hidden transition-[height] duration-300 ease-in-out"
+                  >
+                    {message.role === 'assistant' ? (
+                      <>
+                        {markdownEnabled ? (
+                          <MarkdownContent
+                            content={message.content}
+                            messageId={message.id}
+                          />
+                        ) : (
+                          <div className="whitespace-pre-wrap wrap-break-words">
+                            {message.content}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="whitespace-pre-wrap wrap-break-words">
+                        {message.content}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Gradient fade overlay when collapsed */}
+                  {canCollapse && isCollapsed && (
+                    <div
+                      className={cn(
+                        'absolute bottom-0 left-0 right-0 h-16 pointer-events-none',
+                        message.role === 'user'
+                          ? 'bg-linear-to-t from-primary to-transparent'
+                          : 'bg-linear-to-t from-muted to-transparent'
+                      )}
+                    />
+                  )}
+                </div>
+
+                {/* Collapse/Expand button */}
+                {canCollapse && (
+                  <div
+                    className={cn(
+                      'flex items-center mt-2 pt-2',
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
+                    )}
+                  >
+                    <button
+                      className="text-xs opacity-60 hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                      onClick={() => setIsCollapsed(!isCollapsed)}
+                    >
+                      {isCollapsed ? (
+                        <>
+                          <ChevronDown className="h-3 w-3" />
+                          {t('showMore')}
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp className="h-3 w-3" />
+                          {t('showLess')}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer: Tokens + Actions */}
+              <div
+                className={cn(
+                  'flex items-center mt-1 gap-2',
+                  message.role === 'user'
+                    ? 'justify-start pl-2'
+                    : 'justify-between pr-2' // Spread content for assistant
+                )}
+              >
+                {/* Token usage info for developer mode */}
+                {userMode === 'developer' &&
+                message.role === 'assistant' &&
+                message.tokenUsage ? (
+                  <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 select-text">
+                    {message.tokenUsage.promptTokens !== undefined && (
+                      <span>
+                        {t('promptTokens')}:{' '}
+                        {message.tokenUsage.promptTokens.toLocaleString()}
+                      </span>
+                    )}
+                    {message.tokenUsage.completionTokens !== undefined && (
+                      <span>
+                        {t('completionTokens')}:{' '}
+                        {message.tokenUsage.completionTokens.toLocaleString()}
+                      </span>
+                    )}
+                    {message.tokenUsage.totalTokens !== undefined && (
+                      <span>
+                        {t('totalTokens')}:{' '}
+                        {message.tokenUsage.totalTokens.toLocaleString()}
+                      </span>
+                    )}
+                    {message.tokenUsage.tokensPerSecond !== undefined && (
+                      <span>
+                        {t('tokensPerSecond')}:{' '}
+                        {message.tokenUsage.tokensPerSecond.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div /> // Spacer
+                )}
+
+                {/* Action buttons */}
+                <div
+                  className={cn(
+                    'flex items-center gap-1',
+                    'opacity-0 group-hover:opacity-100 transition-opacity duration-150'
+                  )}
+                >
+                  {message.role === 'user' && (
+                    <button
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors group/btn"
+                      onClick={handleEdit}
+                      title={t('edit') || 'Edit'}
+                    >
+                      <Pencil className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
+                    </button>
+                  )}
+                  {message.role === 'assistant' && (
+                    <>
+                      <button
+                        className="p-1.5 rounded-md hover:bg-muted transition-colors group/btn"
+                        onClick={handleEdit}
+                        title={t('edit') || 'Edit'}
+                      >
+                        <Pencil className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
+                      </button>
+                      <button
+                        className="p-1.5 rounded-md hover:bg-muted transition-colors group/btn"
+                        onClick={handleToggleMarkdown}
+                        title={
+                          markdownEnabled ? t('showRawText') : t('showMarkdown')
+                        }
+                      >
+                        {markdownEnabled ? (
+                          <FileText className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
+                        ) : (
+                          <Code className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
+                        )}
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="p-1.5 rounded-md hover:bg-muted transition-colors group/btn"
+                    onClick={handleCopy}
+                    title={t('copy')}
+                  >
+                    {isCopied ? (
+                      <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if relevant props change
+    // Note: onToggleMarkdown and onCopy are stable callbacks from useCallback, so we don't need to compare them
+    return (
+      prevProps.message.id === nextProps.message.id &&
+      prevProps.message.content === nextProps.message.content &&
+      prevProps.message.reasoning === nextProps.message.reasoning &&
+      prevProps.message.codeBlocks === nextProps.message.codeBlocks &&
+      prevProps.message.tokenUsage === nextProps.message.tokenUsage &&
+      prevProps.message.metadata === nextProps.message.metadata && // Include metadata for agent card updates
+      prevProps.userMode === nextProps.userMode &&
+      prevProps.markdownEnabled === nextProps.markdownEnabled &&
+      prevProps.isCopied === nextProps.isCopied &&
+      prevProps.isEditing === nextProps.isEditing &&
+      prevProps.editingContent === nextProps.editingContent &&
+      prevProps.isStreaming === nextProps.isStreaming &&
+      prevProps.isLastMessage === nextProps.isLastMessage
+    );
+  }
+);

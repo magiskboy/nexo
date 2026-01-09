@@ -8,12 +8,12 @@ import {
   setStreamingStartTime,
   clearStreamingStartTime,
   updateMessageTokenUsage,
-} from '@/store/slices/messages';
+} from '@/features/chat/state/messages';
 import type { Message } from '@/store/types';
 import { showSuccess } from '@/store/slices/notificationSlice';
 import { addPermissionRequest } from '@/store/slices/toolPermissionSlice';
 import { useTranslation } from 'react-i18next';
-import { messagesApi } from '@/store/api/messagesApi';
+import { messagesApi } from '@/features/chat/state/messagesApi';
 import { extractCodeBlocks } from '@/lib/code-block-extractor';
 
 // Event types

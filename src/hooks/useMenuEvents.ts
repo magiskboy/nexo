@@ -8,8 +8,8 @@ import {
   toggleSidebar,
   setTheme,
 } from '@/store/slices/uiSlice';
-import { createChat } from '@/store/slices/chatsSlice';
-import { useWorkspaces } from './useWorkspaces';
+import { createChat } from '@/features/chat/state/chatsSlice';
+import { useWorkspaces } from '@/features/workspace';
 import { useTranslation } from 'react-i18next';
 
 /**
