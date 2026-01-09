@@ -84,6 +84,8 @@
   "errorEditingMessage": "Error editing message",
   "executing": "Executing...",
   "expandSidebar": "Expand sidebar",
+  "featureAgentDescription": "Discover and install specialized AI agents from the community to automate complex tasks.",
+  "featureAgentTitle": "AI Agents",
   "featureDataConnectorDescription": "Connect to external data sources and databases for enhanced AI interactions",
   "featureDataConnectorTitle": "Data Connector",
   "featureInteractiveDescription": "Run Python code, render diagrams, and interact with rich content directly in your conversations",

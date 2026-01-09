@@ -84,6 +84,8 @@
   "errorEditingMessage": "Lỗi khi chỉnh sửa tin nhắn",
   "executing": "Đang thực thi...",
   "expandSidebar": "Mở rộng sidebar",
+  "featureAgentDescription": "Khám phá và cài đặt các agent AI chuyên biệt từ cộng đồng để tự động hóa các tác vụ phức tạp.",
+  "featureAgentTitle": "AI Agents",
   "featureDataConnectorDescription": "Kết nối với các nguồn dữ liệu và cơ sở dữ liệu bên ngoài để nâng cao tương tác AI",
   "featureDataConnectorTitle": "Kết nối Dữ liệu",
   "featureInteractiveDescription": "Chạy Python code, render diagram và tương tác với nội dung phong phú trực tiếp trong cuộc trò chuyện",

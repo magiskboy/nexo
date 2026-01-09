@@ -9,6 +9,7 @@ import {
   GitBranch,
   Database,
   PlayCircle,
+  Bot,
 } from 'lucide-react';
 import {
   Dialog,
@@ -36,6 +37,12 @@ const features = [
     icon: Code,
     key: 'featureInteractive',
     navigateTo: 'general' as const,
+    comingSoon: false,
+  },
+  {
+    icon: Bot,
+    key: 'featureAgent',
+    navigateTo: 'agent' as const,
     comingSoon: false,
   },
   {
@@ -131,6 +138,7 @@ export function WelcomeScreen({ open, onOpenChange }: WelcomeProps) {
             | 'prompts'
             | 'addon'
             | 'usage'
+            | 'agent'
             | 'about'
         )
       );
