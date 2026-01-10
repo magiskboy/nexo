@@ -5,11 +5,11 @@
       "endpoints": [
         "https://github.com/nexo-agent/nexo/releases/latest/download/latest.json"
       ],
-      "pubkey": "RWS/hMThiUCDH4XEHW9nRsefH5vT5B3dmlcMbBveSikP0O/lCEyuIJJi"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFGODM0MDg5RTFDNDg0QkYKUldTL2hNVGhpVUNESDRYRUhXOW5Sc2VmSDV2VDVCM2RtbGNNYkJ2ZVNpa1AwTy9sQ0V5dUlKSmkK"
     }
   },
   "productName": "Nexo",
-  "version": "0.1.0-alpha.20",
+  "version": "0.1.0-alpha.21",
   "identifier": "com.nexo.app",
   "build": {
     "beforeDevCommand": "yarn dev",
@@ -43,9 +43,6 @@
       "icons/icon.ico"
     ],
     "resources": ["binaries/*"],
-    "macOS": {
-      "signingIdentity": "-"
-    },
     "windows": {
       "wix": {
         "version": "0.1.17"
