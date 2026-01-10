@@ -238,9 +238,21 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
+  body {
+    @apply overflow-hidden;
+    height: 100%;
+    width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground select-none;
     font-weight: 400; /* Enforce global regular weight */
+  }
+
+  #root {
+    height: 100%;
+    width: 100%;
   }
 
   /* Force all headings and bold elements to be regular weight */

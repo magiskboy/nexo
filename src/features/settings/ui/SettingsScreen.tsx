@@ -158,13 +158,15 @@ export function SettingsScreen() {
   );
 
   const content = (
-    <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">
-          {sections.find((s) => s.id === selectedSection)?.label}
-        </h1>
+    <div className="h-full overflow-auto">
+      <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">
+            {sections.find((s) => s.id === selectedSection)?.label}
+          </h1>
+        </div>
+        {renderContent()}
       </div>
-      {renderContent()}
     </div>
   );
 

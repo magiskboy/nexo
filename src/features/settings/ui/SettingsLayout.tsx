@@ -1,9 +1,9 @@
 import { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { Button } from '@/ui/atoms/button/button';
 import { useAppDispatch } from '@/app/hooks';
 import { navigateToChat } from '@/features/ui/state/uiSlice';
+import { ScrollArea } from '@/ui/atoms/scroll-area';
 
 interface SettingsLayoutProps {
   children: ReactNode;
@@ -37,11 +37,7 @@ export function SettingsLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ScrollArea className="flex-1 [&_[data-slot='scroll-area-scrollbar']]:hidden">
-          {children}
-        </ScrollArea>
-      </div>
+      <div className="flex-1 flex flex-col pb-4">{children}</div>
     </div>
   );
 }
