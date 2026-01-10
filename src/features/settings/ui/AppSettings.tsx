@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Label } from '@/ui/atoms/label';
+import { Languages, Palette, User } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/ui/atoms/select';
+import { Separator } from '@/ui/atoms/separator';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import i18n from '@/i18n/config';
 
@@ -52,85 +53,93 @@ export function AppSettings() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        {t('generalSettingsDescription') || t('configureGeneralSettings')}
-      </p>
+      {/* Language */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Languages className="size-4 text-muted-foreground" />
+          <h3 className="font-medium text-sm">{t('language')}</h3>
+        </div>
+        <Select
+          value={currentLanguage}
+          onValueChange={(value: 'vi' | 'en') => handleLanguageChange(value)}
+        >
+          <SelectTrigger id="language-select" className="w-full">
+            <SelectValue placeholder={t('selectLanguage')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="en">{t('english')}</SelectItem>
+            <SelectItem value="vi">{t('vietnamese')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="language-select">{t('language')}</Label>
-          <Select
-            value={currentLanguage}
-            onValueChange={(value: 'vi' | 'en') => handleLanguageChange(value)}
-          >
-            <SelectTrigger id="language-select" className="w-full">
-              <SelectValue placeholder={t('selectLanguage')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="vi">{t('vietnamese')}</SelectItem>
-              <SelectItem value="en">{t('english')}</SelectItem>
-            </SelectContent>
-          </Select>
+      <Separator />
+
+      {/* Theme */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Palette className="size-4 text-muted-foreground" />
+          <h3 className="font-medium text-sm">{t('theme')}</h3>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="theme-select">{t('theme')}</Label>
-          <Select
-            value={currentTheme}
-            onValueChange={(value: Theme) => handleThemeChange(value)}
-          >
-            <SelectTrigger id="theme-select" className="w-full">
-              <SelectValue placeholder={t('selectTheme')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="light">{t('lightTheme')}</SelectItem>
-              <SelectItem value="dark">{t('darkTheme')}</SelectItem>
-              <SelectItem value="system">{t('systemTheme')}</SelectItem>
-              <SelectItem value="github-light">
-                {t('githubLightTheme')}
-              </SelectItem>
-              <SelectItem value="github-dark">
-                {t('githubDarkTheme')}
-              </SelectItem>
-              <SelectItem value="gruvbox">{t('gruvboxTheme')}</SelectItem>
-              <SelectItem value="dracula">{t('draculaTheme')}</SelectItem>
-              <SelectItem value="solarized-light">
-                {t('solarizedLightTheme')}
-              </SelectItem>
-              <SelectItem value="solarized-dark">
-                {t('solarizedDarkTheme')}
-              </SelectItem>
-              <SelectItem value="one-dark-pro">
-                {t('oneDarkProTheme')}
-              </SelectItem>
-              <SelectItem value="one-light">{t('oneLightTheme')}</SelectItem>
-              <SelectItem value="monokai">{t('monokaiTheme')}</SelectItem>
-              <SelectItem value="nord">{t('nordTheme')}</SelectItem>
-              <SelectItem value="ayu-dark">{t('ayuDarkTheme')}</SelectItem>
-            </SelectContent>
-          </Select>
+        <Select
+          value={currentTheme}
+          onValueChange={(value: Theme) => handleThemeChange(value)}
+        >
+          <SelectTrigger id="theme-select" className="w-full">
+            <SelectValue placeholder={t('selectTheme')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="light">{t('lightTheme')}</SelectItem>
+            <SelectItem value="dark">{t('darkTheme')}</SelectItem>
+            <SelectItem value="system">{t('systemTheme')}</SelectItem>
+            <SelectItem value="github-light">
+              {t('githubLightTheme')}
+            </SelectItem>
+            <SelectItem value="github-dark">{t('githubDarkTheme')}</SelectItem>
+            <SelectItem value="gruvbox">{t('gruvboxTheme')}</SelectItem>
+            <SelectItem value="dracula">{t('draculaTheme')}</SelectItem>
+            <SelectItem value="solarized-light">
+              {t('solarizedLightTheme')}
+            </SelectItem>
+            <SelectItem value="solarized-dark">
+              {t('solarizedDarkTheme')}
+            </SelectItem>
+            <SelectItem value="one-dark-pro">{t('oneDarkProTheme')}</SelectItem>
+            <SelectItem value="one-light">{t('oneLightTheme')}</SelectItem>
+            <SelectItem value="monokai">{t('monokaiTheme')}</SelectItem>
+            <SelectItem value="nord">{t('nordTheme')}</SelectItem>
+            <SelectItem value="ayu-dark">{t('ayuDarkTheme')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Separator />
+
+      {/* User Mode */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <User className="size-4 text-muted-foreground" />
+          <h3 className="font-medium text-sm">{t('userMode')}</h3>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="user-mode-select">{t('userMode')}</Label>
-          <Select
-            value={currentUserMode}
-            onValueChange={(value: 'normal' | 'developer') =>
-              handleUserModeChange(value)
-            }
-          >
-            <SelectTrigger id="user-mode-select" className="w-full">
-              <SelectValue placeholder={t('selectUserMode')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="normal">{t('normalUser')}</SelectItem>
-              <SelectItem value="developer">{t('developerUser')}</SelectItem>
-            </SelectContent>
-          </Select>
-          {currentUserMode === 'developer' && (
-            <p className="text-xs text-muted-foreground">
-              {t('developerModeDescription')}
-            </p>
-          )}
-        </div>
+        <Select
+          value={currentUserMode}
+          onValueChange={(value: 'normal' | 'developer') =>
+            handleUserModeChange(value)
+          }
+        >
+          <SelectTrigger id="user-mode-select" className="w-full">
+            <SelectValue placeholder={t('selectUserMode')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="normal">{t('normalUser')}</SelectItem>
+            <SelectItem value="developer">{t('developerUser')}</SelectItem>
+          </SelectContent>
+        </Select>
+        {currentUserMode === 'developer' && (
+          <p className="text-xs text-muted-foreground">
+            {t('developerModeDescription')}
+          </p>
+        )}
       </div>
     </div>
   );
