@@ -1,7 +1,7 @@
 {
   "name": "llm-client",
   "private": true,
-  "version": "0.1.0-alpha.24",
+  "version": "0.1.0-alpha.25",
   "type": "module",
   "scripts": {
     "dev": "vite",
