@@ -45,7 +45,7 @@ export function UsageOverview({ summary, loading }: UsageOverviewProps) {
           </div>
         </CardHeader>
         <CardContent className="relative z-10">
-          <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+          <div className="text-3xl tracking-tight text-foreground tabular-nums">
             {new Intl.NumberFormat('en-US', {
               style: 'currency',
               currency: 'USD',
@@ -66,7 +66,7 @@ export function UsageOverview({ summary, loading }: UsageOverviewProps) {
           </div>
         </CardHeader>
         <CardContent className="relative z-10">
-          <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+          <div className="text-3xl tracking-tight text-foreground tabular-nums">
             {(
               summary.total_input_tokens + summary.total_output_tokens
             ).toLocaleString()}
@@ -95,7 +95,7 @@ export function UsageOverview({ summary, loading }: UsageOverviewProps) {
           </div>
         </CardHeader>
         <CardContent className="relative z-10">
-          <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+          <div className="text-3xl tracking-tight text-foreground tabular-nums">
             {summary.total_requests.toLocaleString()}
           </div>
         </CardContent>
@@ -112,7 +112,7 @@ export function UsageOverview({ summary, loading }: UsageOverviewProps) {
           </div>
         </CardHeader>
         <CardContent className="relative z-10">
-          <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+          <div className="text-3xl tracking-tight text-foreground tabular-nums">
             {summary.average_latency.toFixed(0)}
             <span className="text-sm font-medium text-muted-foreground ml-1">
               ms

@@ -167,20 +167,35 @@ export function PromptManagement() {
             <EmptyState icon={FileText} title={t('noPrompts')} />
           ) : (
             <ScrollArea className="h-full [&_[data-slot='scroll-area-scrollbar']]:hidden">
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {prompts.map((prompt) => (
                   <div
                     key={prompt.id}
                     onClick={() => handleEdit(prompt)}
-                    className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="group relative rounded-lg border bg-card p-4 hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer overflow-hidden"
                   >
-                    <div className="flex-1 space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{prompt.name}</h4>
+                    {/* Subtle gradient overlay on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+
+                    <div className="relative space-y-3">
+                      {/* Header with icon and name */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center size-10 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                          <FileText className="size-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-normal truncate">
+                            {prompt.name}
+                          </h4>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {prompt.content}
-                      </p>
+
+                      {/* Content preview */}
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground line-clamp-3">
+                          {prompt.content}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -19,6 +19,7 @@ export function useAddons() {
     []
   );
   const [nodeRuntimes, setNodeRuntimes] = useState<NodeRuntimeStatus[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Track installing state by version (string) or null if not installing
   const [installingPython, setInstallingPython] = useState<string | null>(null);
@@ -103,15 +104,23 @@ export function useAddons() {
 
   // Initial load
   useEffect(() => {
-    loadAddonConfig();
-    loadPythonStatus();
-    loadNodeStatus();
+    const loadAll = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        loadAddonConfig(),
+        loadPythonStatus(),
+        loadNodeStatus(),
+      ]);
+      setIsLoading(false);
+    };
+    loadAll();
   }, [loadAddonConfig, loadPythonStatus, loadNodeStatus]);
 
   return {
     addonConfig,
     pythonRuntimes,
     nodeRuntimes,
+    isLoading,
     installingPython,
     installingNode,
     actions: {

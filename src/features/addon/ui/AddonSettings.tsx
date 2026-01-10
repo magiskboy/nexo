@@ -3,6 +3,7 @@ import { Button } from '@/ui/atoms/button/button';
 import { Download, Trash2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/ui/atoms/tooltip';
+import { Skeleton } from '@/ui/atoms/skeleton';
 import { useAddons } from '../hooks/useAddons';
 
 const PythonIcon = ({ className }: { className?: string }) => (
@@ -29,6 +30,24 @@ const NodeIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const RuntimeCardSkeleton = () => (
+  <div className="flex flex-col rounded-lg border p-4">
+    <div className="flex items-center gap-3 mb-4">
+      <Skeleton className="size-10 rounded-full" />
+      <div className="min-w-0 flex-1">
+        <Skeleton className="h-5 w-24 mb-2" />
+        <Skeleton className="h-4 w-16" />
+      </div>
+    </div>
+    <div className="h-5 mb-4">
+      <Skeleton className="h-3 w-full" />
+    </div>
+    <div className="mt-auto pt-2">
+      <Skeleton className="h-9 w-full" />
+    </div>
+  </div>
+);
+
 export default function AddonSettings() {
   const { t } = useTranslation('settings');
 
@@ -36,6 +55,7 @@ export default function AddonSettings() {
     addonConfig,
     pythonRuntimes,
     nodeRuntimes,
+    isLoading,
     installingPython,
     installingNode,
     actions,
@@ -65,91 +85,99 @@ export default function AddonSettings() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {pythonRuntimes.map((runtime) => (
-            <div
-              key={runtime.version}
-              className="flex flex-col rounded-lg border p-4 hover:bg-accent/50 transition-colors"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="size-10 rounded-full bg-brand-python/10 flex items-center justify-center shrink-0">
-                  <PythonIcon className="size-5 text-brand-python" />
-                </div>
-                <div className="min-w-0">
-                  {runtime.installed && runtime.path ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <h5 className="font-medium cursor-help">
-                          Python {runtime.version}
-                        </h5>
-                      </TooltipTrigger>
-                      <TooltipContent>{runtime.path}</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <h5 className="font-medium">Python {runtime.version}</h5>
-                  )}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                        runtime.installed
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {runtime.installed ? t('installed') : t('notInstalled')}
-                    </span>
+          {isLoading ? (
+            <>
+              <RuntimeCardSkeleton />
+              <RuntimeCardSkeleton />
+              <RuntimeCardSkeleton />
+            </>
+          ) : (
+            pythonRuntimes.map((runtime) => (
+              <div
+                key={runtime.version}
+                className="flex flex-col rounded-lg border p-4 hover:bg-accent/50 transition-colors"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="size-10 rounded-full bg-brand-python/10 flex items-center justify-center shrink-0">
+                    <PythonIcon className="size-5 text-brand-python" />
+                  </div>
+                  <div className="min-w-0">
+                    {runtime.installed && runtime.path ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <h5 className="font-medium cursor-help">
+                            Python {runtime.version}
+                          </h5>
+                        </TooltipTrigger>
+                        <TooltipContent>{runtime.path}</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <h5 className="font-medium">Python {runtime.version}</h5>
+                    )}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-md px-2 py-1 text-xs',
+                          runtime.installed
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-muted text-muted-foreground'
+                        )}
+                      >
+                        {runtime.installed ? t('installed') : t('notInstalled')}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="h-5 mb-4">
-                {runtime.path ? (
-                  <span
-                    className="text-[10px] text-muted-foreground font-mono block truncate"
-                    title={runtime.path}
-                  >
-                    {runtime.path}
-                  </span>
-                ) : (
-                  <div className="h-full" />
-                )}
-              </div>
+                <div className="h-5 mb-4">
+                  {runtime.path ? (
+                    <span
+                      className="text-[10px] text-muted-foreground font-mono block truncate"
+                      title={runtime.path}
+                    >
+                      {runtime.path}
+                    </span>
+                  ) : (
+                    <div className="h-full" />
+                  )}
+                </div>
 
-              <div className="mt-auto pt-2">
-                {!runtime.installed ? (
-                  <Button
-                    onClick={() => actions.installPython(runtime.version)}
-                    disabled={installingPython !== null}
-                    size="sm"
-                    className="w-full h-9 bg-brand-python hover:bg-brand-python/90 text-white"
-                  >
-                    {installingPython === runtime.version ? (
-                      <>
-                        <RefreshCw className="mr-2 size-4 animate-spin" />
-                        {t('installing')}
-                      </>
-                    ) : (
-                      <>
-                        <Download className="mr-2 size-4" />
-                        {t('install')}
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => actions.uninstallPython(runtime.version)}
-                    disabled={installingPython !== null}
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-9 text-destructive hover:bg-destructive/10 hover:text-destructive border-transparent hover:border-destructive/20"
-                  >
-                    <Trash2 className="mr-2 size-4" />
-                    {t('uninstall')}
-                  </Button>
-                )}
+                <div className="mt-auto pt-2">
+                  {!runtime.installed ? (
+                    <Button
+                      onClick={() => actions.installPython(runtime.version)}
+                      disabled={installingPython !== null}
+                      size="sm"
+                      className="w-full h-9 bg-brand-python hover:bg-brand-python/90 text-white"
+                    >
+                      {installingPython === runtime.version ? (
+                        <>
+                          <RefreshCw className="mr-2 size-4 animate-spin" />
+                          {t('installing')}
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 size-4" />
+                          {t('install')}
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => actions.uninstallPython(runtime.version)}
+                      disabled={installingPython !== null}
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 text-destructive hover:bg-destructive/10 hover:text-destructive border-transparent hover:border-destructive/20"
+                    >
+                      <Trash2 className="mr-2 size-4" />
+                      {t('uninstall')}
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
@@ -164,91 +192,98 @@ export default function AddonSettings() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {nodeRuntimes.map((runtime) => (
-            <div
-              key={runtime.version}
-              className="flex flex-col rounded-lg border p-4 hover:bg-accent/50 transition-colors"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="size-10 rounded-full bg-brand-node/10 flex items-center justify-center shrink-0">
-                  <NodeIcon className="size-5 text-brand-node" />
-                </div>
-                <div className="min-w-0">
-                  {runtime.installed && runtime.path ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <h5 className="font-medium cursor-help">
-                          Node.js {runtime.version}
-                        </h5>
-                      </TooltipTrigger>
-                      <TooltipContent>{runtime.path}</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <h5 className="font-medium">Node.js {runtime.version}</h5>
-                  )}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                        runtime.installed
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {runtime.installed ? t('installed') : t('notInstalled')}
-                    </span>
+          {isLoading ? (
+            <>
+              <RuntimeCardSkeleton />
+              <RuntimeCardSkeleton />
+            </>
+          ) : (
+            nodeRuntimes.map((runtime) => (
+              <div
+                key={runtime.version}
+                className="flex flex-col rounded-lg border p-4 hover:bg-accent/50 transition-colors"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="size-10 rounded-full bg-brand-node/10 flex items-center justify-center shrink-0">
+                    <NodeIcon className="size-5 text-brand-node" />
+                  </div>
+                  <div className="min-w-0">
+                    {runtime.installed && runtime.path ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <h5 className="font-medium cursor-help">
+                            Node.js {runtime.version}
+                          </h5>
+                        </TooltipTrigger>
+                        <TooltipContent>{runtime.path}</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <h5 className="font-medium">Node.js {runtime.version}</h5>
+                    )}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-md px-2 py-1 text-xs',
+                          runtime.installed
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-muted text-muted-foreground'
+                        )}
+                      >
+                        {runtime.installed ? t('installed') : t('notInstalled')}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="h-5 mb-4">
-                {runtime.path ? (
-                  <span
-                    className="text-[10px] text-muted-foreground font-mono block truncate"
-                    title={runtime.path}
-                  >
-                    {runtime.path}
-                  </span>
-                ) : (
-                  <div className="h-full" />
-                )}
-              </div>
+                <div className="h-5 mb-4">
+                  {runtime.path ? (
+                    <span
+                      className="text-[10px] text-muted-foreground font-mono block truncate"
+                      title={runtime.path}
+                    >
+                      {runtime.path}
+                    </span>
+                  ) : (
+                    <div className="h-full" />
+                  )}
+                </div>
 
-              <div className="mt-auto pt-2">
-                {!runtime.installed ? (
-                  <Button
-                    onClick={() => actions.installNode(runtime.version)}
-                    disabled={installingNode !== null}
-                    size="sm"
-                    className="w-full h-9 bg-brand-node hover:bg-brand-node/90 text-white"
-                  >
-                    {installingNode === runtime.version ? (
-                      <>
-                        <RefreshCw className="mr-2 size-4 animate-spin" />
-                        {t('installing')}
-                      </>
-                    ) : (
-                      <>
-                        <Download className="mr-2 size-4" />
-                        {t('install')}
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => actions.uninstallNode(runtime.version)}
-                    disabled={installingNode !== null}
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-9 text-destructive hover:bg-destructive/10 hover:text-destructive border-transparent hover:border-destructive/20"
-                  >
-                    <Trash2 className="mr-2 size-4" />
-                    {t('uninstall')}
-                  </Button>
-                )}
+                <div className="mt-auto pt-2">
+                  {!runtime.installed ? (
+                    <Button
+                      onClick={() => actions.installNode(runtime.version)}
+                      disabled={installingNode !== null}
+                      size="sm"
+                      className="w-full h-9 bg-brand-node hover:bg-brand-node/90 text-white"
+                    >
+                      {installingNode === runtime.version ? (
+                        <>
+                          <RefreshCw className="mr-2 size-4 animate-spin" />
+                          {t('installing')}
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 size-4" />
+                          {t('install')}
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => actions.uninstallNode(runtime.version)}
+                      disabled={installingNode !== null}
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 text-destructive hover:bg-destructive/10 hover:text-destructive border-transparent hover:border-destructive/20"
+                    >
+                      <Trash2 className="mr-2 size-4" />
+                      {t('uninstall')}
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
