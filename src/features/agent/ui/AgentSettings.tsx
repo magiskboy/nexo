@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from '@/ui/atoms/dialog/component';
 import { Separator } from '@/ui/atoms/separator';
+import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -208,15 +209,6 @@ export function AgentSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold mb-1">Agent Management</h3>
-          <p className="text-sm text-muted-foreground">
-            Extend Nexo capabilities with specialized agents.
-          </p>
-        </div>
-      </div>
-
       <Tabs defaultValue="installed" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="installed">Installed Agents</TabsTrigger>
@@ -421,219 +413,223 @@ export function AgentSettings() {
               </div>
             </div>
           </DialogHeader>
-          <DialogBody style={{ scrollbarWidth: 'none' }}>
-            {selectedAgent && (
-              <div className="space-y-6">
-                {/* Description */}
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Description</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedAgent.manifest.description}
-                  </p>
-                </div>
+          <DialogBody>
+            <ScrollArea className="h-full pr-4">
+              {selectedAgent && (
+                <div className="space-y-6">
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Description</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {selectedAgent.manifest.description}
+                    </p>
+                  </div>
 
-                <Separator />
+                  <Separator />
 
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Information</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground mb-1">Author</p>
-                      <p className="font-medium">
-                        {selectedAgent.manifest.author}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground mb-1">Version</p>
-                      <p className="font-mono text-xs">
-                        {selectedAgent.version_ref}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground mb-1">
-                        Schema Version
-                      </p>
-                      <p className="font-medium">
-                        {selectedAgent.manifest.schema_version}
-                      </p>
-                    </div>
-                    {selectedAgent.manifest.license && (
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">Information</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-muted-foreground mb-1">License</p>
+                        <p className="text-muted-foreground mb-1">Author</p>
                         <p className="font-medium">
-                          {selectedAgent.manifest.license}
+                          {selectedAgent.manifest.author}
                         </p>
                       </div>
-                    )}
-                    {selectedAgent.install_info && (
-                      <>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Version</p>
+                        <p className="font-mono text-xs">
+                          {selectedAgent.version_ref}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">
+                          Schema Version
+                        </p>
+                        <p className="font-medium">
+                          {selectedAgent.manifest.schema_version}
+                        </p>
+                      </div>
+                      {selectedAgent.manifest.license && (
                         <div>
-                          <p className="text-muted-foreground mb-1">Source</p>
-                          <p className="font-medium capitalize">
-                            {selectedAgent.install_info.source.type}
+                          <p className="text-muted-foreground mb-1">License</p>
+                          <p className="font-medium">
+                            {selectedAgent.manifest.license}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground mb-1">Updated</p>
-                          <p className="font-medium text-xs">
-                            {new Date(
-                              selectedAgent.install_info.updated_at * 1000
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </>
-                    )}
+                      )}
+                      {selectedAgent.install_info && (
+                        <>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Source</p>
+                            <p className="font-medium capitalize">
+                              {selectedAgent.install_info.source.type}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">
+                              Updated
+                            </p>
+                            <p className="font-medium text-xs">
+                              {new Date(
+                                selectedAgent.install_info.updated_at * 1000
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Links */}
-                {(selectedAgent.manifest.homepage ||
-                  selectedAgent.manifest.repository ||
-                  (selectedAgent.install_info?.source.type === 'git' &&
-                    selectedAgent.install_info.source.url)) && (
-                  <>
-                    <Separator />
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-sm">Links</h4>
-                      <div className="space-y-2">
-                        {selectedAgent.manifest.homepage && (
-                          <a
-                            href={selectedAgent.manifest.homepage}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-primary hover:underline"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            <span>Homepage</span>
-                          </a>
-                        )}
-                        {selectedAgent.manifest.repository && (
-                          <a
-                            href={selectedAgent.manifest.repository}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-primary hover:underline"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            <span>Repository</span>
-                          </a>
-                        )}
-                        {/* Show source URL if different from repo or if repo missing */}
-                        {selectedAgent.install_info?.source.type === 'git' &&
-                          selectedAgent.install_info.source.url &&
-                          selectedAgent.install_info.source.url !==
-                            selectedAgent.manifest.repository && (
+                  {/* Links */}
+                  {(selectedAgent.manifest.homepage ||
+                    selectedAgent.manifest.repository ||
+                    (selectedAgent.install_info?.source.type === 'git' &&
+                      selectedAgent.install_info.source.url)) && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm">Links</h4>
+                        <div className="space-y-2">
+                          {selectedAgent.manifest.homepage && (
                             <a
-                              href={selectedAgent.install_info.source.url}
+                              href={selectedAgent.manifest.homepage}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-2 text-sm text-primary hover:underline"
                             >
-                              <GitBranch className="h-4 w-4" />
-                              <span>Source Repository</span>
+                              <ExternalLink className="h-4 w-4" />
+                              <span>Homepage</span>
                             </a>
                           )}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Permissions */}
-                {selectedAgent.manifest.permissions &&
-                  selectedAgent.manifest.permissions.length > 0 && (
-                    <>
-                      <Separator />
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-sm">Permissions</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedAgent.manifest.permissions.map(
-                            (permission, index) => (
-                              <span
-                                key={index}
-                                className="px-2 py-1 text-xs bg-muted rounded-md"
-                              >
-                                {permission}
-                              </span>
-                            )
+                          {selectedAgent.manifest.repository && (
+                            <a
+                              href={selectedAgent.manifest.repository}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-sm text-primary hover:underline"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <span>Repository</span>
+                            </a>
                           )}
+                          {/* Show source URL if different from repo or if repo missing */}
+                          {selectedAgent.install_info?.source.type === 'git' &&
+                            selectedAgent.install_info.source.url &&
+                            selectedAgent.install_info.source.url !==
+                              selectedAgent.manifest.repository && (
+                              <a
+                                href={selectedAgent.install_info.source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm text-primary hover:underline"
+                              >
+                                <GitBranch className="h-4 w-4" />
+                                <span>Source Repository</span>
+                              </a>
+                            )}
                         </div>
                       </div>
                     </>
                   )}
 
-                {/* Tools */}
-                <Separator />
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm flex items-center gap-2">
-                    <Wrench className="h-4 w-4" />
-                    Tools ({agentTools.length})
-                  </h4>
-                  {loadingAgentInfo ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Loading tools...</span>
-                    </div>
-                  ) : agentTools.length > 0 ? (
-                    <div className="space-y-2">
-                      {agentTools.map((tool, index) => (
-                        <div
-                          key={index}
-                          className="p-3 rounded-md bg-muted/50 border"
-                        >
-                          <div className="font-medium text-sm mb-1">
-                            {tool.name}
+                  {/* Permissions */}
+                  {selectedAgent.manifest.permissions &&
+                    selectedAgent.manifest.permissions.length > 0 && (
+                      <>
+                        <Separator />
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-sm">Permissions</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedAgent.manifest.permissions.map(
+                              (permission, index) => (
+                                <span
+                                  key={index}
+                                  className="px-2 py-1 text-xs bg-muted rounded-md"
+                                >
+                                  {permission}
+                                </span>
+                              )
+                            )}
                           </div>
-                          {tool.description && (
-                            <p className="text-xs text-muted-foreground">
-                              {tool.description}
-                            </p>
-                          )}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No tools available
-                    </p>
-                  )}
-                </div>
+                      </>
+                    )}
 
-                {/* Instructions */}
-                <Separator />
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Instructions
-                  </h4>
-                  {loadingAgentInfo ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Loading instructions...</span>
-                    </div>
-                  ) : agentInstructions ? (
-                    <div className="p-3 rounded-md bg-muted/50 border">
-                      <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans">
-                        {agentInstructions}
-                      </pre>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No instructions available
-                    </p>
-                  )}
-                </div>
+                  {/* Tools */}
+                  <Separator />
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <Wrench className="h-4 w-4" />
+                      Tools ({agentTools.length})
+                    </h4>
+                    {loadingAgentInfo ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading tools...</span>
+                      </div>
+                    ) : agentTools.length > 0 ? (
+                      <div className="space-y-2">
+                        {agentTools.map((tool, index) => (
+                          <div
+                            key={index}
+                            className="p-3 rounded-md bg-muted/50 border"
+                          >
+                            <div className="font-medium text-sm mb-1">
+                              {tool.name}
+                            </div>
+                            {tool.description && (
+                              <p className="text-xs text-muted-foreground">
+                                {tool.description}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No tools available
+                      </p>
+                    )}
+                  </div>
 
-                {/* Path */}
-                <Separator />
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Installation Path</h4>
-                  <p className="text-xs text-muted-foreground font-mono break-all">
-                    {selectedAgent.path}
-                  </p>
+                  {/* Instructions */}
+                  <Separator />
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Instructions
+                    </h4>
+                    {loadingAgentInfo ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading instructions...</span>
+                      </div>
+                    ) : agentInstructions ? (
+                      <div className="p-3 rounded-md bg-muted/50 border">
+                        <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans">
+                          {agentInstructions}
+                        </pre>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No instructions available
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Path */}
+                  <Separator />
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Installation Path</h4>
+                    <p className="text-xs text-muted-foreground font-mono break-all">
+                      {selectedAgent.path}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </ScrollArea>
           </DialogBody>
           <DialogFooter className="flex justify-between items-center sm:justify-between w-full">
             <Button

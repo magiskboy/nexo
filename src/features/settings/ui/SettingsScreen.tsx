@@ -10,7 +10,6 @@ import {
   Github,
   Globe,
   BookOpen,
-  Heart,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -133,20 +132,6 @@ export function SettingsScreen() {
 
         <Separator />
 
-        {/* Version Info */}
-        <div className="space-y-2">
-          <h4 className="font-medium text-sm text-foreground">
-            {tCommon('version')}
-          </h4>
-          <p className="text-sm text-muted-foreground">
-            <span className="font-mono font-medium">
-              {tCommon('appVersion')}
-            </span>
-          </p>
-        </div>
-
-        <Separator />
-
         {/* Features Grid */}
         <div className="space-y-3">
           <h4 className="font-medium text-sm text-foreground">
@@ -225,15 +210,6 @@ export function SettingsScreen() {
             </Button>
           </div>
         </div>
-
-        <Separator />
-
-        {/* Footer */}
-        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-          <span>{tCommon('madeWith', { defaultValue: 'Made with' })}</span>
-          <Heart className="size-3 fill-red-500 text-red-500" />
-          <span>{tCommon('byTeam', { defaultValue: 'by the Nexo team' })}</span>
-        </div>
       </div>
     );
   }
@@ -268,16 +244,18 @@ export function SettingsScreen() {
   );
 
   const content = (
-    <ScrollArea className="h-full">
-      <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">
-            {sections.find((s) => s.id === selectedSection)?.label}
-          </h1>
+    <div className="h-full flex flex-col">
+      <ScrollArea className="flex-1">
+        <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold">
+              {sections.find((s) => s.id === selectedSection)?.label}
+            </h1>
+          </div>
+          {renderContent()}
         </div>
-        {renderContent()}
-      </div>
-    </ScrollArea>
+      </ScrollArea>
+    </div>
   );
 
   return (

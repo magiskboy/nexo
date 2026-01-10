@@ -92,7 +92,7 @@ export function AppSettings() {
             <SelectItem value="light">{t('lightTheme')}</SelectItem>
             <SelectItem value="dark">{t('darkTheme')}</SelectItem>
             <SelectItem value="system">{t('systemTheme')}</SelectItem>
-            <SelectItem value="github-light">
+            {/* <SelectItem value="github-light">
               {t('githubLightTheme')}
             </SelectItem>
             <SelectItem value="github-dark">{t('githubDarkTheme')}</SelectItem>
@@ -108,7 +108,7 @@ export function AppSettings() {
             <SelectItem value="one-light">{t('oneLightTheme')}</SelectItem>
             <SelectItem value="monokai">{t('monokaiTheme')}</SelectItem>
             <SelectItem value="nord">{t('nordTheme')}</SelectItem>
-            <SelectItem value="ayu-dark">{t('ayuDarkTheme')}</SelectItem>
+            <SelectItem value="ayu-dark">{t('ayuDarkTheme')}</SelectItem> */}
           </SelectContent>
         </Select>
       </div>

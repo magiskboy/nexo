@@ -18,7 +18,6 @@
   "allChatsClearedDescription": "All chats have been cleared successfully",
   "apiKey": "API Key",
   "appDescription": "A desktop application for interacting with large language models. Supports multiple LLM providers, MCP servers, and workspace management.",
-  "appVersion": "0.1.0",
   "ayuDarkTheme": "Ayu Dark",
   "baseUrl": "Base URL",
   "cancel": "Cancel",

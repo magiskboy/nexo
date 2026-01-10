@@ -18,7 +18,6 @@
   "allChatsClearedDescription": "Tất cả các cuộc hội thoại đã được xoá thành công",
   "apiKey": "API Key",
   "appDescription": "Ứng dụng desktop để tương tác với các mô hình ngôn ngữ lớn. Hỗ trợ nhiều LLM providers, MCP servers, và quản lý workspace.",
-  "appVersion": "0.1.0",
   "ayuDarkTheme": "Ayu Dark",
   "baseUrl": "Base URL",
   "cancel": "Hủy",
