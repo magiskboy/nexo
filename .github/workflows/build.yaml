@@ -65,23 +65,24 @@ jobs:
           echo "VITE_SENTRY_DSN=${{ vars.SENTRY_DSN }}" >> $GITHUB_ENV
           echo "RUST_SENTRY_DSN=${{ vars.SENTRY_DSN }}" >> $GITHUB_ENV
 
+      - name: Debug - List bundle directory
+        # This will help us see where the artifacts actually are
+        if: always()
+        run: |
+          find src-tauri/target -name "bundle" -type d -exec ls -R {} + || true
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Sentry DSN - embedded at build time
-          # Use repository variable SENTRY_DSN for both frontend and backend
           VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           RUST_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-          # APPLE_ID: ${{ secrets.APPLE_ID }}
-          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          # APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'Nexo __VERSION__'
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: false
           prerelease: true
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
