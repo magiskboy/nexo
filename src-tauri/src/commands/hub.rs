@@ -152,7 +152,9 @@ pub async fn install_mcp_server_from_hub(
 #[derive(Deserialize)]
 pub struct InstallAgentFromHubPayload {
     #[serde(rename = "agentId")]
+    #[allow(dead_code)]
     pub agent_id: String,
+    #[allow(dead_code)]
     pub name: String,
     pub git_install: crate::models::HubGitInstall,
 }
