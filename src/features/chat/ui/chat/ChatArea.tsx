@@ -318,6 +318,8 @@ export function ChatArea() {
             timeLeft={timeLeft}
             streamingError={selectedChatId ? streamingError : undefined}
             onRetryStreaming={handleRetryStreaming}
+            isEditing={!!editingMessageId}
+            onCancelEdit={() => handleEditMessage(null)}
           />
         </div>
       </div>
@@ -341,22 +343,6 @@ export function ChatArea() {
       />
 
       {/* Input Area */}
-      {editingMessageId && (
-        <div className="mx-auto max-w-3xl px-4 pb-2">
-          <div className="flex items-center justify-between rounded-t-lg bg-muted/50 px-4 py-2 border-x border-t border-border">
-            <span className="text-sm font-medium flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              {t('editingMessage') || 'Editing Message'}
-            </span>
-            <button
-              onClick={() => handleEditMessage(null)}
-              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-background/50 transition-colors"
-            >
-              {t('cancel') || 'Cancel'}
-            </button>
-          </div>
-        </div>
-      )}
       <ChatInput
         selectedWorkspaceId={selectedWorkspaceId}
         selectedChatId={selectedChatId}
@@ -367,6 +353,8 @@ export function ChatArea() {
         timeLeft={timeLeft}
         streamingError={selectedChatId ? streamingError : undefined}
         onRetryStreaming={handleRetryStreaming}
+        isEditing={!!editingMessageId}
+        onCancelEdit={() => handleEditMessage(null)}
       />
 
       {/* Agent Chat History Dialog */}

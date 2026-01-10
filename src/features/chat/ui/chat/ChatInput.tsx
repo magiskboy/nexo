@@ -1,5 +1,13 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
-import { Send, Paperclip, Square, Wrench, Brain, Search } from 'lucide-react';
+import {
+  Send,
+  Paperclip,
+  Square,
+  Wrench,
+  Brain,
+  Search,
+  X,
+} from 'lucide-react';
 import { Input } from '@/ui/atoms/input';
 import {
   MAX_MESSAGE_LENGTH,
@@ -62,6 +70,8 @@ interface ChatInputProps {
   timeLeft?: number | null;
   streamingError?: { messageId: string; error: string; canRetry: boolean };
   onRetryStreaming?: () => void;
+  isEditing?: boolean;
+  onCancelEdit?: () => void;
 }
 
 export function ChatInput({
@@ -74,6 +84,8 @@ export function ChatInput({
   timeLeft,
   streamingError,
   onRetryStreaming,
+  isEditing = false,
+  onCancelEdit,
 }: ChatInputProps) {
   // Track render performance
   useComponentPerformance({
@@ -648,10 +660,29 @@ export function ChatInput({
           </div>
         )}
 
-        <div className="mx-auto max-w-3xl px-4 py-3">
+        <div className="mx-auto max-w-3xl px-4 py-2">
+          {/* Edit Mode Bar - Above ChatInput */}
+          {isEditing && (
+            <div className="flex items-center justify-between rounded-t-lg bg-primary/10 px-3 py-1 border-x border-t border-primary/20">
+              <span className="text-xs font-medium text-primary">
+                {t('editingMessage', { ns: 'common' })}
+              </span>
+              {onCancelEdit && (
+                <button
+                  onClick={onCancelEdit}
+                  className="rounded-full hover:bg-primary/20 transition-colors p-1"
+                  aria-label={t('cancel', { ns: 'common' })}
+                >
+                  <X className="h-3.5 w-3.5 text-primary" />
+                </button>
+              )}
+            </div>
+          )}
+
           <div
             className={cn(
-              'rounded-lg border border-border bg-muted/20 shadow-sm p-3 relative transition-colors',
+              'border border-border bg-muted/20 shadow-sm p-3 relative transition-colors',
+              isEditing ? 'rounded-b-lg border-t-0' : 'rounded-lg',
               isDragging && 'border-primary ring-2 ring-primary/20 bg-muted/50'
             )}
             onDragOver={handleDragOver}
