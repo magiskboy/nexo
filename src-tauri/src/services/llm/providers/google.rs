@@ -2,7 +2,6 @@ use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage};
 use crate::models::llm_types::*;
-use crate::models::llm_types::{ToolCall, ToolCallFunction};
 use async_trait::async_trait;
 use base64::Engine as _;
 use futures::StreamExt;
@@ -226,10 +225,22 @@ impl GoogleProvider {
         ))
     }
 
-    fn check_model_capabilities(model_id: &str) -> (bool, bool) {
+    fn check_model_capabilities(model_id: &str) -> (bool, bool, bool) {
         let model_lower = model_id.to_lowercase();
 
-        // All Gemini models support tools
+        // Check if model supports image generation
+        let supports_image_generation = model_lower.contains("image")
+            || model_lower.contains("gemini-2.5-flash-image")
+            || model_lower.contains("gemini-3-pro-image")
+            || model_lower.contains("nano-banana")
+            || model_lower.contains("imagen");
+
+        // Image generation models don't support tools or thinking
+        if supports_image_generation {
+            return (false, false, true);
+        }
+
+        // Regular Gemini models support tools
         let supports_tools = model_lower.contains("gemini");
 
         // Only Gemini 2.5+ and Gemini 3+ support thinking
@@ -244,7 +255,7 @@ impl GoogleProvider {
             false
         };
 
-        (supports_tools, supports_thinking)
+        (supports_tools, supports_thinking, supports_image_generation)
     }
 
     fn get_fallback_models() -> Vec<LLMModel> {
@@ -255,7 +266,8 @@ impl GoogleProvider {
                 created: None,
                 owned_by: Some("Google".to_string()),
                 supports_tools: true,
-                supports_thinking: false, // Gemini 1.5 doesn't support thinking
+                supports_thinking: false,
+                supports_image_generation: false,
             },
             LLMModel {
                 id: "gemini-1.5-flash".to_string(),
@@ -263,7 +275,8 @@ impl GoogleProvider {
                 created: None,
                 owned_by: Some("Google".to_string()),
                 supports_tools: true,
-                supports_thinking: false, // Gemini 1.5 doesn't support thinking
+                supports_thinking: false,
+                supports_image_generation: false,
             },
             LLMModel {
                 id: "gemini-pro".to_string(),
@@ -271,7 +284,26 @@ impl GoogleProvider {
                 created: None,
                 owned_by: Some("Google".to_string()),
                 supports_tools: true,
-                supports_thinking: false, // Gemini Pro (old) doesn't support thinking
+                supports_thinking: false,
+                supports_image_generation: false,
+            },
+            LLMModel {
+                id: "gemini-2.5-flash-image".to_string(),
+                name: "Gemini 2.5 Flash Image".to_string(),
+                created: None,
+                owned_by: Some("Google".to_string()),
+                supports_tools: false,
+                supports_thinking: false,
+                supports_image_generation: true,
+            },
+            LLMModel {
+                id: "gemini-3-pro-image-preview".to_string(),
+                name: "Gemini 3 Pro Image Preview".to_string(),
+                created: None,
+                owned_by: Some("Google".to_string()),
+                supports_tools: false,
+                supports_thinking: false,
+                supports_image_generation: true,
             },
         ]
     }
@@ -311,6 +343,7 @@ impl GoogleProvider {
         let mut buffer = String::new();
         let mut final_usage: Option<TokenUsage> = None;
         let mut final_tool_calls: Vec<ToolCall> = Vec::new();
+        let mut final_images: Vec<InlineData> = Vec::new();
 
         // Need to parse a JSON array stream essentially.
         // But Google sends valid JSON array chunks? No, usually it sends partial JSON or a stream of JSON objects.
@@ -405,6 +438,19 @@ impl GoogleProvider {
                                                         message_id.clone(),
                                                         text.to_string(),
                                                     )?;
+                                                }
+                                            }
+
+                                            // Check for inline image data
+                                            if let Some(inline_data) = part.get("inlineData") {
+                                                if let (Some(mime_type), Some(data)) = (
+                                                    inline_data.get("mimeType").and_then(|m| m.as_str()),
+                                                    inline_data.get("data").and_then(|d| d.as_str()),
+                                                ) {
+                                                    final_images.push(InlineData {
+                                                        mime_type: mime_type.to_string(),
+                                                        data: data.to_string(),
+                                                    });
                                                 }
                                             }
                                         }
@@ -506,6 +552,11 @@ impl GoogleProvider {
             } else {
                 Some(full_reasoning)
             },
+            images: if final_images.is_empty() {
+                None
+            } else {
+                Some(final_images)
+            },
         })
     }
 
@@ -548,6 +599,7 @@ impl GoogleProvider {
         let mut full_content = String::new();
         let mut full_reasoning = String::new();
         let mut tool_calls = Vec::new();
+        let mut images = Vec::new();
 
         if let Some(candidates) = json.get("candidates").and_then(|c| c.as_array()) {
             if let Some(first_candidate) = candidates.first() {
@@ -567,6 +619,19 @@ impl GoogleProvider {
                                 } else {
                                     // This is regular content
                                     full_content.push_str(text);
+                                }
+                            }
+
+                            // Check for inline image data
+                            if let Some(inline_data) = part.get("inlineData") {
+                                if let (Some(mime_type), Some(data)) = (
+                                    inline_data.get("mimeType").and_then(|m| m.as_str()),
+                                    inline_data.get("data").and_then(|d| d.as_str()),
+                                ) {
+                                    images.push(InlineData {
+                                        mime_type: mime_type.to_string(),
+                                        data: data.to_string(),
+                                    });
                                 }
                             }
 
@@ -637,6 +702,11 @@ impl GoogleProvider {
             } else {
                 Some(full_reasoning)
             },
+            images: if images.is_empty() {
+                None
+            } else {
+                Some(images)
+            },
         })
     }
 }
@@ -692,7 +762,7 @@ impl LLMProvider for GoogleProvider {
                                         id.strip_prefix("models/").unwrap_or(&id).to_string();
 
                                     // Check model capabilities
-                                    let (supports_tools, supports_thinking) =
+                                    let (supports_tools, supports_thinking, supports_image_generation) =
                                         Self::check_model_capabilities(&clean_id);
 
                                     Some(LLMModel {
@@ -702,6 +772,7 @@ impl LLMProvider for GoogleProvider {
                                         owned_by: Some("Google".to_string()),
                                         supports_tools,
                                         supports_thinking,
+                                        supports_image_generation,
                                     })
                                 })
                                 .collect();
@@ -935,6 +1006,15 @@ impl LLMProvider for GoogleProvider {
                                             }
                                         }
                                     }
+                                    ContentPart::InlineData { inline_data } => {
+                                        // Handle inline data directly (e.g., from previous image generation)
+                                        google_parts.push(json!({
+                                            "inlineData": {
+                                                "mimeType": inline_data.mime_type,
+                                                "data": inline_data.data
+                                            }
+                                        }));
+                                    }
                                 }
                             }
                             contents.push(json!({
@@ -945,10 +1025,37 @@ impl LLMProvider for GoogleProvider {
                     }
                 }
                 ChatMessage::Assistant { content, .. } => {
-                    contents.push(json!({
-                        "role": "model",
-                        "parts": [{ "text": content }]
-                    }));
+                    match content {
+                        AssistantContent::Text(text) => {
+                            contents.push(json!({
+                                "role": "model",
+                                "parts": [{ "text": text }]
+                            }));
+                        }
+                        AssistantContent::Parts(parts) => {
+                            let mut google_parts = Vec::new();
+                            for part in parts {
+                                match part {
+                                    ContentPart::Text { text } => {
+                                        google_parts.push(json!({ "text": text }));
+                                    }
+                                    ContentPart::InlineData { inline_data } => {
+                                        google_parts.push(json!({
+                                            "inlineData": {
+                                                "mimeType": inline_data.mime_type,
+                                                "data": inline_data.data
+                                            }
+                                        }));
+                                    }
+                                    _ => {} // Skip other types for assistant messages
+                                }
+                            }
+                            contents.push(json!({
+                                "role": "model",
+                                "parts": google_parts
+                            }));
+                        }
+                    }
                 }
                 _ => {} // Tool messages not yet fully supported in this simple implementation
             }
@@ -968,20 +1075,49 @@ impl LLMProvider for GoogleProvider {
             api_key.unwrap_or("")
         );
 
+        let mut gen_config = json!({
+            "temperature": request.temperature,
+            "maxOutputTokens": request.max_tokens,
+        });
+
+        // Add response modalities if specified (for image generation)
+        if let Some(modalities) = request.response_modalities.as_ref() {
+            if !modalities.is_empty() {
+                gen_config["responseModalities"] = json!(modalities);
+            }
+        }
+
+        // Add image config if specified
+        if let Some(img_config) = request.image_config.as_ref() {
+            let mut image_config_json = json!({});
+            if let Some(aspect_ratio) = img_config.aspect_ratio.as_ref() {
+                image_config_json["aspectRatio"] = json!(aspect_ratio);
+            }
+            if let Some(image_size) = img_config.image_size.as_ref() {
+                image_config_json["imageSize"] = json!(image_size);
+            }
+            if !image_config_json.as_object().unwrap().is_empty() {
+                gen_config["imageConfig"] = image_config_json;
+            }
+        }
+
         let mut body = json!({
             "contents": contents,
-            "generationConfig": {
-                "temperature": request.temperature,
-                "maxOutputTokens": request.max_tokens,
-            }
+            "generationConfig": gen_config
         });
 
         // Add thinking config if reasoning_effort is specified
         // Different models use different thinking parameters:
         // - Gemini 3: thinkingLevel (low, medium, high)
         // - Gemini 2.5: thinkingBudget (number of tokens)
+        // Image generation models don't support thinking
+        let model_lower = model.to_lowercase();
+        let is_image_generation_model = model_lower.contains("image") 
+            || model_lower.contains("nano-banana")
+            || model_lower.contains("imagen");
+        
         if let Some(effort) = request.reasoning_effort.as_ref() {
-            if !effort.is_empty() {
+            if !effort.is_empty() && !is_image_generation_model {
                 if let Some(gen_config) = body
                     .get_mut("generationConfig")
                     .and_then(|v| v.as_object_mut())
@@ -1022,34 +1158,50 @@ impl LLMProvider for GoogleProvider {
         }
 
         if let Some(sys) = system_instruction {
-            // Check if model supports systemInstruction (most modern ones do)
-            if let Some(obj) = body.as_object_mut() {
-                obj.insert("systemInstruction".to_string(), sys);
+            // Image generation models don't support systemInstruction
+            let model_lower = model.to_lowercase();
+            let is_image_generation_model = model_lower.contains("image") 
+                || model_lower.contains("nano-banana")
+                || model_lower.contains("imagen");
+            
+            if !is_image_generation_model {
+                // Only add systemInstruction for non-image generation models
+                if let Some(obj) = body.as_object_mut() {
+                    obj.insert("systemInstruction".to_string(), sys);
+                }
             }
         }
 
         // Add tools if present
         if let Some(tools) = request.tools {
-            // Map tools to Google format if needed.
-            // Start simple without tools or implement mapping.
-            // Google tools format: function_declarations inside 'tools' array.
-            let google_tools: Vec<serde_json::Value> = tools
-                .iter()
-                .map(|t| {
-                    json!({
-                        "name": t.function.name,
-                        "description": t.function.description,
-                        "parameters": t.function.parameters
+            // Image generation models don't support tools
+            let model_lower = model.to_lowercase();
+            let is_image_generation_model = model_lower.contains("image") 
+                || model_lower.contains("nano-banana")
+                || model_lower.contains("imagen");
+            
+            if !is_image_generation_model {
+                // Map tools to Google format if needed.
+                // Start simple without tools or implement mapping.
+                // Google tools format: function_declarations inside 'tools' array.
+                let google_tools: Vec<serde_json::Value> = tools
+                    .iter()
+                    .map(|t| {
+                        json!({
+                            "name": t.function.name,
+                            "description": t.function.description,
+                            "parameters": t.function.parameters
+                        })
                     })
-                })
-                .collect();
+                    .collect();
 
-            if !google_tools.is_empty() {
-                if let Some(obj) = body.as_object_mut() {
-                    obj.insert(
-                        "tools".to_string(),
-                        json!([{ "function_declarations": google_tools }]),
-                    );
+                if !google_tools.is_empty() {
+                    if let Some(obj) = body.as_object_mut() {
+                        obj.insert(
+                            "tools".to_string(),
+                            json!([{ "function_declarations": google_tools }]),
+                        );
+                    }
                 }
             }
         }

@@ -277,6 +277,7 @@ impl OpenAIProvider {
             } else {
                 Some(full_reasoning)
             },
+            images: None,
         })
     }
 
@@ -435,6 +436,7 @@ impl OpenAIProvider {
             tool_calls,
             usage,
             reasoning: None,
+            images: None,
         })
     }
 }
@@ -491,6 +493,7 @@ impl LLMProvider for OpenAIProvider {
                     .map(|s| s.to_string()),
                 supports_tools,
                 supports_thinking,
+                supports_image_generation: false,
             })
         };
 

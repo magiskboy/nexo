@@ -12,6 +12,8 @@ pub struct LLMModel {
     pub supports_tools: bool,
     #[serde(default, rename = "supportsThinking")]
     pub supports_thinking: bool,
+    #[serde(default, rename = "supportsImageGeneration")]
+    pub supports_image_generation: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -37,7 +39,7 @@ pub enum ChatMessage {
     User { content: UserContent },
     #[serde(rename = "assistant")]
     Assistant {
-        content: String,
+        content: AssistantContent,
         #[serde(skip_serializing_if = "Option::is_none")]
         tool_calls: Option<Vec<ToolCall>>,
     },
@@ -46,6 +48,13 @@ pub enum ChatMessage {
         content: String,
         tool_call_id: String,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum AssistantContent {
+    Text(String),
+    Parts(Vec<ContentPart>),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,6 +73,8 @@ pub enum ContentPart {
     ImageUrl { image_url: ImageUrl },
     #[serde(rename = "file_url")]
     FileUrl { file_url: FileUrl },
+    #[serde(rename = "inline_data")]
+    InlineData { inline_data: InlineData },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -75,6 +86,12 @@ pub struct ImageUrl {
 pub struct FileUrl {
     pub url: String,
     pub mime_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct InlineData {
+    pub mime_type: String,
+    pub data: String, // base64 encoded
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -126,6 +143,18 @@ pub struct LLMChatRequest {
     pub reasoning_effort: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream_options: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub response_modalities: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_config: Option<ImageConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ImageConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub aspect_ratio: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_size: Option<String>, // "1K", "2K", "4K"
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -149,6 +178,8 @@ pub struct LLMChatResponse {
     pub usage: Option<TokenUsage>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub images: Option<Vec<InlineData>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

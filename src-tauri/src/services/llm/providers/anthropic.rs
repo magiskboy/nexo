@@ -355,6 +355,7 @@ impl AnthropicProvider {
             } else {
                 Some(full_thinking)
             },
+            images: None,
         })
     }
 
@@ -470,6 +471,7 @@ impl AnthropicProvider {
             } else {
                 Some(thinking_str)
             },
+            images: None,
         })
     }
 }
@@ -521,6 +523,7 @@ impl LLMProvider for AnthropicProvider {
                         owned_by: Some("anthropic".to_string()),
                         supports_tools,
                         supports_thinking,
+                        supports_image_generation: false,
                     });
                 }
             }
@@ -634,6 +637,26 @@ impl LLMProvider for AnthropicProvider {
                                             });
                                         }
                                     }
+                                    ContentPart::InlineData { inline_data } => {
+                                        // Handle inline data (e.g., from Google's image generation)
+                                        if inline_data.mime_type.starts_with("image/") {
+                                            blocks.push(AnthropicContentBlock::Image {
+                                                source: AnthropicImageSource {
+                                                    r#type: "base64".to_string(),
+                                                    media_type: inline_data.mime_type,
+                                                    data: inline_data.data,
+                                                },
+                                            });
+                                        } else {
+                                            // Non-image inline data not supported
+                                            blocks.push(AnthropicContentBlock::Text {
+                                                text: format!(
+                                                    "[Inline data: {} - Not supported by this model]",
+                                                    inline_data.mime_type
+                                                ),
+                                            });
+                                        }
+                                    }
                                 }
                             }
                             messages.push(AnthropicMessage {
@@ -648,8 +671,20 @@ impl LLMProvider for AnthropicProvider {
                     tool_calls,
                 } => {
                     let mut blocks = Vec::new();
-                    if !content.is_empty() {
-                        blocks.push(AnthropicContentBlock::Text { text: content });
+                    // Handle AssistantContent
+                    match content {
+                        AssistantContent::Text(text) => {
+                            if !text.is_empty() {
+                                blocks.push(AnthropicContentBlock::Text { text });
+                            }
+                        }
+                        AssistantContent::Parts(parts) => {
+                            for part in parts {
+                                if let ContentPart::Text { text } = part {
+                                    blocks.push(AnthropicContentBlock::Text { text });
+                                }
+                            }
+                        }
                     }
                     if let Some(tcs) = tool_calls {
                         for tc in tcs {

@@ -632,15 +632,39 @@ impl ChatService {
         )?;
 
         // 10. Determine if streaming is enabled
-        let stream_enabled = workspace_settings
+        let mut stream_enabled = workspace_settings
             .stream_enabled
             .map(|v| v == 1)
             .unwrap_or(true); // Default to true
+        
+        // Image generation does NOT support streaming - force non-streaming
+        let model_lower = model.to_lowercase();
+        if model_lower.contains("image") || model_lower.contains("nano-banana") || model_lower.contains("imagen") {
+            stream_enabled = false;
+        }
 
         let tool_choice: Option<ToolChoice> = None; // Use "auto" by default
 
         // 11. Create LLM request
         let model_for_usage = model.clone();
+        
+        // Auto-detect image generation models and enable image output
+        let model_lower = model.to_lowercase();
+        let is_image_generation_model = model_lower.contains("image") 
+            || model_lower.contains("nano-banana")
+            || model_lower.contains("imagen");
+        
+        let (response_modalities, image_config) = if is_image_generation_model {
+            // Enable both text and image output for image generation models
+            // Don't set imageConfig for experimental models - they don't support it
+            (
+                Some(vec!["TEXT".to_string(), "IMAGE".to_string()]),
+                None, // Let API use defaults
+            )
+        } else {
+            (None, None)
+        };
+        
         let llm_request = LLMChatRequest {
             model: model.clone(), // Clone here since we use it below
             messages: api_messages,
@@ -653,6 +677,8 @@ impl ChatService {
             stream_options: Some(serde_json::json!({
                 "include_usage": true
             })),
+            response_modalities,
+            image_config,
         };
 
         // 12. Get cancellation receiver for this chat
@@ -718,13 +744,49 @@ impl ChatService {
             None,
         )?;
 
-        // Update metadata with token usage
+        // Update metadata with token usage and images
+        let mut metadata_obj = serde_json::json!({});
+        
         if let Some(usage) = &llm_response.usage {
-            let metadata = serde_json::json!({
-                "tokenUsage": usage
-            });
+            metadata_obj["tokenUsage"] = serde_json::json!(usage);
+        }
+        
+        // Add generated images to metadata if present
+        if let Some(images) = &llm_response.images {
+            if !images.is_empty() {
+                // Convert images to data URLs for frontend display
+                let image_urls: Vec<String> = images
+                    .iter()
+                    .map(|img| {
+                        format!("data:{};base64,{}", img.mime_type, img.data)
+                    })
+                    .collect();
+                
+                metadata_obj["images"] = serde_json::json!(image_urls);
+            }
+        }
+        
+        if !metadata_obj.as_object().unwrap().is_empty() {
             self.message_service
-                .update_metadata(assistant_message_id.clone(), Some(metadata.to_string()))?;
+                .update_metadata(assistant_message_id.clone(), Some(metadata_obj.to_string()))?;
+            
+            // Emit metadata updated event with delay to ensure DB has flushed
+            let app_clone = app.clone();
+            let chat_id_clone = chat_id.clone();
+            let assistant_message_id_clone = assistant_message_id.clone();
+            
+            tokio::spawn(async move {
+                // Small delay to ensure DB has flushed
+                tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+                
+                let message_emitter = MessageEmitter::new(app_clone);
+                if let Err(e) = message_emitter.emit_message_metadata_updated(
+                    chat_id_clone,
+                    assistant_message_id_clone,
+                ) {
+                    eprintln!("Failed to emit metadata-updated event: {}", e);
+                }
+            });
         }
 
         // 14. Emit tool calls event if detected
@@ -889,10 +951,16 @@ impl ChatService {
             .or(llm_connection.default_model.clone())
             .ok_or_else(|| AppError::Validation("No model selected".to_string()))?;
 
-        let stream_enabled = workspace_settings
+        let mut stream_enabled = workspace_settings
             .stream_enabled
             .map(|v| v == 1)
             .unwrap_or(true);
+        
+        // Image generation does NOT support streaming - force non-streaming
+        let model_lower = model.to_lowercase();
+        if model_lower.contains("image") || model_lower.contains("nano-banana") || model_lower.contains("imagen") {
+            stream_enabled = false;
+        }
 
         // Get tools
         // Get tools if not provided
@@ -976,6 +1044,24 @@ impl ChatService {
 
                 // Call LLM
                 let model_for_usage = model.clone();
+                
+                // Auto-detect image generation models and enable image output
+                let model_lower = model.to_lowercase();
+                let is_image_generation_model = model_lower.contains("image") 
+                    || model_lower.contains("nano-banana")
+                    || model_lower.contains("imagen");
+                
+                let (response_modalities, image_config) = if is_image_generation_model {
+                    // Enable both text and image output for image generation models
+                    // Don't set imageConfig for experimental models - they don't support it
+                    (
+                        Some(vec!["TEXT".to_string(), "IMAGE".to_string()]),
+                        None, // Let API use defaults
+                    )
+                } else {
+                    (None, None)
+                };
+                
                 let llm_request = LLMChatRequest {
                     model: model.clone(),
                     messages: current_messages.clone(),
@@ -988,6 +1074,8 @@ impl ChatService {
                     stream_options: Some(serde_json::json!({
                         "include_usage": true
                     })),
+                    response_modalities,
+                    image_config,
                 };
 
                 let start_time = std::time::Instant::now();
@@ -1100,7 +1188,7 @@ impl ChatService {
 
                     // Add assistant message with tool calls to conversation
                     let assistant_msg_with_tools = ChatMessage::Assistant {
-                        content: llm_response.content.clone(),
+                        content: AssistantContent::Text(llm_response.content.clone()),
                         tool_calls: Some(tool_calls.clone()),
                     };
                     current_messages.push(assistant_msg_with_tools);
@@ -1733,7 +1821,7 @@ impl ChatService {
                     // Tool calls are only included when they're part of the current conversation flow
                     // In history, we just include the content
                     ChatMessage::Assistant {
-                        content: msg.content.clone(),
+                        content: AssistantContent::Text(msg.content.clone()),
                         tool_calls: None,
                     }
                 }

@@ -10,7 +10,6 @@ import {
   updateMessageTokenUsage,
 } from '@/features/chat/state/messages';
 import type { Message } from '@/app/types';
-import { showSuccess } from '@/features/notifications/state/notificationSlice';
 import { addPermissionRequest } from '@/features/tools/state/toolPermissionSlice';
 import { useTranslation } from 'react-i18next';
 import { messagesApi } from '@/features/chat/state/messagesApi';
@@ -303,6 +302,7 @@ export function useChatStreaming() {
     const unlistenMetadataUpdated = listenToEvent<MessageMetadataUpdatedEvent>(
       TauriEvents.MESSAGE_METADATA_UPDATED,
       async (payload) => {
+        // Invalidate to refetch message with updated metadata
         dispatch(
           messagesApi.util.invalidateTags([
             { type: 'Message', id: `LIST_${payload.chat_id}` },
@@ -318,9 +318,12 @@ export function useChatStreaming() {
         dispatch(clearStreamingMessageId());
         dispatch(clearStreamingStartTime(payload.chat_id));
 
-        dispatch(
-          showSuccess(t('agentTaskCompleted') || 'Agent task completed')
-        );
+        // Only show success toast for agent tasks (not for image generation)
+        // Agent tasks have specific metadata structure, images are just in metadata
+        // We'll skip the toast - if it's truly an agent task, it will be obvious from the UI
+        // dispatch(
+        //   showSuccess(t('agentTaskCompleted') || 'Agent task completed')
+        // );
       }
     );
 

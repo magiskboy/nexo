@@ -278,6 +278,7 @@ impl OpenAICompatProvider {
             } else {
                 Some(full_reasoning)
             },
+            images: None,
         })
     }
 
@@ -437,6 +438,7 @@ impl OpenAICompatProvider {
             tool_calls,
             usage,
             reasoning: None,
+            images: None,
         })
     }
 }
@@ -528,6 +530,7 @@ impl LLMProvider for OpenAICompatProvider {
                         .map(|s| s.to_string()),
                     supports_tools,
                     supports_thinking,
+                    supports_image_generation: false,
                 })
             } else {
                 None

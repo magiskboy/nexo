@@ -5,6 +5,7 @@ export interface LLMModel {
   owned_by?: string;
   supportsTools: boolean;
   supportsThinking: boolean;
+  supportsImageGeneration: boolean;
 }
 
 export interface LLMConnection {
