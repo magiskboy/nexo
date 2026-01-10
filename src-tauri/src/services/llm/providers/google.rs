@@ -797,12 +797,32 @@ impl LLMProvider for GoogleProvider {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        request: LLMChatRequest,
+        mut request: LLMChatRequest,
         chat_id: String,
         message_id: String,
         app: AppHandle,
         cancellation_rx: Option<tokio::sync::broadcast::Receiver<()>>,
     ) -> Result<LLMChatResponse, AppError> {
+        // Auto-detect and configure for image generation models
+        let model_lower = request.model.to_lowercase();
+        let is_image_generation_model = model_lower.contains("image") 
+            || model_lower.contains("nano-banana")
+            || model_lower.contains("imagen");
+        
+        if is_image_generation_model {
+            // Image generation models require specific configuration
+            // 1. Enable both TEXT and IMAGE response modalities
+            if request.response_modalities.is_none() {
+                request.response_modalities = Some(vec!["TEXT".to_string(), "IMAGE".to_string()]);
+            }
+            
+            // 2. Force non-streaming (image generation doesn't support streaming)
+            request.stream = false;
+            
+            // 3. Don't set imageConfig for experimental models - they use defaults
+            // request.image_config can be None or provided by caller
+        }
+        
         // Map request to Google format
         let mut contents = Vec::new();
         let mut system_instruction = None;

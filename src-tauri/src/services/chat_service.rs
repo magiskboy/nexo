@@ -632,38 +632,15 @@ impl ChatService {
         )?;
 
         // 10. Determine if streaming is enabled
-        let mut stream_enabled = workspace_settings
+        let stream_enabled = workspace_settings
             .stream_enabled
             .map(|v| v == 1)
             .unwrap_or(true); // Default to true
-        
-        // Image generation does NOT support streaming - force non-streaming
-        let model_lower = model.to_lowercase();
-        if model_lower.contains("image") || model_lower.contains("nano-banana") || model_lower.contains("imagen") {
-            stream_enabled = false;
-        }
 
         let tool_choice: Option<ToolChoice> = None; // Use "auto" by default
 
         // 11. Create LLM request
         let model_for_usage = model.clone();
-        
-        // Auto-detect image generation models and enable image output
-        let model_lower = model.to_lowercase();
-        let is_image_generation_model = model_lower.contains("image") 
-            || model_lower.contains("nano-banana")
-            || model_lower.contains("imagen");
-        
-        let (response_modalities, image_config) = if is_image_generation_model {
-            // Enable both text and image output for image generation models
-            // Don't set imageConfig for experimental models - they don't support it
-            (
-                Some(vec!["TEXT".to_string(), "IMAGE".to_string()]),
-                None, // Let API use defaults
-            )
-        } else {
-            (None, None)
-        };
         
         let llm_request = LLMChatRequest {
             model: model.clone(), // Clone here since we use it below
@@ -677,8 +654,8 @@ impl ChatService {
             stream_options: Some(serde_json::json!({
                 "include_usage": true
             })),
-            response_modalities,
-            image_config,
+            response_modalities: None, // Provider-specific, will be set by provider if needed
+            image_config: None, // Provider-specific, will be set by provider if needed
         };
 
         // 12. Get cancellation receiver for this chat
@@ -951,16 +928,10 @@ impl ChatService {
             .or(llm_connection.default_model.clone())
             .ok_or_else(|| AppError::Validation("No model selected".to_string()))?;
 
-        let mut stream_enabled = workspace_settings
+        let stream_enabled = workspace_settings
             .stream_enabled
             .map(|v| v == 1)
             .unwrap_or(true);
-        
-        // Image generation does NOT support streaming - force non-streaming
-        let model_lower = model.to_lowercase();
-        if model_lower.contains("image") || model_lower.contains("nano-banana") || model_lower.contains("imagen") {
-            stream_enabled = false;
-        }
 
         // Get tools
         // Get tools if not provided
@@ -1045,23 +1016,6 @@ impl ChatService {
                 // Call LLM
                 let model_for_usage = model.clone();
                 
-                // Auto-detect image generation models and enable image output
-                let model_lower = model.to_lowercase();
-                let is_image_generation_model = model_lower.contains("image") 
-                    || model_lower.contains("nano-banana")
-                    || model_lower.contains("imagen");
-                
-                let (response_modalities, image_config) = if is_image_generation_model {
-                    // Enable both text and image output for image generation models
-                    // Don't set imageConfig for experimental models - they don't support it
-                    (
-                        Some(vec!["TEXT".to_string(), "IMAGE".to_string()]),
-                        None, // Let API use defaults
-                    )
-                } else {
-                    (None, None)
-                };
-                
                 let llm_request = LLMChatRequest {
                     model: model.clone(),
                     messages: current_messages.clone(),
@@ -1074,8 +1028,8 @@ impl ChatService {
                     stream_options: Some(serde_json::json!({
                         "include_usage": true
                     })),
-                    response_modalities,
-                    image_config,
+                    response_modalities: None, // Provider-specific, will be set by provider if needed
+                    image_config: None, // Provider-specific, will be set by provider if needed
                 };
 
                 let start_time = std::time::Instant::now();
