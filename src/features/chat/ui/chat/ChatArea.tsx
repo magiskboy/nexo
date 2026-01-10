@@ -113,13 +113,30 @@ export function ChatArea() {
                     blob = new Blob([ab], { type: mimeType });
                   } else {
                     // Handle file path (New)
-                    const { convertFileSrc } =
-                      await import('@tauri-apps/api/core');
-                    const assetUrl = convertFileSrc(dataUrlOrPath);
-                    const response = await fetch(assetUrl);
-                    blob = await response.blob();
-                    mimeType = blob.type;
-                    extension = mimeType.split('/')[1] || 'png';
+                    const { readFile } = await import('@tauri-apps/plugin-fs');
+                    const bytes = await readFile(dataUrlOrPath);
+
+                    const ext =
+                      dataUrlOrPath.split('.').pop()?.toLowerCase() || 'png';
+                    mimeType = (() => {
+                      switch (ext) {
+                        case 'jpg':
+                        case 'jpeg':
+                          return 'image/jpeg';
+                        case 'png':
+                          return 'image/png';
+                        case 'webp':
+                          return 'image/webp';
+                        case 'gif':
+                          return 'image/gif';
+                        case 'svg':
+                          return 'image/svg+xml';
+                        default:
+                          return 'image/png';
+                      }
+                    })();
+                    extension = ext;
+                    blob = new Blob([bytes], { type: mimeType });
                   }
 
                   return new File([blob], `image-${index}.${extension}`, {
