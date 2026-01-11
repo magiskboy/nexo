@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { readFile } from '@tauri-apps/plugin-fs';
+import { readFile, writeFile, mkdir } from '@tauri-apps/plugin-fs';
+import { downloadDir, join } from '@tauri-apps/api/path';
+import { Download } from 'lucide-react';
+import { ContextMenu } from '@/ui/atoms/context-menu';
+import { useAppDispatch } from '@/app/hooks';
+import {
+  showSuccess,
+  showError,
+} from '@/features/notifications/state/notificationSlice';
+import { useTranslation } from 'react-i18next';
 
 interface MessageImageProps {
   src: string;
@@ -14,8 +23,15 @@ export const MessageImage = ({
   className,
   onClick,
 }: MessageImageProps) => {
+  const dispatch = useAppDispatch();
+  const { t } = useTranslation('common');
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -118,17 +134,93 @@ export const MessageImage = ({
     );
   }
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+      const downloadsPath = await downloadDir();
+
+      // Ensure the downloads directory exists (it should, but just in case)
+      await mkdir(downloadsPath, { recursive: true }).catch(() => {});
+
+      let fileName = `nexo_image_${Date.now()}.png`;
+      if (src.startsWith('http') || !src.startsWith('data:')) {
+        const parts = src.split('/');
+        const lastPart = parts[parts.length - 1]?.split('?')[0];
+        if (lastPart && lastPart.includes('.')) {
+          fileName = lastPart;
+        }
+      }
+
+      const filePath = await join(downloadsPath, fileName);
+
+      let data: Uint8Array;
+      if (src.startsWith('data:')) {
+        const base64Data = src.split(',')[1];
+        const binaryString = atob(base64Data);
+        data = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          data[i] = binaryString.charCodeAt(i);
+        }
+      } else if (src.startsWith('http')) {
+        const response = await fetch(src);
+        const arrayBuffer = await response.arrayBuffer();
+        data = new Uint8Array(arrayBuffer);
+      } else {
+        // Local file path
+        data = await readFile(src);
+      }
+
+      await writeFile(filePath, data);
+      dispatch(
+        showSuccess(t('downloadComplete') || 'Download complete', fileName)
+      );
+    } catch (err) {
+      console.error('Failed to download image:', err);
+      dispatch(
+        showError(
+          t('downloadFailed') || 'Download failed',
+          err instanceof Error ? err.message : 'Unknown error'
+        )
+      );
+    } finally {
+      setIsDownloading(false);
+      setContextMenu(null);
+    }
+  };
+
   return (
-    <img
-      src={displaySrc}
-      alt={alt}
-      className={className}
-      loading="lazy"
-      onClick={() => onClick?.(displaySrc)}
-      onError={(e) => {
-        console.error('Image load error for src:', displaySrc, e);
-        setError('Image failed to render');
-      }}
-    />
+    <div className="relative group">
+      <img
+        src={displaySrc}
+        alt={alt}
+        className={className}
+        loading="lazy"
+        onClick={() => onClick?.(displaySrc)}
+        onContextMenu={handleContextMenu}
+        onError={(e) => {
+          console.error('Image load error for src:', displaySrc, e);
+          setError('Image failed to render');
+        }}
+      />
+      <ContextMenu
+        open={contextMenu !== null}
+        position={contextMenu || { x: 0, y: 0 }}
+        items={[
+          {
+            label: t('saveImage') || 'Lưu hình ảnh',
+            icon: <Download className="size-4" />,
+            onClick: handleDownload,
+            disabled: isDownloading,
+          },
+        ]}
+        onClose={() => setContextMenu(null)}
+      />
+    </div>
   );
 };
