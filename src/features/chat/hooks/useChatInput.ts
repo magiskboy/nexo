@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
   setInput,
@@ -98,29 +98,41 @@ export function useChatInput(selectedWorkspaceId: string | null) {
   }, [selectedWorkspaceId, selectedModel, streamEnabled]);
 
   // Handlers
-  const handleInputChange = (value: string) => {
-    dispatch(setInput(value));
-  };
+  const handleInputChange = useCallback(
+    (value: string) => {
+      dispatch(setInput(value));
+    },
+    [dispatch]
+  );
 
-  const handleModelChange = (model: string | undefined) => {
-    dispatch(setSelectedModel(model));
-  };
+  const handleModelChange = useCallback(
+    (model: string | undefined) => {
+      dispatch(setSelectedModel(model));
+    },
+    [dispatch]
+  );
 
-  const handleFileUpload = (files: File[]) => {
-    dispatch(setAttachedFiles(files));
-  };
+  const handleFileUpload = useCallback(
+    (files: File[]) => {
+      dispatch(setAttachedFiles(files));
+    },
+    [dispatch]
+  );
 
-  const handleClearInput = () => {
+  const handleClearInput = useCallback(() => {
     dispatch(clearInput());
-  };
+  }, [dispatch]);
 
-  const handleThinkingToggle = () => {
+  const handleThinkingToggle = useCallback(() => {
     dispatch(setIsThinkingEnabled(!isThinkingEnabled));
-  };
+  }, [dispatch, isThinkingEnabled]);
 
-  const handleReasoningEffortChange = (effort: 'low' | 'medium' | 'high') => {
-    dispatch(setReasoningEffort(effort));
-  };
+  const handleReasoningEffortChange = useCallback(
+    (effort: 'low' | 'medium' | 'high') => {
+      dispatch(setReasoningEffort(effort));
+    },
+    [dispatch]
+  );
 
   return {
     input,

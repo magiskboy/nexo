@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Send,
   Paperclip,
@@ -515,10 +515,13 @@ export function ChatInput({
     }
   };
 
-  const handleRemoveFile = (index: number) => {
-    const newFiles = attachedFiles.filter((_, i) => i !== index);
-    handleFileUpload(newFiles);
-  };
+  const handleRemoveFile = useCallback(
+    (index: number) => {
+      const newFiles = attachedFiles.filter((_, i) => i !== index);
+      handleFileUpload(newFiles);
+    },
+    [attachedFiles, handleFileUpload]
+  );
 
   const handleUploadClick = () => {
     if (supportsVision) {
@@ -714,7 +717,8 @@ export function ChatInput({
                   <AttachedFileItem
                     key={`${file.name}-${file.lastModified}-${file.size}`}
                     file={file}
-                    onRemove={() => handleRemoveFile(index)}
+                    index={index}
+                    onRemove={handleRemoveFile}
                     disabled={disabled}
                   />
                 ))}
