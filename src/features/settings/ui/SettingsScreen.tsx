@@ -53,7 +53,7 @@ export function SettingsScreen() {
   const sections = [
     {
       id: 'general',
-      label: t('title'),
+      label: t('generalSetting'),
       icon: <SettingsIcon className="size-4" />,
     },
     {

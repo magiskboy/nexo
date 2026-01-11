@@ -503,13 +503,12 @@ export function WorkspaceSettingsForm({
                         {showAllMcpConnections ? (
                           <>
                             <ChevronUp className="size-3 mr-1" />
-                            {t('showOnlyConnected', { ns: 'settings' }) ||
-                              'Show only connected'}
+                            {t('showOnlyConnected', { ns: 'settings' })}
                           </>
                         ) : (
                           <>
                             <ChevronDown className="size-3 mr-1" />
-                            {t('showAll', { ns: 'settings' }) || 'Show all'}
+                            {t('showAll', { ns: 'settings' })}
                           </>
                         )}
                       </Button>
@@ -527,9 +526,10 @@ export function WorkspaceSettingsForm({
                       return (
                         <div className="text-sm text-muted-foreground py-2">
                           {allMcpConnections.length === 0
-                            ? t('noMCPConnections')
-                            : t('noConnectedMCPConnections') ||
-                              'No connected MCP connections available'}
+                            ? t('noMCPConnections', { ns: 'settings' })
+                            : t('noConnectedMCPConnectionsAvailable', {
+                                ns: 'settings',
+                              })}
                         </div>
                       );
                     }
@@ -654,8 +654,13 @@ export function WorkspaceSettingsForm({
                                     {conn.name}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
-                                    ({selectedToolsCount}/{tools.length}{' '}
-                                    selected)
+                                    (
+                                    {t('mcpSelectedToolsCount', {
+                                      ns: 'settings',
+                                      selected: selectedToolsCount,
+                                      total: tools.length,
+                                    })}
+                                    )
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -677,8 +682,12 @@ export function WorkspaceSettingsForm({
                                       )}
                                       title={
                                         allSelected
-                                          ? 'Deselect all tools'
-                                          : 'Select all tools'
+                                          ? t('deselectAllTools', {
+                                              ns: 'settings',
+                                            })
+                                          : t('selectAllTools', {
+                                              ns: 'settings',
+                                            })
                                       }
                                     >
                                       {allSelected && (
@@ -770,7 +779,10 @@ export function WorkspaceSettingsForm({
                                               {isSelected && (
                                                 <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
                                                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                                    Permission:
+                                                    {t('permission', {
+                                                      ns: 'settings',
+                                                    })}
+                                                    :
                                                   </span>
                                                   <Select
                                                     value={
@@ -806,10 +818,14 @@ export function WorkspaceSettingsForm({
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                       <SelectItem value="auto">
-                                                        Auto (Run)
+                                                        {t('permissionAuto', {
+                                                          ns: 'settings',
+                                                        })}
                                                       </SelectItem>
                                                       <SelectItem value="require">
-                                                        Ask (Target)
+                                                        {t('permissionAsk', {
+                                                          ns: 'settings',
+                                                        })}
                                                       </SelectItem>
                                                     </SelectContent>
                                                   </Select>
@@ -822,7 +838,9 @@ export function WorkspaceSettingsForm({
                                     </div>
                                   ) : (
                                     <div className="p-4 text-center text-xs text-muted-foreground italic">
-                                      No tools available
+                                      {t('noToolsAvailable', {
+                                        ns: 'settings',
+                                      })}
                                     </div>
                                   )}
                                 </div>
@@ -854,7 +872,7 @@ export function WorkspaceSettingsForm({
                       </Tooltip>
                     </div>
                     <p className="text-[11px] text-muted-foreground/80">
-                      Show tokens as they are generated.
+                      {t('streamModeDescriptionSecondary', { ns: 'settings' })}
                     </p>
                   </div>
                   <Switch
@@ -868,19 +886,21 @@ export function WorkspaceSettingsForm({
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-1.5">
                       <Label htmlFor="max-iterations" className="text-sm">
-                        {t('maxIterations') || 'Agent Iterations'}
+                        {t('maxIterations', { ns: 'common' })}
                       </Label>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Info className="size-3.5 text-muted-foreground/70 cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          Số lần tối đa Agent có thể gọi Tool trong một yêu cầu
+                          {t('maxIterationsDescription', { ns: 'settings' })}
                         </TooltipContent>
                       </Tooltip>
                     </div>
                     <p className="text-[11px] text-muted-foreground/80">
-                      Default: 25. Increase for complex tasks.
+                      {t('maxIterationsDescriptionSecondary', {
+                        ns: 'settings',
+                      })}
                     </p>
                   </div>
                   <Input
@@ -901,9 +921,6 @@ export function WorkspaceSettingsForm({
 
               {/* Danger Zone Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-destructive">
-                  {t('dangerZone', { ns: 'settings' }) || 'Danger Zone'}
-                </h3>
                 <div className="space-y-2 w-full">
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
