@@ -17,8 +17,7 @@ pub use llm_connection_repository::{LLMConnectionRepository, SqliteLLMConnection
 pub use mcp_connection_repository::{MCPConnectionRepository, SqliteMCPConnectionRepository};
 pub use message_repository::{MessageRepository, SqliteMessageRepository};
 pub use prompt_repository::{PromptRepository, SqlitePromptRepository};
-pub mod usage_repository;
-pub use usage_repository::{SqliteUsageRepository, UsageRepository};
+
 pub use workspace_repository::{SqliteWorkspaceRepository, WorkspaceRepository};
 pub use workspace_settings_repository::{
     SqliteWorkspaceSettingsRepository, WorkspaceSettingsRepository,

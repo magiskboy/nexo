@@ -4,6 +4,7 @@ mod constants;
 mod db;
 mod error;
 mod events;
+mod features;
 mod menu;
 mod models;
 mod repositories;
@@ -213,10 +214,10 @@ pub fn run() {
             commands::node::install_node_runtime,
             commands::node::uninstall_node_runtime,
             // Usage commands
-            commands::usage::get_usage_summary,
-            commands::usage::get_usage_chart,
-            commands::usage::get_usage_logs,
-            commands::usage::clear_usage,
+            features::usage::commands::get_usage_summary,
+            features::usage::commands::get_usage_chart,
+            features::usage::commands::get_usage_logs,
+            features::usage::commands::clear_usage,
             // Agent commands
             agent::commands::install_agent,
             agent::commands::get_installed_agents,

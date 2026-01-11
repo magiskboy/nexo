@@ -1,4 +1,4 @@
-use crate::models::usage::{UsageChartPoint, UsageFilter, UsageStat, UsageSummary};
+use super::models::{UsageChartPoint, UsageFilter, UsageStat, UsageSummary};
 use rusqlite::{params, Result};
 use std::sync::Arc;
 use tauri::AppHandle;

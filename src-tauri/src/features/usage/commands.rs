@@ -1,5 +1,5 @@
+use super::models::{UsageChartPoint, UsageFilter, UsageStat, UsageSummary};
 use crate::error::AppError;
-use crate::models::usage::{UsageChartPoint, UsageFilter, UsageStat, UsageSummary};
 use crate::state::AppState;
 use tauri::State;
 

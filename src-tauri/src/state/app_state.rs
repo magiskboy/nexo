@@ -1,3 +1,4 @@
+use crate::features::usage::{SqliteUsageRepository, UsageRepository, UsageService};
 use crate::repositories::*;
 use crate::services::*;
 use rusqlite::Connection;

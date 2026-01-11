@@ -25,6 +25,6 @@ pub use mcp_connection::MCPServerConnection;
 pub use message::Message;
 pub use prompt::Prompt;
 pub use prompt_template::ParsedPromptTemplate;
-pub mod usage;
+
 pub use workspace::Workspace;
 pub use workspace_settings::WorkspaceSettings;

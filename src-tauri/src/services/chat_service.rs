@@ -1,11 +1,11 @@
 use crate::error::AppError;
 use crate::events::{AgentEmitter, MessageEmitter, ToolEmitter};
+use crate::features::usage::UsageService;
 use crate::models::llm_types::*;
 use crate::models::{Chat, Message};
 use crate::repositories::ChatRepository;
 use crate::services::{
-    LLMConnectionService, LLMService, MessageService, ToolService, UsageService,
-    WorkspaceSettingsService,
+    LLMConnectionService, LLMService, MessageService, ToolService, WorkspaceSettingsService,
 };
 use base64::{engine::general_purpose, Engine as _};
 use rust_mcp_sdk::{schema::CallToolRequestParams, McpClient};
@@ -193,9 +193,15 @@ impl ChatService {
                     "mov" => "video/quicktime",
                     _ => "application/octet-stream",
                 };
-                Ok((format!("data:{};base64,{}", mime, encoded), mime.to_string()))
+                Ok((
+                    format!("data:{};base64,{}", mime, encoded),
+                    mime.to_string(),
+                ))
             } else {
-                Ok((path_or_data.to_string(), "application/octet-stream".to_string()))
+                Ok((
+                    path_or_data.to_string(),
+                    "application/octet-stream".to_string(),
+                ))
             }
         }
     }
@@ -641,7 +647,7 @@ impl ChatService {
 
         // 11. Create LLM request
         let model_for_usage = model.clone();
-        
+
         let llm_request = LLMChatRequest {
             model: model.clone(), // Clone here since we use it below
             messages: api_messages,
@@ -655,7 +661,7 @@ impl ChatService {
                 "include_usage": true
             })),
             response_modalities: None, // Provider-specific, will be set by provider if needed
-            image_config: None, // Provider-specific, will be set by provider if needed
+            image_config: None,        // Provider-specific, will be set by provider if needed
         };
 
         // 12. Get cancellation receiver for this chat
@@ -723,44 +729,41 @@ impl ChatService {
 
         // Update metadata with token usage and images
         let mut metadata_obj = serde_json::json!({});
-        
+
         if let Some(usage) = &llm_response.usage {
             metadata_obj["tokenUsage"] = serde_json::json!(usage);
         }
-        
+
         // Add generated images to metadata if present
         if let Some(images) = &llm_response.images {
             if !images.is_empty() {
                 // Convert images to data URLs for frontend display
                 let image_urls: Vec<String> = images
                     .iter()
-                    .map(|img| {
-                        format!("data:{};base64,{}", img.mime_type, img.data)
-                    })
+                    .map(|img| format!("data:{};base64,{}", img.mime_type, img.data))
                     .collect();
-                
+
                 metadata_obj["images"] = serde_json::json!(image_urls);
             }
         }
-        
+
         if !metadata_obj.as_object().unwrap().is_empty() {
             self.message_service
                 .update_metadata(assistant_message_id.clone(), Some(metadata_obj.to_string()))?;
-            
+
             // Emit metadata updated event with delay to ensure DB has flushed
             let app_clone = app.clone();
             let chat_id_clone = chat_id.clone();
             let assistant_message_id_clone = assistant_message_id.clone();
-            
+
             tokio::spawn(async move {
                 // Small delay to ensure DB has flushed
                 tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
-                
+
                 let message_emitter = MessageEmitter::new(app_clone);
-                if let Err(e) = message_emitter.emit_message_metadata_updated(
-                    chat_id_clone,
-                    assistant_message_id_clone,
-                ) {
+                if let Err(e) = message_emitter
+                    .emit_message_metadata_updated(chat_id_clone, assistant_message_id_clone)
+                {
                     eprintln!("Failed to emit metadata-updated event: {}", e);
                 }
             });
@@ -1015,7 +1018,7 @@ impl ChatService {
 
                 // Call LLM
                 let model_for_usage = model.clone();
-                
+
                 let llm_request = LLMChatRequest {
                     model: model.clone(),
                     messages: current_messages.clone(),
@@ -1706,7 +1709,9 @@ impl ChatService {
                     let files = if let Some(metadata) = &msg.metadata {
                         if let Ok(meta_json) = serde_json::from_str::<serde_json::Value>(metadata) {
                             // Try new format first (files array)
-                            if let Some(file_array) = meta_json.get("files").and_then(|f| f.as_array()) {
+                            if let Some(file_array) =
+                                meta_json.get("files").and_then(|f| f.as_array())
+                            {
                                 Some(
                                     file_array
                                         .iter()
@@ -1715,7 +1720,9 @@ impl ChatService {
                                 )
                             }
                             // Fallback to old format (images only)
-                            else if let Some(imgs) = meta_json.get("images").and_then(|i| i.as_array()) {
+                            else if let Some(imgs) =
+                                meta_json.get("images").and_then(|i| i.as_array())
+                            {
                                 Some(
                                     imgs.iter()
                                         .filter_map(|i| i.as_str().map(|s| s.to_string()))
@@ -1744,10 +1751,12 @@ impl ChatService {
                             }
                             // File parts
                             for file_path in file_list {
-                                let (file_content, actual_mime) = self
-                                    .load_file_content(&file_path)
-                                    .unwrap_or((file_path.clone(), "application/octet-stream".to_string()));
-                                
+                                let (file_content, actual_mime) =
+                                    self.load_file_content(&file_path).unwrap_or((
+                                        file_path.clone(),
+                                        "application/octet-stream".to_string(),
+                                    ));
+
                                 // Check if it's an image to maintain backward compatibility
                                 if actual_mime.starts_with("image/") {
                                     parts.push(ContentPart::ImageUrl {
@@ -1810,10 +1819,12 @@ impl ChatService {
                 }
                 // File parts
                 for file_path in file_list {
-                    let (file_content, actual_mime) = self
-                        .load_file_content(file_path)
-                        .unwrap_or((file_path.to_string(), "application/octet-stream".to_string()));
-                    
+                    let (file_content, actual_mime) =
+                        self.load_file_content(file_path).unwrap_or((
+                            file_path.to_string(),
+                            "application/octet-stream".to_string(),
+                        ));
+
                     // Check if it's an image
                     if actual_mime.starts_with("image/") {
                         parts.push(ContentPart::ImageUrl {

@@ -1,7 +1,6 @@
+use super::models::{UsageChartPoint, UsageFilter, UsageStat, UsageSummary};
+use super::repository::UsageRepository;
 use crate::models::llm_types::TokenUsage;
-use crate::models::usage::UsageChartPoint;
-use crate::models::usage::{UsageFilter, UsageStat, UsageSummary};
-use crate::repositories::UsageRepository;
 use rusqlite::Result;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -42,6 +41,7 @@ impl UsageService {
         0.0 // Default/Unknown (e.g., Ollama or local models)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn record_usage(
         &self,
         workspace_id: String,
