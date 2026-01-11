@@ -273,23 +273,29 @@ export function ChatArea() {
     dispatch(clearInput());
     dispatch(setLoading(true));
 
+    // Capture editing ID and clear it immediately for better UX
+    const currentEditingId = editingMessageId;
+    if (currentEditingId) {
+      setEditingMessageId(null);
+    }
+
     try {
       // Send message with streaming support (streaming handled via Tauri events)
-      if (editingMessageId) {
-        const message = messages.find((m) => m.id === editingMessageId);
+      if (currentEditingId) {
+        const message = messages.find((m) => m.id === currentEditingId);
         if (message) {
           if (message.role === 'user') {
             await dispatch(
               editAndResendMessage({
                 chatId: selectedChatId,
-                messageId: editingMessageId,
+                messageId: currentEditingId,
                 newContent: userInput,
                 files, // Pass updated files
               })
             ).unwrap();
           } else if (message.role === 'assistant') {
             await invokeCommand(TauriCommands.UPDATE_MESSAGE, {
-              id: editingMessageId,
+              id: currentEditingId,
               content: userInput,
               reasoning: message.reasoning || null,
               timestamp: null,
@@ -301,7 +307,6 @@ export function ChatArea() {
             );
           }
         }
-        setEditingMessageId(null);
       } else {
         await dispatch(
           sendMessage({
