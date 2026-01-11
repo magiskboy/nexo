@@ -1,5 +1,5 @@
+use super::models::Workspace;
 use crate::error::AppError;
-use crate::models::Workspace;
 use rusqlite::params;
 use std::sync::Arc;
 use tauri::AppHandle;

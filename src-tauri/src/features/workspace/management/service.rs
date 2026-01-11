@@ -1,6 +1,6 @@
+use super::models::Workspace;
+use super::repository::WorkspaceRepository;
 use crate::error::AppError;
-use crate::models::Workspace;
-use crate::repositories::WorkspaceRepository;
 use std::sync::Arc;
 
 pub struct WorkspaceService {

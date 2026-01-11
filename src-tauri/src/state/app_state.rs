@@ -1,4 +1,11 @@
 use crate::features::usage::{SqliteUsageRepository, UsageRepository, UsageService};
+use crate::features::workspace::{
+    management::{SqliteWorkspaceRepository, WorkspaceRepository, WorkspaceService},
+    settings::{
+        SqliteWorkspaceSettingsRepository, WorkspaceSettingsRepository, WorkspaceSettingsService,
+    },
+    WorkspaceFeature,
+};
 use crate::repositories::*;
 use crate::services::*;
 use rusqlite::Connection;
@@ -19,10 +26,9 @@ pub struct AppState {
     pub db_state: Arc<Mutex<Option<Connection>>>,
 
     // Services (injected dependencies)
-    pub workspace_service: Arc<WorkspaceService>,
+    pub workspace_feature: Arc<WorkspaceFeature>,
     pub chat_service: Arc<ChatService>,
     pub message_service: Arc<MessageService>,
-    pub workspace_settings_service: Arc<WorkspaceSettingsService>,
     pub chat_input_settings_service: Arc<ChatInputSettingsService>,
     pub llm_connection_service: Arc<LLMConnectionService>,
     pub mcp_connection_service: Arc<MCPConnectionService>,
@@ -87,6 +93,13 @@ impl AppState {
         let message_service = Arc::new(MessageService::new(message_repo));
         let workspace_settings_service =
             Arc::new(WorkspaceSettingsService::new(workspace_settings_repo));
+
+        // Feature: Workspace
+        let workspace_feature = Arc::new(WorkspaceFeature::new(
+            workspace_service.clone(),
+            workspace_settings_service.clone(),
+        ));
+
         let llm_connection_service = Arc::new(LLMConnectionService::new(llm_connection_repo));
         let llm_service = Arc::new(LLMService::new());
         let usage_service = Arc::new(UsageService::new(usage_repo));
@@ -123,10 +136,9 @@ impl AppState {
 
         Ok(Self {
             db_state,
-            workspace_service,
+            workspace_feature,
             chat_service,
             message_service,
-            workspace_settings_service,
             chat_input_settings_service,
             llm_connection_service,
             mcp_connection_service,

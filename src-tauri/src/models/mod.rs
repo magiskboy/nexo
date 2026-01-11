@@ -10,8 +10,6 @@ pub mod mcp_tool;
 pub mod message;
 pub mod prompt;
 pub mod prompt_template;
-pub mod workspace;
-pub mod workspace_settings;
 
 pub use addon_config::AddonIndex;
 pub use app_setting::AppSetting;
@@ -25,6 +23,3 @@ pub use mcp_connection::MCPServerConnection;
 pub use message::Message;
 pub use prompt::Prompt;
 pub use prompt_template::ParsedPromptTemplate;
-
-pub use workspace::Workspace;
-pub use workspace_settings::WorkspaceSettings;

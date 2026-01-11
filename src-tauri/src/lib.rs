@@ -139,10 +139,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             // Workspace commands
-            commands::workspace::create_workspace,
-            commands::workspace::get_workspaces,
-            commands::workspace::update_workspace,
-            commands::workspace::delete_workspace,
+            features::workspace::management::commands::create_workspace,
+            features::workspace::management::commands::get_workspaces,
+            features::workspace::management::commands::update_workspace,
+            features::workspace::management::commands::delete_workspace,
             // Chat commands
             commands::chat::create_chat,
             commands::chat::get_chats,
@@ -163,8 +163,8 @@ pub fn run() {
             commands::chat_input_settings::get_chat_input_settings,
             commands::chat_input_settings::save_chat_input_settings,
             // Workspace Settings commands
-            commands::settings::save_workspace_settings,
-            commands::settings::get_workspace_settings,
+            features::workspace::settings::commands::save_workspace_settings,
+            features::workspace::settings::commands::get_workspace_settings,
             // LLM Connection commands
             commands::llm_connection::create_llm_connection,
             commands::llm_connection::get_llm_connections,

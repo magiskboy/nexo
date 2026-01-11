@@ -15,8 +15,6 @@ pub mod prompt_service;
 pub mod prompt_template_service;
 pub mod python_runtime;
 pub mod tool_service;
-pub mod workspace_service;
-pub mod workspace_settings_service;
 
 pub use app_settings_service::AppSettingsService;
 pub use chat_input_settings_service::ChatInputSettingsService;
@@ -35,6 +33,3 @@ pub use prompt_service::PromptService;
 pub use prompt_template_service::PromptTemplateService;
 pub use python_runtime::PythonRuntime;
 pub use tool_service::ToolService;
-
-pub use workspace_service::WorkspaceService;
-pub use workspace_settings_service::WorkspaceSettingsService;

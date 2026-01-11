@@ -1,5 +1,5 @@
+use super::models::Workspace;
 use crate::error::AppError;
-use crate::models::Workspace;
 use crate::state::AppState;
 use tauri::State;
 
@@ -10,12 +10,13 @@ pub fn create_workspace(
     state: State<'_, AppState>,
 ) -> Result<Workspace, AppError> {
     let workspace = state
-        .workspace_service
+        .workspace_feature
+        .service
         .create(id.clone(), name)
         .map_err(|e| AppError::Generic(e.to_string()))?;
 
     // Create default settings for the new workspace
-    state.workspace_settings_service.save(
+    state.workspace_feature.settings_service.save(
         id,
         None,       // llm_connection_id
         None,       // system_message
@@ -32,7 +33,8 @@ pub fn create_workspace(
 #[tauri::command]
 pub fn get_workspaces(state: State<'_, AppState>) -> Result<Vec<Workspace>, AppError> {
     state
-        .workspace_service
+        .workspace_feature
+        .service
         .get_all()
         .map_err(|e| AppError::Generic(e.to_string()))
 }
@@ -44,7 +46,8 @@ pub fn update_workspace(
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
     state
-        .workspace_service
+        .workspace_feature
+        .service
         .update(id, name)
         .map_err(|e| AppError::Generic(e.to_string()))
 }
@@ -52,7 +55,8 @@ pub fn update_workspace(
 #[tauri::command]
 pub fn delete_workspace(id: String, state: State<'_, AppState>) -> Result<(), AppError> {
     state
-        .workspace_service
+        .workspace_feature
+        .service
         .delete(id)
         .map_err(|e| AppError::Generic(e.to_string()))
 }

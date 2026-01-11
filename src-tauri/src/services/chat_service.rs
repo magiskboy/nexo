@@ -1,12 +1,11 @@
 use crate::error::AppError;
 use crate::events::{AgentEmitter, MessageEmitter, ToolEmitter};
 use crate::features::usage::UsageService;
+use crate::features::workspace::settings::{WorkspaceSettings, WorkspaceSettingsService};
 use crate::models::llm_types::*;
 use crate::models::{Chat, Message};
 use crate::repositories::ChatRepository;
-use crate::services::{
-    LLMConnectionService, LLMService, MessageService, ToolService, WorkspaceSettingsService,
-};
+use crate::services::{LLMConnectionService, LLMService, MessageService, ToolService};
 use base64::{engine::general_purpose, Engine as _};
 use rust_mcp_sdk::{schema::CallToolRequestParams, McpClient};
 use serde_json;
@@ -1193,7 +1192,7 @@ impl ChatService {
         chat_id: &str,
         assistant_message_id: &str,
         tool_calls: Vec<crate::models::llm_types::ToolCall>,
-        workspace_settings: &crate::models::WorkspaceSettings,
+        workspace_settings: &WorkspaceSettings,
     ) -> Result<Vec<crate::models::llm_types::ToolCall>, AppError> {
         let tool_emitter = ToolEmitter::new(app.clone());
 
@@ -1660,7 +1659,7 @@ impl ChatService {
     fn prepare_messages_for_agent_loop(
         &self,
         chat_id: &str,
-        workspace_settings: &crate::models::WorkspaceSettings,
+        workspace_settings: &WorkspaceSettings,
         user_content: &str,
         system_prompt_override: Option<String>,
     ) -> Result<Vec<ChatMessage>, AppError> {
@@ -1677,7 +1676,7 @@ impl ChatService {
     fn prepare_messages(
         &self,
         existing_messages: &[Message],
-        workspace_settings: &crate::models::WorkspaceSettings,
+        workspace_settings: &WorkspaceSettings,
         user_content: &str,
         user_files: Option<&[String]>,
         system_prompt_override: Option<String>,

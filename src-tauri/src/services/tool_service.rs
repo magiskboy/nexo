@@ -1,6 +1,7 @@
 use crate::error::AppError;
+use crate::features::workspace::settings::WorkspaceSettingsService;
 use crate::models::llm_types::ChatCompletionTool;
-use crate::services::{MCPClientService, MCPConnectionService, WorkspaceSettingsService};
+use crate::services::{MCPClientService, MCPConnectionService};
 use serde_json;
 use std::sync::Arc;
 use tauri::AppHandle;

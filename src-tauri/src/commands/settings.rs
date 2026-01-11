@@ -1,45 +1,7 @@
 use crate::error::AppError;
-use crate::models::{AppSetting, WorkspaceSettings};
+use crate::models::AppSetting;
 use crate::state::AppState;
 use tauri::State;
-
-#[tauri::command]
-pub fn save_workspace_settings(
-    workspace_id: String,
-    llm_connection_id: Option<String>,
-    system_message: Option<String>,
-    mcp_tool_ids: Option<String>,
-    stream_enabled: Option<bool>,
-    default_model: Option<String>,
-    tool_permission_config: Option<String>,
-    max_agent_iterations: Option<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), AppError> {
-    state
-        .workspace_settings_service
-        .save(
-            workspace_id,
-            llm_connection_id,
-            system_message,
-            mcp_tool_ids,
-            stream_enabled,
-            default_model,
-            tool_permission_config,
-            max_agent_iterations,
-        )
-        .map_err(|e| AppError::Generic(e.to_string()))
-}
-
-#[tauri::command]
-pub fn get_workspace_settings(
-    workspace_id: String,
-    state: State<'_, AppState>,
-) -> Result<Option<WorkspaceSettings>, AppError> {
-    state
-        .workspace_settings_service
-        .get_by_workspace_id(&workspace_id)
-        .map_err(|e| AppError::Generic(e.to_string()))
-}
 
 #[tauri::command]
 pub fn save_app_setting(
