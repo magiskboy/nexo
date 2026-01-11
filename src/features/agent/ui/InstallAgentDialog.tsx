@@ -84,12 +84,12 @@ export function InstallAgentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh]">
         <DialogHeader className="shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             {agent.icon ? (
               <img
                 src={agent.icon}
                 alt={agent.name}
-                className="w-10 h-10 object-contain rounded-md bg-muted/20 p-1"
+                className="size-10 object-contain rounded-lg bg-muted/20 p-1.5 shrink-0"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.nextElementSibling?.classList.remove(
@@ -98,15 +98,15 @@ export function InstallAgentDialog({
                 }}
               />
             ) : null}
-            <div className="hidden rounded-lg bg-primary/10 p-2.5">
-              <Bot className="size-5 text-primary" />
+            <div className="hidden rounded-lg bg-primary/10 p-2">
+              <Bot className="size-6 text-primary" />
             </div>
-            <div>
-              <DialogTitle>
-                {t('installAgent', { defaultValue: 'Install Agent' })}:{' '}
-                {agent.name}
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-base">
+                {t('installAgent', { defaultValue: 'Install Agent' })}
               </DialogTitle>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-sm font-medium mt-1">{agent.name}</h4>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {agent.description}
               </p>
             </div>
@@ -115,52 +115,72 @@ export function InstallAgentDialog({
 
         <DialogBody>
           <ScrollArea className="h-full [&_[data-slot='scroll-area-scrollbar']]:hidden">
-            <div className="space-y-4 pr-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-3 pr-4">
+              {/* Metadata Grid */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-muted-foreground mb-1">Category</p>
-                  <p className="font-medium bg-muted px-2 py-1 rounded inline-block">
-                    {agent.category}
+                  <p className="text-xs text-muted-foreground mb-1.5">
+                    Category
                   </p>
+                  <span className="inline-flex items-center bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-medium">
+                    {agent.category}
+                  </span>
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">Author</p>
-                  <p className="font-medium">{agent.author}</p>
+                  <p className="text-xs text-muted-foreground mb-1.5">Author</p>
+                  <p className="text-sm">{agent.author}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">Version</p>
-                  <p className="font-mono text-xs">{agent.version}</p>
+                  <p className="text-xs text-muted-foreground mb-1.5">
+                    Version
+                  </p>
+                  <span className="inline-flex items-center bg-muted px-2 py-0.5 rounded font-mono text-xs">
+                    {agent.version}
+                  </span>
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">Source</p>
+                  <p className="text-xs text-muted-foreground mb-1.5">Source</p>
                   <a
                     href={agent.git_install.repository_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline truncate block"
+                    className="text-sm text-primary hover:underline truncate block"
                   >
                     Repository
                   </a>
                 </div>
               </div>
 
-              <div className="border rounded-md p-3 bg-muted/30">
-                <p className="text-xs text-muted-foreground mb-2 font-semibold">
+              {/* Git Installation Details */}
+              <div className="border rounded-lg p-3 bg-muted/20">
+                <p className="text-xs text-muted-foreground mb-2">
                   Git Installation Details
                 </p>
-                <div className="space-y-1 font-mono text-xs">
-                  <p>
-                    <span className="text-muted-foreground">Repo:</span>{' '}
-                    {agent.git_install.repository_url}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Rev:</span>{' '}
-                    {agent.git_install.revision}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Path:</span>{' '}
-                    {agent.git_install.subpath}
-                  </p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground min-w-[3rem] shrink-0">
+                      Repo:
+                    </span>
+                    <span className="font-mono truncate">
+                      {agent.git_install.repository_url}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground min-w-[3rem] shrink-0">
+                      Rev:
+                    </span>
+                    <span className="font-mono truncate">
+                      {agent.git_install.revision}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground min-w-[3rem] shrink-0">
+                      Path:
+                    </span>
+                    <span className="font-mono truncate">
+                      {agent.git_install.subpath}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
