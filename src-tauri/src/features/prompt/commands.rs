@@ -1,5 +1,5 @@
+use super::models::Prompt;
 use crate::error::AppError;
-use crate::models::Prompt;
 use crate::state::AppState;
 use tauri::State;
 

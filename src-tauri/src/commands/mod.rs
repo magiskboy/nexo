@@ -6,6 +6,6 @@ pub mod hub;
 pub mod mcp_tool;
 pub mod message;
 pub mod node;
-pub mod prompt;
+
 pub mod python;
 pub mod settings;

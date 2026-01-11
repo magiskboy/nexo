@@ -182,10 +182,10 @@ pub fn run() {
             commands::settings::get_app_setting,
             commands::settings::get_all_app_settings,
             // Prompt commands
-            commands::prompt::create_prompt,
-            commands::prompt::get_prompts,
-            commands::prompt::update_prompt,
-            commands::prompt::delete_prompt,
+            features::prompt::commands::create_prompt,
+            features::prompt::commands::get_prompts,
+            features::prompt::commands::update_prompt,
+            features::prompt::commands::delete_prompt,
             // Hub commands
             commands::hub::fetch_hub_prompts,
             commands::hub::fetch_prompt_template,

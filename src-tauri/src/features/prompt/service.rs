@@ -1,6 +1,6 @@
+use super::models::Prompt;
+use super::repository::PromptRepository;
 use crate::error::AppError;
-use crate::models::Prompt;
-use crate::repositories::PromptRepository;
 use std::sync::Arc;
 
 pub struct PromptService {

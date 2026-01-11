@@ -8,8 +8,6 @@ pub mod llm_types;
 
 pub mod mcp_tool;
 pub mod message;
-pub mod prompt;
-pub mod prompt_template;
 
 pub use addon_config::AddonIndex;
 pub use app_setting::AppSetting;
@@ -20,5 +18,3 @@ pub use hub_index::{
 };
 
 pub use message::Message;
-pub use prompt::Prompt;
-pub use prompt_template::ParsedPromptTemplate;

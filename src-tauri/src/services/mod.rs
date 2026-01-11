@@ -11,8 +11,7 @@ pub mod mcp_config_service;
 pub mod mcp_tool_refresh_service;
 pub mod message_service;
 pub mod node_runtime;
-pub mod prompt_service;
-pub mod prompt_template_service;
+
 pub mod python_runtime;
 pub mod tool_service;
 
@@ -29,7 +28,6 @@ pub use mcp_config_service::MCPConfigService;
 pub use mcp_tool_refresh_service::MCPToolRefreshService;
 pub use message_service::MessageService;
 pub use node_runtime::NodeRuntime;
-pub use prompt_service::PromptService;
-pub use prompt_template_service::PromptTemplateService;
+
 pub use python_runtime::PythonRuntime;
 pub use tool_service::ToolService;

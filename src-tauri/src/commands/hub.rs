@@ -1,7 +1,8 @@
 use crate::error::AppError;
 use crate::features::mcp_connection::MCPServerConnection;
-use crate::models::{HubMCPServer, HubPrompt, ParsedPromptTemplate, Prompt};
-use crate::services::{HubService, MCPConfigService, PromptTemplateService};
+use crate::features::prompt::{ParsedPromptTemplate, Prompt, PromptTemplateService};
+use crate::models::{HubMCPServer, HubPrompt};
+use crate::services::{HubService, MCPConfigService};
 use crate::state::AppState;
 use serde::Deserialize;
 use std::collections::HashMap;

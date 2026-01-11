@@ -1,5 +1,5 @@
+use super::models::ParsedPromptTemplate;
 use crate::error::AppError;
-use crate::models::ParsedPromptTemplate;
 use regex::Regex;
 
 const HUB_BASE_URL: &str = "https://raw.githubusercontent.com/Nexo-Agent/official-hub/main";
@@ -15,11 +15,9 @@ impl PromptTemplateService {
     /// Fetch markdown file from GitHub raw URL
     pub async fn fetch_prompt_template(&self, path: &str) -> Result<String, AppError> {
         let url = format!("{}/{}", HUB_BASE_URL, path);
-        let response = reqwest::get(&url)
-            .await
-            .map_err(|e| {
-                AppError::PromptTemplate(format!("Failed to fetch template from {}: {}", url, e))
-            })?;
+        let response = reqwest::get(&url).await.map_err(|e| {
+            AppError::PromptTemplate(format!("Failed to fetch template from {}: {}", url, e))
+        })?;
 
         if !response.status().is_success() {
             return Err(AppError::PromptTemplate(format!(
@@ -37,7 +35,10 @@ impl PromptTemplateService {
     }
 
     /// Parse markdown template to extract title, description, content, and variables
-    pub fn parse_markdown_template(&self, markdown: &str) -> Result<ParsedPromptTemplate, AppError> {
+    pub fn parse_markdown_template(
+        &self,
+        markdown: &str,
+    ) -> Result<ParsedPromptTemplate, AppError> {
         // Extract title from first # header
         let title = self.extract_title(markdown)?;
 
@@ -169,7 +170,6 @@ impl PromptTemplateService {
         result.sort();
         result
     }
-
 }
 
 impl Default for PromptTemplateService {

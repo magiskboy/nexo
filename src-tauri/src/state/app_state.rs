@@ -4,6 +4,7 @@ use crate::features::llm_connection::{
 use crate::features::mcp_connection::{
     MCPConnectionRepository, MCPConnectionService, SqliteMCPConnectionRepository,
 };
+use crate::features::prompt::{PromptRepository, PromptService, SqlitePromptRepository};
 use crate::features::usage::{SqliteUsageRepository, UsageRepository, UsageService};
 use crate::features::workspace::{
     management::{SqliteWorkspaceRepository, WorkspaceRepository, WorkspaceService},
