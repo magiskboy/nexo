@@ -30,34 +30,23 @@ pub struct MCPClientService;
 
 impl MCPClientService {
     /// Parse headers/env vars from JSON string
-    fn parse_headers(
-        headers: &Option<String>,
-    ) -> (
-        Option<HashMap<String, String>>,
-        Option<HashMap<String, String>>,
-    ) {
-        let mut custom_headers: Option<HashMap<String, String>> = None;
-        let mut env_vars: Option<HashMap<String, String>> = None;
-
-        if let Some(headers_str) = headers {
-            if let Ok(parsed_headers) = serde_json::from_str::<serde_json::Value>(headers_str) {
-                if let Some(obj) = parsed_headers.as_object() {
-                    let mut header_map = HashMap::new();
+    fn parse_json_map(json_str: &Option<String>) -> Option<HashMap<String, String>> {
+        if let Some(s) = json_str {
+            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(s) {
+                if let Some(obj) = parsed.as_object() {
+                    let mut map = HashMap::new();
                     for (key, value) in obj {
                         if let Some(val_str) = value.as_str() {
-                            header_map.insert(key.clone(), val_str.to_string());
+                            map.insert(key.clone(), val_str.to_string());
                         }
                     }
-                    if !header_map.is_empty() {
-                        custom_headers = Some(header_map.clone());
-                        // For stdio transport, headers are treated as environment variables
-                        env_vars = Some(header_map);
+                    if !map.is_empty() {
+                        return Some(map);
                     }
                 }
             }
         }
-
-        (custom_headers, env_vars)
+        None
     }
 
     /// Create client details for MCP initialization
@@ -74,22 +63,30 @@ impl MCPClientService {
     }
 
     /// Create and start MCP client based on transport type
-    /// Create and start MCP client based on transport type
     pub async fn create_and_start_client(
         app: &AppHandle,
         url: String,
         r#type: String,
         headers: Option<String>,
+        env_vars_json: Option<String>,
         runtime_path: Option<String>,
     ) -> Result<Arc<ClientRuntime>, AppError> {
         // Validate transport type
         if r#type != "sse" && r#type != "http-streamable" && r#type != "stdio" {
             return Err(AppError::Validation(format!(
-                "Unsupported transport type: {type}. Only 'sse', 'http-streamable', and 'stdio' are supported."
+                "Unsupported transport type: {}. Only 'sse', 'http-streamable', and 'stdio' are supported.",
+                r#type
             )));
         }
 
-        let (custom_headers, mut env_vars) = Self::parse_headers(&headers);
+        let custom_headers = Self::parse_json_map(&headers);
+        let mut env_vars = Self::parse_json_map(&env_vars_json);
+
+        // Fallback: If it's stdio and headers are provided but env_vars are not, use headers as env_vars (legacy support)
+        if r#type == "stdio" && env_vars.is_none() && custom_headers.is_some() {
+            env_vars = custom_headers.clone();
+        }
+
         let client_details = Self::create_client_details();
         let handler = SimpleClientHandler {};
 
@@ -99,8 +96,14 @@ impl MCPClientService {
                 custom_headers,
                 ..ClientSseTransportOptions::default()
             };
-            let transport = ClientSseTransport::new(&url, sse_options)
-                .map_err(|e| AppError::Generic(format!("Failed to create SSE transport: {e}")))?;
+            let transport = match ClientSseTransport::new(&url, sse_options) {
+                Ok(t) => t,
+                Err(e) => {
+                    let err_msg = format!("Failed to create SSE transport for {}: {}", url, e);
+                    eprintln!("{}", err_msg);
+                    return Err(AppError::Generic(err_msg));
+                }
+            };
             client_runtime::create_client(client_details, transport, handler)
         } else if r#type == "http-streamable" {
             // Create http-streamable transport with options
@@ -109,7 +112,7 @@ impl MCPClientService {
                 ..RequestOptions::default()
             };
             let transport_options = StreamableTransportOptions {
-                mcp_url: url,
+                mcp_url: url.clone(),
                 request_options,
             };
             client_runtime::with_transport_options(client_details, transport_options, handler)
@@ -119,16 +122,20 @@ impl MCPClientService {
             // - "command" (just the command)
             // - "command arg1 arg2" (command with space-separated arguments)
             // - "/path/to/command" (absolute path)
-            // - "/path/to/command" (absolute path)
             // Use shell-words to parse command and arguments, respecting quotes
-            let parts = shell_words::split(&url).map_err(|e| {
-                AppError::Validation(format!("Invalid stdio URL: parse error: {}", e))
-            })?;
+            let parts = match shell_words::split(&url) {
+                Ok(p) => p,
+                Err(e) => {
+                    let err_msg = format!("Invalid stdio URL '{}': parse error: {}", url, e);
+                    eprintln!("{}", err_msg);
+                    return Err(AppError::Validation(err_msg));
+                }
+            };
 
             if parts.is_empty() {
-                return Err(AppError::Validation(
-                    "Invalid stdio URL: command cannot be empty".to_string(),
-                ));
+                let err_msg = format!("Invalid stdio URL '{}': command cannot be empty", url);
+                eprintln!("{}", err_msg);
+                return Err(AppError::Validation(err_msg));
             }
 
             let mut command = parts[0].clone();
@@ -168,7 +175,6 @@ impl MCPClientService {
                         command = rt_path;
                     }
                 }
-                // If default/empty, fall through to auto-detection below
             }
 
             // If command is still generic and we haven't set a specific runtime (or we want to fallback), try auto-detection
@@ -228,24 +234,33 @@ impl MCPClientService {
                 }
             }
 
-            // Use environment variables parsed from headers (for stdio, headers are treated as env vars)
-            let transport = StdioTransport::create_with_server_launch(
+            // Use environment variables
+            let transport = match StdioTransport::create_with_server_launch(
                 &command,
-                args,
+                args.clone(),
                 env_vars,
                 TransportOptions::default(),
-            )
-            .map_err(|e| AppError::Generic(format!("Failed to create stdio transport: {e}")))?;
+            ) {
+                Ok(t) => t,
+                Err(e) => {
+                    let err_msg = format!(
+                        "Failed to create stdio transport for command '{}' with args {:?}: {}",
+                        command, args, e
+                    );
+                    eprintln!("{}", err_msg);
+                    return Err(AppError::Generic(err_msg));
+                }
+            };
 
             client_runtime::create_client(client_details, transport, handler)
         };
 
         // Start the client
-        client
-            .clone()
-            .start()
-            .await
-            .map_err(|e| AppError::Generic(format!("Failed to start MCP client: {e}")))?;
+        if let Err(e) = client.clone().start().await {
+            let err_msg = format!("Failed to start MCP client for {}: {}", url, e);
+            eprintln!("{}", err_msg);
+            return Err(AppError::Generic(err_msg));
+        }
 
         Ok(client)
     }
@@ -256,15 +271,32 @@ impl MCPClientService {
         url: String,
         r#type: String,
         headers: Option<String>,
+        env_vars_json: Option<String>,
         runtime_path: Option<String>,
     ) -> Result<Vec<MCPTool>, AppError> {
-        let client = Self::create_and_start_client(app, url, r#type, headers, runtime_path).await?;
+        let client = Self::create_and_start_client(
+            app,
+            url.clone(),
+            r#type,
+            headers,
+            env_vars_json,
+            runtime_path,
+        )
+        .await?;
 
         // List tools from the server
-        let tools_result = client
-            .list_tools(None)
-            .await
-            .map_err(|e| AppError::Generic(format!("Failed to list tools: {e}")))?;
+        let tools_result = match client.list_tools(None).await {
+            Ok(r) => r,
+            Err(e) => {
+                let err_msg = format!(
+                    "Failed to list tools from MCP server {}: {}",
+                    url.clone(),
+                    e
+                );
+                eprintln!("{}", err_msg);
+                return Err(AppError::Generic(err_msg));
+            }
+        };
 
         // Convert tools to our MCPTool format
         let tools: Vec<MCPTool> = tools_result
@@ -296,11 +328,20 @@ impl MCPClientService {
         url: String,
         r#type: String,
         headers: Option<String>,
+        env_vars_json: Option<String>,
         tool_name: String,
         arguments: serde_json::Value,
         runtime_path: Option<String>,
     ) -> Result<String, AppError> {
-        let client = Self::create_and_start_client(app, url, r#type, headers, runtime_path).await?;
+        let client = Self::create_and_start_client(
+            app,
+            url.clone(),
+            r#type,
+            headers,
+            env_vars_json,
+            runtime_path,
+        )
+        .await?;
 
         // Call the tool
         // Convert arguments from Value to Map if it's an object
@@ -309,13 +350,22 @@ impl MCPClientService {
             _ => None,
         };
         let params = CallToolRequestParams {
-            name: tool_name,
+            name: tool_name.clone(),
             arguments: arguments_map,
         };
-        let result = client
-            .call_tool(params)
-            .await
-            .map_err(|e| AppError::Generic(format!("Failed to call tool: {e}")))?;
+        let result = match client.call_tool(params).await {
+            Ok(r) => r,
+            Err(e) => {
+                let err_msg = format!(
+                    "Failed to call tool {} on MCP server {}: {}",
+                    tool_name.clone(),
+                    url.clone(),
+                    e
+                );
+                eprintln!("{}", err_msg);
+                return Err(AppError::Generic(err_msg));
+            }
+        };
 
         // Serialize result to JSON string
         let result_json = serde_json::to_string(&result.content)

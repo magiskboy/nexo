@@ -171,6 +171,7 @@ export function MCPServerConnections() {
         url: connection.url,
         type: connection.type,
         headers: connection.headers,
+        env_vars: connection.env_vars,
         runtime_path: connection.runtime_path,
       }).catch((error) => {
         console.error('Error reloading MCP connection:', error);
@@ -209,6 +210,7 @@ export function MCPServerConnections() {
             url: connection.url,
             type: connection.type,
             headers: connection.headers,
+            env_vars: connection.env_vars,
             runtime_path: connection.runtime_path,
             tools: connection.tools,
           },
@@ -228,6 +230,7 @@ export function MCPServerConnections() {
             url: connection.url,
             type: connection.type,
             headers: connection.headers,
+            env_vars: connection.env_vars,
             runtime_path: connection.runtime_path,
           }).catch((error) => {
             console.error('Error reconnecting MCP server:', error);
@@ -254,6 +257,7 @@ export function MCPServerConnections() {
           url: connection.url,
           type: connection.type,
           headers: connection.headers,
+          env_vars: connection.env_vars,
           runtime_path: connection.runtime_path,
         }).catch((error) => {
           console.error('Error connecting MCP server:', error);
@@ -549,6 +553,7 @@ function MCPServerConnectionDialog({
     connection?.type || 'sse'
   );
   const [headers, setHeaders] = useState(connection?.headers || '');
+  const [envVars, setEnvVars] = useState(connection?.env_vars || '');
   const [selectedRuntime, setSelectedRuntime] = useState<string>('default');
 
   React.useEffect(() => {
@@ -570,11 +575,13 @@ function MCPServerConnectionDialog({
       setUrl(displayUrl);
       setType(connection.type);
       setHeaders(connection.headers || '');
+      setEnvVars(connection.env_vars || '');
     } else {
       setName('');
       setUrl('');
       setType('sse');
       setHeaders('');
+      setEnvVars('');
       setSelectedRuntime('default');
     }
   }, [connection, open, pythonRuntimes, nodeRuntimes]);
@@ -597,6 +604,7 @@ function MCPServerConnectionDialog({
         url: finalUrl,
         type,
         headers: headers?.trim() || undefined,
+        env_vars: envVars?.trim() || undefined,
         runtime_path:
           selectedRuntime !== 'default' ? selectedRuntime : undefined,
       });
@@ -606,6 +614,10 @@ function MCPServerConnectionDialog({
 
   const handleHeadersChange = (value: string | undefined) => {
     setHeaders(value || '');
+  };
+
+  const handleEnvVarsChange = (value: string | undefined) => {
+    setEnvVars(value || '');
   };
 
   const handleRuntimeChange = (value: string) => {
@@ -629,6 +641,7 @@ function MCPServerConnectionDialog({
   const runtimePrefix = isPython ? 'uv' : isNode ? 'npx' : undefined;
 
   const showHeaders = type === 'sse' || type === 'http-streamable';
+  const showEnvVars = type === 'stdio';
   const showRuntimeSelector = type === 'stdio';
 
   // Helper to check if runtime is ready
@@ -651,168 +664,187 @@ function MCPServerConnectionDialog({
           onSubmit={handleSubmit}
           className="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
-          <DialogBody className="[&>div]:px-0 [&>div]:py-0">
-            <div className="space-y-4 px-4 py-2">
-              <div className="space-y-2 w-full">
-                <Label htmlFor="mcp-name">{t('connectionName')}</Label>
-                <Input
-                  id="mcp-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t('mcpConnectionNamePlaceholder')}
-                  className="w-full"
-                  required
-                />
-              </div>
-              <div className="space-y-2 w-full">
-                <Label htmlFor="mcp-type">{t('type')}</Label>
-                <Select
-                  value={type}
-                  onValueChange={(value: 'sse' | 'stdio' | 'http-streamable') =>
-                    setType(value)
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sse">{t('sseType')}</SelectItem>
-                    <SelectItem value="stdio">{t('stdioType')}</SelectItem>
-                    <SelectItem value="http-streamable">
-                      {t('httpStreamableType')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {showRuntimeSelector &&
-                (runtimesLoading ? (
-                  <RuntimeSelectorSkeleton />
-                ) : hasInstalledRuntimes ? (
-                  <div className="space-y-2 w-full">
-                    <Label>{t('runtimeEnvironment')}</Label>
-                    <Select
-                      value={selectedRuntime}
-                      onValueChange={handleRuntimeChange}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={t('systemDefault')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="default">
-                          {t('systemDefault')}
-                        </SelectItem>
-                        {pythonRuntimes
-                          .filter((r) => r.installed && r.path)
-                          .map((r) => (
-                            <SelectItem key={r.version} value={r.path || ''}>
-                              Python {r.version} (Bundled)
-                            </SelectItem>
-                          ))}
-                        {nodeRuntimes
-                          .filter((r) => r.installed && r.path)
-                          .map((r) => (
-                            <SelectItem key={r.version} value={r.path || ''}>
-                              Node.js {r.version} (Bundled)
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : null)}
-
-              <div className="space-y-2 w-full">
-                <Label htmlFor="mcp-url">
-                  {type === 'stdio'
-                    ? runtimePrefix
-                      ? t('mcpArguments')
-                      : t('mcpCommand')
-                    : t('url')}
-                </Label>
-                <div className="flex gap-2 items-center">
-                  {type === 'stdio' && runtimePrefix && (
-                    <span className="bg-muted px-3 py-2 rounded-md text-sm font-mono border whitespace-nowrap">
-                      {runtimePrefix}
-                    </span>
-                  )}
+          <DialogBody className="[&>div]:px-0 [&>div]:py-0 overflow-hidden">
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="space-y-4 px-4 py-2 pb-6">
+                <div className="space-y-2 w-full">
+                  <Label htmlFor="mcp-name">{t('connectionName')}</Label>
                   <Input
-                    id="mcp-url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder={
-                      type === 'stdio'
-                        ? runtimePrefix
-                          ? t('mcpArgumentsPlaceholder')
-                          : t('stdioUrlPlaceholder')
-                        : t('sseUrlPlaceholder')
-                    }
+                    id="mcp-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t('mcpConnectionNamePlaceholder')}
                     className="w-full"
                     required
                   />
                 </div>
-              </div>
-              {showHeaders && (
-                <div className="w-full">
-                  <HeadersEditor
-                    value={headers}
-                    onChange={handleHeadersChange}
-                  />
-                </div>
-              )}
-
-              {/* Info message */}
-              <div className="text-sm text-muted-foreground">
-                {t('mcpAutoConnectInfo')}
-              </div>
-
-              {/* Tools List - Show if connection exists and has tools */}
-              {connection?.tools && connection.tools.length > 0 && (
                 <div className="space-y-2 w-full">
-                  <Label>
-                    {t('toolsList', { count: connection.tools.length })}
-                  </Label>
-                  <ScrollArea className="h-[200px] w-full rounded-md border p-3">
-                    <div className="space-y-1">
-                      {connection.tools.map((tool, index) => (
-                        <div
-                          key={index}
-                          className="flex flex-col gap-1 rounded-md bg-muted px-2 py-1.5 text-sm"
-                        >
-                          <span className="font-medium">{tool.name}</span>
-                          {tool.description && (
-                            <span className="text-xs text-muted-foreground wrap-break-word">
-                              {tool.description}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                  <Label htmlFor="mcp-type">{t('type')}</Label>
+                  <Select
+                    value={type}
+                    onValueChange={(
+                      value: 'sse' | 'stdio' | 'http-streamable'
+                    ) => setType(value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sse">{t('sseType')}</SelectItem>
+                      <SelectItem value="stdio">{t('stdioType')}</SelectItem>
+                      <SelectItem value="http-streamable">
+                        {t('httpStreamableType')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
+
+                {showRuntimeSelector &&
+                  (runtimesLoading ? (
+                    <RuntimeSelectorSkeleton />
+                  ) : hasInstalledRuntimes ? (
+                    <div className="space-y-2 w-full">
+                      <Label>{t('runtimeEnvironment')}</Label>
+                      <Select
+                        value={selectedRuntime}
+                        onValueChange={handleRuntimeChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('systemDefault')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">
+                            {t('systemDefault')}
+                          </SelectItem>
+                          {pythonRuntimes
+                            .filter((r) => r.installed && r.path)
+                            .map((r) => (
+                              <SelectItem key={r.version} value={r.path || ''}>
+                                Python {r.version} (Bundled)
+                              </SelectItem>
+                            ))}
+                          {nodeRuntimes
+                            .filter((r) => r.installed && r.path)
+                            .map((r) => (
+                              <SelectItem key={r.version} value={r.path || ''}>
+                                Node.js {r.version} (Bundled)
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null)}
+
+                <div className="space-y-2 w-full">
+                  <Label htmlFor="mcp-url">
+                    {type === 'stdio'
+                      ? runtimePrefix
+                        ? t('mcpArguments')
+                        : t('mcpCommand')
+                      : t('url')}
+                  </Label>
+                  <div className="flex gap-2 items-center">
+                    {type === 'stdio' && runtimePrefix && (
+                      <span className="bg-muted px-3 py-2 rounded-md text-sm font-mono border whitespace-nowrap">
+                        {runtimePrefix}
+                      </span>
+                    )}
+                    <Input
+                      id="mcp-url"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder={
+                        type === 'stdio'
+                          ? runtimePrefix
+                            ? t('mcpArgumentsPlaceholder')
+                            : t('stdioUrlPlaceholder')
+                          : t('sseUrlPlaceholder')
+                      }
+                      className="w-full"
+                      required
+                    />
+                  </div>
+                </div>
+                {showHeaders && (
+                  <div className="w-full">
+                    <HeadersEditor
+                      value={headers}
+                      onChange={handleHeadersChange}
+                    />
+                  </div>
+                )}
+
+                {showEnvVars && (
+                  <div className="w-full">
+                    <HeadersEditor
+                      value={envVars}
+                      onChange={handleEnvVarsChange}
+                      label={t('envVarsOptional', {
+                        defaultValue: 'Environment Variables (Optional)',
+                      })}
+                      placeholderKey="VAR_NAME"
+                      placeholderValue="value"
+                      emptyText={t('noEnvVars', {
+                        defaultValue: 'No environment variables',
+                      })}
+                      helperText={t('envVarsInfo', {
+                        defaultValue:
+                          'Passed as environment variables to the stdio process.',
+                      })}
+                    />
+                  </div>
+                )}
+
+                {/* Info message */}
+                <div className="text-sm text-muted-foreground">
+                  {t('mcpAutoConnectInfo')}
+                </div>
+
+                {/* Tools List - Show if connection exists and has tools */}
+                {connection?.tools && connection.tools.length > 0 && (
+                  <div className="space-y-2 w-full">
+                    <Label>
+                      {t('toolsList', { count: connection.tools.length })}
+                    </Label>
+                    <div className="rounded-md border p-3 bg-muted/20">
+                      <div className="space-y-1">
+                        {connection.tools.map((tool, index) => (
+                          <div
+                            key={index}
+                            className="flex flex-col gap-1 rounded-md bg-muted/50 px-2 py-1.5 text-sm"
+                          >
+                            <span className="font-medium">{tool.name}</span>
+                            {tool.description && (
+                              <span className="text-xs text-muted-foreground wrap-break-word">
+                                {tool.description}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
           </DialogBody>
-          <DialogFooter className="shrink-0 justify-between gap-2">
+          <DialogFooter className="shrink-0 justify-between gap-2 border-t pt-4">
             {onDelete && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={onDelete}
-                className="flex-1"
-              >
-                <Trash2 className="mr-2 size-4" />
-                {t('delete', { ns: 'common' })}
+              <Button type="button" variant="destructive" onClick={onDelete}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t('delete')}
               </Button>
             )}
-            <Button
-              type="submit"
-              disabled={!name.trim() || !url.trim()}
-              className="flex-1"
-            >
-              {connection
-                ? t('save', { ns: 'common' })
-                : t('add', { ns: 'common' })}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                {t('cancel')}
+              </Button>
+              <Button type="submit">{t('save')}</Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -820,48 +852,34 @@ function MCPServerConnectionDialog({
   );
 }
 
-interface DeleteConfirmDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-  connectionName?: string;
-}
-
 function DeleteConfirmDialog({
   open,
   onOpenChange,
   onConfirm,
   connectionName,
-}: DeleteConfirmDialogProps) {
-  const { t } = useTranslation(['settings', 'common']);
-
-  const handleConfirm = () => {
-    onConfirm();
-  };
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  connectionName?: string;
+}) {
+  const { t } = useTranslation('settings');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('deleteConnection')}</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {t('confirmDeleteConnection')}
-            {connectionName && (
-              <span className="font-semibold">{connectionName}</span>
-            )}
-            ?
+            {t('deleteConnectionConfirm', { name: connectionName })}
           </p>
         </DialogHeader>
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            {t('cancel', { ns: 'common' })}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('cancel')}
           </Button>
-          <Button type="button" variant="destructive" onClick={handleConfirm}>
-            {t('delete', { ns: 'common' })}
+          <Button variant="destructive" onClick={onConfirm}>
+            {t('delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

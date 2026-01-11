@@ -10,12 +10,13 @@ pub fn create_mcp_server_connection(
     url: String,
     r#type: String,
     headers: String,
+    env_vars: Option<String>,
     runtime_path: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<MCPServerConnection, AppError> {
     state
         .mcp_connection_service
-        .create(id, name, url, r#type, headers, runtime_path)
+        .create(id, name, url, r#type, headers, env_vars, runtime_path)
         .map_err(|e| AppError::Mcp(e.to_string()))
 }
 
@@ -36,12 +37,13 @@ pub fn update_mcp_server_connection(
     url: Option<String>,
     r#type: Option<String>,
     headers: Option<String>,
+    env_vars: Option<String>,
     runtime_path: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
     state
         .mcp_connection_service
-        .update(id, name, url, r#type, headers, runtime_path)
+        .update(id, name, url, r#type, headers, env_vars, runtime_path)
         .map_err(|e| AppError::Mcp(e.to_string()))
 }
 

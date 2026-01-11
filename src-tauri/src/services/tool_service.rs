@@ -118,7 +118,10 @@ impl ToolService {
         // Track tool execution start
         crate::lib::sentry_helpers::add_breadcrumb(
             "mcp.tool",
-            format!("Executing tool {} via connection {}", tool_name, connection_id),
+            format!(
+                "Executing tool {} via connection {}",
+                tool_name, connection_id
+            ),
             sentry::Level::Info,
         );
 
@@ -151,6 +154,7 @@ impl ToolService {
             connection.url,
             connection.r#type,
             headers,
+            connection.env_vars,
             tool_name.to_string(),
             arguments,
             connection.runtime_path,

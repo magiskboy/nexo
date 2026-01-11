@@ -13,6 +13,11 @@ interface Header {
 interface HeadersEditorProps {
   value?: string; // JSON string
   onChange: (value: string | undefined) => void;
+  label?: string;
+  placeholderKey?: string;
+  placeholderValue?: string;
+  emptyText?: string;
+  helperText?: string;
 }
 
 function parseHeaders(value: string) {
@@ -28,7 +33,15 @@ function parseHeaders(value: string) {
   }
 }
 
-export function HeadersEditor({ value, onChange }: HeadersEditorProps) {
+export function HeadersEditor({
+  value,
+  onChange,
+  label,
+  placeholderKey,
+  placeholderValue,
+  emptyText,
+  helperText,
+}: HeadersEditorProps) {
   const { t } = useTranslation('settings');
   const [headers, setHeaders] = useState<Header[]>(parseHeaders(value ?? ''));
 
@@ -75,11 +88,13 @@ export function HeadersEditor({ value, onChange }: HeadersEditorProps) {
 
   return (
     <div className="space-y-3">
-      <Label>{t('headersOptional')}</Label>
+      <Label>{label || t('headersOptional')}</Label>
 
       {headers.length === 0 ? (
         <div className="rounded-lg border border-dashed p-4 text-center">
-          <p className="text-sm text-muted-foreground mb-3">{t('noHeaders')}</p>
+          <p className="text-sm text-muted-foreground mb-3">
+            {emptyText || t('noHeaders')}
+          </p>
           <Button
             type="button"
             variant="outline"
@@ -106,7 +121,7 @@ export function HeadersEditor({ value, onChange }: HeadersEditorProps) {
                     id={`header-key-${index}`}
                     value={header.key}
                     onChange={(e) => handleKeyChange(index, e.target.value)}
-                    placeholder={t('headerKeyPlaceholder')}
+                    placeholder={placeholderKey || t('headerKeyPlaceholder')}
                     className="h-9 w-full"
                   />
                 </div>
@@ -118,7 +133,9 @@ export function HeadersEditor({ value, onChange }: HeadersEditorProps) {
                     id={`header-value-${index}`}
                     value={header.value}
                     onChange={(e) => handleValueChange(index, e.target.value)}
-                    placeholder={t('headerValuePlaceholder')}
+                    placeholder={
+                      placeholderValue || t('headerValuePlaceholder')
+                    }
                     className="h-9 w-full"
                   />
                 </div>
@@ -146,7 +163,11 @@ export function HeadersEditor({ value, onChange }: HeadersEditorProps) {
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground">{t('headersInfo')}</p>
+      {helperText !== undefined ? (
+        <p className="text-xs text-muted-foreground">{helperText}</p>
+      ) : (
+        <p className="text-xs text-muted-foreground">{t('headersInfo')}</p>
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ pub trait MCPConnectionRepository: Send + Sync {
         url: Option<&str>,
         r#type: Option<&str>,
         headers: Option<&str>,
+        env_vars: Option<&str>,
         runtime_path: Option<&str>,
     ) -> Result<(), AppError>;
     fn update_status(
@@ -41,8 +42,8 @@ impl MCPConnectionRepository for SqliteMCPConnectionRepository {
     fn create(&self, connection: &MCPServerConnection) -> Result<(), AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         conn.execute(
-            "INSERT INTO mcp_server_connections (id, name, url, type, headers, runtime_path, status, tools_json, error_message, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-            params![connection.id, connection.name, connection.url, connection.r#type, connection.headers, connection.runtime_path, connection.status, connection.tools_json, connection.error_message, connection.created_at, connection.updated_at],
+            "INSERT INTO mcp_server_connections (id, name, url, type, headers, env_vars, runtime_path, status, tools_json, error_message, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+            params![connection.id, connection.name, connection.url, connection.r#type, connection.headers, connection.env_vars, connection.runtime_path, connection.status, connection.tools_json, connection.error_message, connection.created_at, connection.updated_at],
         )?;
         Ok(())
     }
@@ -50,7 +51,7 @@ impl MCPConnectionRepository for SqliteMCPConnectionRepository {
     fn get_all(&self) -> Result<Vec<MCPServerConnection>, AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         let mut stmt = conn.prepare(
-            "SELECT id, name, url, type, headers, runtime_path, status, tools_json, error_message, created_at, updated_at FROM mcp_server_connections ORDER BY created_at DESC"
+            "SELECT id, name, url, type, headers, env_vars, runtime_path, status, tools_json, error_message, created_at, updated_at FROM mcp_server_connections ORDER BY created_at DESC"
         )?;
 
         let connections = stmt
@@ -61,12 +62,13 @@ impl MCPConnectionRepository for SqliteMCPConnectionRepository {
                     url: row.get(2)?,
                     r#type: row.get(3)?,
                     headers: row.get(4)?,
-                    runtime_path: row.get(5)?,
-                    status: row.get(6)?,
-                    tools_json: row.get(7)?,
-                    error_message: row.get(8)?,
-                    created_at: row.get(9)?,
-                    updated_at: row.get(10)?,
+                    env_vars: row.get(5)?,
+                    runtime_path: row.get(6)?,
+                    status: row.get(7)?,
+                    tools_json: row.get(8)?,
+                    error_message: row.get(9)?,
+                    created_at: row.get(10)?,
+                    updated_at: row.get(11)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -77,7 +79,7 @@ impl MCPConnectionRepository for SqliteMCPConnectionRepository {
     fn get_by_id(&self, id: &str) -> Result<Option<MCPServerConnection>, AppError> {
         let conn = crate::db::get_connection(&self.app)?;
         let result = conn.query_row(
-            "SELECT id, name, url, type, headers, runtime_path, status, tools_json, error_message, created_at, updated_at FROM mcp_server_connections WHERE id = ?1",
+            "SELECT id, name, url, type, headers, env_vars, runtime_path, status, tools_json, error_message, created_at, updated_at FROM mcp_server_connections WHERE id = ?1",
             params![id],
             |row| {
                 Ok(MCPServerConnection {
@@ -86,12 +88,13 @@ impl MCPConnectionRepository for SqliteMCPConnectionRepository {
                     url: row.get(2)?,
                     r#type: row.get(3)?,
                     headers: row.get(4)?,
-                    runtime_path: row.get(5)?,
-                    status: row.get(6)?,
-                    tools_json: row.get(7)?,
-                    error_message: row.get(8)?,
-                    created_at: row.get(9)?,
-                    updated_at: row.get(10)?,
+                    env_vars: row.get(5)?,
+                    runtime_path: row.get(6)?,
+                    status: row.get(7)?,
+                    tools_json: row.get(8)?,
+                    error_message: row.get(9)?,
+                    created_at: row.get(10)?,
+                    updated_at: row.get(11)?,
                 })
             },
         );
@@ -110,6 +113,7 @@ impl MCPConnectionRepository for SqliteMCPConnectionRepository {
         url: Option<&str>,
         r#type: Option<&str>,
         headers: Option<&str>,
+        env_vars: Option<&str>,
         runtime_path: Option<&str>,
     ) -> Result<(), AppError> {
         let conn = crate::db::get_connection(&self.app)?;
@@ -143,6 +147,13 @@ impl MCPConnectionRepository for SqliteMCPConnectionRepository {
             conn.execute(
                 "UPDATE mcp_server_connections SET headers = ?1, updated_at = ?2 WHERE id = ?3",
                 params![headers, now, id],
+            )?;
+        }
+
+        if let Some(env_vars) = env_vars {
+            conn.execute(
+                "UPDATE mcp_server_connections SET env_vars = ?1, updated_at = ?2 WHERE id = ?3",
+                params![env_vars, now, id],
             )?;
         }
 

@@ -26,6 +26,7 @@ export interface MCPServerConnection {
   url: string;
   type: 'sse' | 'stdio' | 'http-streamable';
   headers?: string;
+  env_vars?: string;
   runtime_path?: string;
   status?: 'disconnected' | 'connecting' | 'connected';
   tools?: MCPToolType[];

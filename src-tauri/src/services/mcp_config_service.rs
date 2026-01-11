@@ -21,7 +21,7 @@ impl MCPConfigService {
     ) -> Result<HubMCPServerConfig, AppError> {
         let mut new_config = config.clone();
         let variable_regex = Regex::new(r"\{(\w+)\}")
-            .map_err(|e| AppError::Hub(format!("Failed to compile variable regex: {}", e)))?;
+            .map_err(|e| AppError::Hub(format!("Failed to compile variable regex: {e}")))?;
 
         // Helper function to process a string: replace provided variables, convert others to {{...}} format
         let process_string = |text: &str| -> String {
@@ -35,7 +35,7 @@ impl MCPConfigService {
                             value.clone()
                         } else {
                             // Otherwise, convert to {{variable_name}} format
-                            format!("{{{{{}}}}}", var_name)
+                            format!("{{{{{var_name}}}}}")
                         }
                     } else {
                         // Should not happen, but return original match if it does
@@ -101,15 +101,15 @@ impl MCPConfigService {
 
     /// Build MCP connection config from hub config
     /// Converts hub config format to MCPServerConnection format
+    /// Returns (url, headers, env_vars, runtime_path)
     pub fn build_mcp_connection_config(
         &self,
         config: &HubMCPServerConfig,
         server_type: &str,
-    ) -> Result<(String, String, Option<String>), AppError> {
+    ) -> Result<(String, String, Option<String>, Option<String>), AppError> {
         match server_type {
             "stdio" => {
                 // For stdio: combine command + args into url
-                // env goes into headers (stdio uses headers as env)
                 let mut url_parts = Vec::new();
 
                 if let Some(command) = &config.command {
@@ -122,16 +122,17 @@ impl MCPConfigService {
 
                 let url = url_parts.join(" ");
 
-                // Convert env to JSON string for headers
-                let headers = if let Some(env) = &config.env {
-                    serde_json::to_string(env).map_err(|e| {
-                        AppError::Hub(format!("Failed to serialize env to JSON: {}", e))
-                    })?
+                // Convert env to JSON string for env_vars
+                let env_vars = if let Some(env) = &config.env {
+                    Some(serde_json::to_string(env).map_err(|e| {
+                        AppError::Hub(format!("Failed to serialize env to JSON: {e}"))
+                    })?)
                 } else {
-                    "{}".to_string()
+                    None
                 };
 
-                Ok((url, headers, None))
+                // Headers are empty for stdio
+                Ok((url, "{}".to_string(), env_vars, None))
             }
             "sse" => {
                 // For sse: url is direct, headers is JSON string
@@ -141,17 +142,16 @@ impl MCPConfigService {
 
                 let headers = if let Some(headers_obj) = &config.headers {
                     serde_json::to_string(headers_obj).map_err(|e| {
-                        AppError::Hub(format!("Failed to serialize headers to JSON: {}", e))
+                        AppError::Hub(format!("Failed to serialize headers to JSON: {e}"))
                     })?
                 } else {
                     "{}".to_string()
                 };
 
-                Ok((url, headers, None))
+                Ok((url, headers, None, None))
             }
             _ => Err(AppError::Hub(format!(
-                "Unsupported MCP server type: {}",
-                server_type
+                "Unsupported MCP server type: {server_type}"
             ))),
         }
     }

@@ -204,6 +204,10 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
         "ALTER TABLE mcp_server_connections ADD COLUMN runtime_path TEXT",
         [],
     );
+    let _ = conn.execute(
+        "ALTER TABLE mcp_server_connections ADD COLUMN env_vars TEXT",
+        [],
+    );
 
     // Create app_settings table
     conn.execute(

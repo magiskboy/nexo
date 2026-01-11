@@ -9,8 +9,20 @@ pub struct MCPClientState {
     // We'll store connection info and recreate clients as needed
     // This is simpler than trying to store different client types
     #[allow(clippy::type_complexity)]
-    pub connection_info:
-        Arc<Mutex<HashMap<String, (String, String, Option<String>, Option<String>)>>>,
+    pub connection_info: Arc<
+        Mutex<
+            HashMap<
+                String,
+                (
+                    String,
+                    String,
+                    Option<String>,
+                    Option<String>,
+                    Option<String>,
+                ),
+            >,
+        >,
+    >,
 
     // Store active clients
     pub active_clients: Arc<Mutex<HashMap<String, Arc<ClientRuntime>>>>,

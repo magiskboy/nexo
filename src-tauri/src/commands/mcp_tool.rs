@@ -10,11 +10,19 @@ pub async fn test_mcp_connection_and_fetch_tools(
     url: String,
     r#type: String,
     headers: Option<String>,
+    env_vars: Option<String>,
     runtime_path: Option<String>,
 ) -> Result<Vec<MCPTool>, AppError> {
-    MCPClientService::test_connection_and_fetch_tools(&app, url, r#type, headers, runtime_path)
-        .await
-        .map_err(|e| AppError::Mcp(e.to_string()))
+    MCPClientService::test_connection_and_fetch_tools(
+        &app,
+        url,
+        r#type,
+        headers,
+        env_vars,
+        runtime_path,
+    )
+    .await
+    .map_err(|e| AppError::Mcp(e.to_string()))
 }
 
 #[tauri::command]
@@ -23,13 +31,21 @@ pub async fn connect_mcp_server_and_fetch_tools(
     url: String,
     r#type: String,
     headers: Option<String>,
+    env_vars: Option<String>,
     runtime_path: Option<String>,
 ) -> Result<Vec<MCPTool>, AppError> {
     // This is the same logic as test_mcp_connection_and_fetch_tools
     // but we'll use it for automatic connection when saving
-    MCPClientService::test_connection_and_fetch_tools(&app, url, r#type, headers, runtime_path)
-        .await
-        .map_err(|e| AppError::Mcp(e.to_string()))
+    MCPClientService::test_connection_and_fetch_tools(
+        &app,
+        url,
+        r#type,
+        headers,
+        env_vars,
+        runtime_path,
+    )
+    .await
+    .map_err(|e| AppError::Mcp(e.to_string()))
 }
 
 #[tauri::command]
@@ -38,13 +54,17 @@ pub async fn get_mcp_client(
     url: String,
     r#type: String,
     headers: Option<String>,
+    env_vars: Option<String>,
     runtime_path: Option<String>,
     state: State<'_, MCPClientState>,
 ) -> Result<(), AppError> {
     let mut connection_info = state.connection_info.lock().await;
 
     // Store connection info for later use
-    connection_info.insert(connection_id, (url, r#type, headers, runtime_path));
+    connection_info.insert(
+        connection_id,
+        (url, r#type, headers, env_vars, runtime_path),
+    );
 
     Ok(())
 }
@@ -60,7 +80,7 @@ pub async fn call_mcp_tool(
     let connection_info = state.connection_info.lock().await;
 
     // Get connection info
-    let (url, r#type, headers, runtime_path) = connection_info
+    let (url, r#type, headers, env_vars, runtime_path) = connection_info
         .get(&connection_id)
         .ok_or_else(|| AppError::Mcp(format!("MCP connection not found: {connection_id}")))?
         .clone();
@@ -72,9 +92,18 @@ pub async fn call_mcp_tool(
         .map_err(|e| AppError::Mcp(format!("Failed to parse arguments: {e}")))?;
 
     // Call tool with client (creates client, calls tool, cleans up)
-    MCPClientService::call_tool(&app, url, r#type, headers, tool_name, args, runtime_path)
-        .await
-        .map_err(|e| AppError::Mcp(e.to_string()))
+    MCPClientService::call_tool(
+        &app,
+        url,
+        r#type,
+        headers,
+        env_vars,
+        tool_name,
+        args,
+        runtime_path,
+    )
+    .await
+    .map_err(|e| AppError::Mcp(e.to_string()))
 }
 
 #[tauri::command]

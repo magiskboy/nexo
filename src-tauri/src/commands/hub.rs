@@ -110,7 +110,7 @@ pub async fn install_mcp_server_from_hub(
         config_service.replace_variables_in_config(&payload.config, &payload.variables)?;
 
     // Build MCP connection config
-    let (url, headers, runtime_path) =
+    let (url, headers, env_vars, runtime_path) =
         config_service.build_mcp_connection_config(&config_with_vars, &payload.server_type)?;
 
     // Create MCP connection
@@ -125,6 +125,7 @@ pub async fn install_mcp_server_from_hub(
         url,
         r#type: payload.server_type,
         headers,
+        env_vars,
         runtime_path,
         status: "disconnected".to_string(),
         tools_json: None,
@@ -142,6 +143,7 @@ pub async fn install_mcp_server_from_hub(
             connection.url.clone(),
             connection.r#type.clone(),
             connection.headers.clone(),
+            connection.env_vars.clone(),
             connection.runtime_path.clone(),
         )
         .map_err(|e| AppError::Mcp(e.to_string()))?;

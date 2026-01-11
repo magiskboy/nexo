@@ -69,6 +69,7 @@ impl MCPToolRefreshService {
                 } else {
                     Some(connection.headers.clone())
                 },
+                connection.env_vars.clone(),
                 connection.runtime_path.clone(),
             )
             .await

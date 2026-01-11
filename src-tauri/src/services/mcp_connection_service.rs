@@ -19,6 +19,7 @@ impl MCPConnectionService {
         url: String,
         r#type: String,
         headers: String,
+        env_vars: Option<String>,
         runtime_path: Option<String>,
     ) -> Result<MCPServerConnection, AppError> {
         let now = std::time::SystemTime::now()
@@ -32,6 +33,7 @@ impl MCPConnectionService {
             url,
             r#type,
             headers,
+            env_vars,
             runtime_path,
             status: "disconnected".to_string(),
             tools_json: None,
@@ -59,6 +61,7 @@ impl MCPConnectionService {
         url: Option<String>,
         r#type: Option<String>,
         headers: Option<String>,
+        env_vars: Option<String>,
         runtime_path: Option<String>,
     ) -> Result<(), AppError> {
         self.repository.update(
@@ -67,6 +70,7 @@ impl MCPConnectionService {
             url.as_deref(),
             r#type.as_deref(),
             headers.as_deref(),
+            env_vars.as_deref(),
             runtime_path.as_deref(),
         )
     }

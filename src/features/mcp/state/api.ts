@@ -9,6 +9,7 @@ interface DbMCPServerConnection {
   url: string;
   type: string;
   headers: string;
+  env_vars: string | null;
   runtime_path: string | null;
   status: string; // "disconnected" | "connecting" | "connected"
   tools_json: string | null;
@@ -36,6 +37,7 @@ function dbToFrontendMCPServerConnection(
     url: dbConn.url,
     type: dbConn.type as 'sse' | 'stdio' | 'http-streamable',
     headers: dbConn.headers || undefined,
+    env_vars: dbConn.env_vars || undefined,
     runtime_path: dbConn.runtime_path || undefined,
     status: dbConn.status as
       | 'disconnected'
@@ -82,6 +84,7 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
             url: connection.url,
             type: connection.type,
             headers: connection.headers || '',
+            envVars: connection.env_vars || null,
             runtimePath: connection.runtime_path || null,
           });
 
@@ -118,11 +121,12 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
         url: string;
         type: 'sse' | 'stdio' | 'http-streamable';
         headers?: string;
+        env_vars?: string;
         runtime_path?: string;
       }
     >({
       queryFn: async (params) => {
-        const { id, url, type, headers, runtime_path } = params;
+        const { id, url, type, headers, env_vars, runtime_path } = params;
         try {
           // Connect and fetch tools
           const mcpTools = await invokeCommand<
@@ -131,6 +135,7 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
             url,
             type,
             headers: headers || null,
+            envVars: env_vars || null,
             runtimePath: runtime_path || null,
           });
 
@@ -215,6 +220,7 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
             url: connection.url ?? null,
             type: connection.type ?? null,
             headers: connection.headers ?? null,
+            envVars: connection.env_vars ?? null,
             runtimePath: connection.runtime_path ?? null,
           });
 
@@ -222,6 +228,7 @@ export const mcpConnectionsApi = baseApi.injectEndpoints({
             !!connection.url ||
             !!connection.type ||
             connection.headers !== undefined ||
+            connection.env_vars !== undefined ||
             connection.runtime_path !== undefined;
 
           if (needsReconnect) {

@@ -380,6 +380,7 @@ impl AgentManager {
             "stdio".to_string(),
             None,
             None,
+            None,
         )
         .await
         .map_err(|e| anyhow::anyhow!(e.to_string()))?;
@@ -444,6 +445,7 @@ impl AgentManager {
             app,
             cmd_str,
             "stdio".to_string(),
+            None,
             None,
             None,
         )
