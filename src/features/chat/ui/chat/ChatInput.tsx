@@ -632,7 +632,7 @@ export function ChatInput({
           timeLeft !== null &&
           timeLeft !== undefined &&
           timeLeft > 0 && (
-            <div className="mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 pb-2">
+            <div className="mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 pb-0">
               <div
                 className={`rounded-lg px-3 py-1.5 text-xs border flex items-center justify-between ${
                   timeLeft <= 10
@@ -643,7 +643,7 @@ export function ChatInput({
                 }`}
               >
                 <span className="font-medium">
-                  ⏱️ {t('streamingTimeout')} {timeLeft}s
+                  {t('streamingTimeout')} {timeLeft}s
                 </span>
               </div>
             </div>
