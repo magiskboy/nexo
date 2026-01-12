@@ -149,16 +149,7 @@ export function LLMConnections() {
       </div>
 
       {llmConnections.length === 0 ? (
-        <EmptyState
-          icon={Network}
-          title={t('noConnections')}
-          action={
-            <Button onClick={handleAdd} size="sm">
-              <Plus className="mr-2 size-4" />
-              {t('addConnection')}
-            </Button>
-          }
-        />
+        <EmptyState icon={Network} title={t('noConnections')} />
       ) : (
         <ScrollArea className="h-full">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -72,6 +72,7 @@
   "deleteConnection": "Delete connection",
   "deletePrompt": "Delete prompt",
   "deleteWorkspace": "Delete workspace",
+  "deleteWorkspaceDescription": "Permanently delete this workspace and all its data. This action cannot be undone.",
   "developerModeDescription": "Developer mode will display detailed token information for each message",
   "developerUser": "Developer User",
   "disconnected": "Disconnected",

@@ -920,30 +920,68 @@ export function WorkspaceSettingsForm({
               <Separator />
 
               {/* Danger Zone Section */}
-              <div className="space-y-4">
-                <div className="space-y-2 w-full">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-foreground">
+              <div className="space-y-4 pt-4">
+                <div className="flex items-center gap-2 px-1">
+                  <div className="h-4 w-1 bg-destructive rounded-full" />
+                  <h3 className="text-base font-semibold text-foreground">
+                    {t('dangerZone', { ns: 'settings' })}
+                  </h3>
+                </div>
+
+                <div className="rounded-xl border border-destructive/20 bg-destructive/5 overflow-hidden">
+                  {/* Clear All Chats */}
+                  <div className="flex items-center justify-between p-4 hover:bg-destructive/10 transition-colors">
+                    <div className="flex flex-col gap-1 max-w-[70%]">
+                      <Label className="text-sm font-medium text-foreground">
                         {t('clearAllChats', { ns: 'settings' })}
                       </Label>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
                         {t('clearAllChatsDescription', { ns: 'settings' })}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setClearChatsDialogOpen(true)}
+                      disabled={!hasChats || isClearingChats}
+                      className="border-destructive/20 text-destructive hover:bg-destructive hover:text-white transition-all shrink-0"
+                    >
+                      {isClearingChats ? (
+                        <Loader2 className="size-3.5 animate-spin mr-2" />
+                      ) : (
+                        <Trash2 className="size-3.5 mr-2" />
+                      )}
+                      {t('clearAllChats', { ns: 'settings' })}
+                    </Button>
+                  </div>
+
+                  <div className="h-px bg-destructive/10 mx-4" />
+
+                  {/* Delete Workspace */}
+                  <div className="flex items-center justify-between p-4 hover:bg-destructive/10 transition-colors">
+                    <div className="flex flex-col gap-1 max-w-[70%]">
+                      <Label className="text-sm font-medium text-foreground">
+                        {t('deleteWorkspace', { ns: 'settings' })}
+                      </Label>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {t('deleteWorkspaceDescription', { ns: 'settings' })}
                       </p>
                     </div>
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
-                      onClick={() => setClearChatsDialogOpen(true)}
-                      disabled={!hasChats || isClearingChats}
+                      onClick={() => setDeleteWorkspaceDialogOpen(true)}
+                      disabled={isDeleting}
+                      className="bg-destructive hover:bg-destructive/90 shadow-sm transition-all shrink-0"
                     >
-                      {isClearingChats ? (
-                        <Loader2 className="size-4 animate-spin mr-2" />
+                      {isDeleting ? (
+                        <Loader2 className="size-3.5 animate-spin mr-2" />
                       ) : (
-                        <Trash2 className="size-4 mr-2" />
+                        <Trash2 className="size-3.5 mr-2" />
                       )}
-                      {t('clearAllChats', { ns: 'settings' })}
+                      {t('deleteWorkspace', { ns: 'settings' })}
                     </Button>
                   </div>
                 </div>
@@ -951,27 +989,25 @@ export function WorkspaceSettingsForm({
             </div>
           </ScrollArea>
         </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row shrink-0 px-6 pt-4 pb-6 border-t border-border justify-between">
+        <div className="flex items-center justify-end gap-3 shrink-0 px-6 py-4 border-t border-border bg-background/50 backdrop-blur-md">
           <Button
             type="button"
-            variant="destructive"
-            onClick={() => setDeleteWorkspaceDialogOpen(true)}
-            className="flex-1"
-            disabled={isDeleting}
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            className="hover:bg-muted"
           >
-            {isDeleting ? (
-              <Loader2 className="size-4 animate-spin mr-2" />
-            ) : (
-              <Trash2 className="size-4 mr-2" />
-            )}
-            {t('deleteWorkspace', { ns: 'settings' })}
+            {t('cancel', { ns: 'common' })}
           </Button>
           <Button
             type="submit"
             disabled={!name.trim() || isSaving}
-            className="flex-1"
+            className="min-w-[120px] shadow-sm font-medium"
           >
-            {isSaving && <Loader2 className="size-4 animate-spin mr-2" />}
+            {isSaving ? (
+              <Loader2 className="size-4 animate-spin mr-2" />
+            ) : (
+              <CheckCircle2 className="size-4 mr-2" />
+            )}
             {t('save', { ns: 'common' })}
           </Button>
         </div>

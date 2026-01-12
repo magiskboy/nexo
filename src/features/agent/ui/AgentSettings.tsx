@@ -221,7 +221,7 @@ export function AgentSettings() {
 
         <TabsContent value="installed" className="mt-4 space-y-3">
           {agents.length === 0 ? (
-            <div className="text-center py-12 border rounded-lg bg-muted/10">
+            <div className="text-center py-12">
               <p className="text-muted-foreground text-sm">
                 No agents installed yet.
               </p>

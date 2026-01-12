@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { navigateToChat } from '@/features/ui/state/uiSlice';
 
@@ -100,29 +99,27 @@ export function WorkspaceSettingsScreen() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0 bg-background">
       {/* Content */}
-      <ScrollArea className="flex-1">
-        <div className="p-6 max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto w-full">
-          {selectedWorkspace ? (
-            <WorkspaceSettingsForm
-              workspace={selectedWorkspace}
-              initialSettings={workspaceSettings[selectedWorkspace.id]}
-              llmConnections={llmConnections}
-              allMcpConnections={allMcpConnections}
-              hasChats={chats.length > 0}
-              onOpenChange={() => {}} // Not needed in page view
-              onSave={onSaveWorkspaceSettings}
-              onDeleteWorkspace={onDeleteWorkspace}
-              onClearAllChats={handleClearAllChats}
-            />
-          ) : (
-            <div className="text-center text-muted-foreground py-12">
-              {t('common:noWorkspaceSelected')}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+      <div className="flex-1 flex flex-col min-h-0 max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto w-full">
+        {selectedWorkspace ? (
+          <WorkspaceSettingsForm
+            workspace={selectedWorkspace}
+            initialSettings={workspaceSettings[selectedWorkspace.id]}
+            llmConnections={llmConnections}
+            allMcpConnections={allMcpConnections}
+            hasChats={chats.length > 0}
+            onOpenChange={() => dispatch(navigateToChat())}
+            onSave={onSaveWorkspaceSettings}
+            onDeleteWorkspace={onDeleteWorkspace}
+            onClearAllChats={handleClearAllChats}
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground p-12">
+            {t('common:noWorkspaceSelected')}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

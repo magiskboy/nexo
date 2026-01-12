@@ -72,6 +72,7 @@
   "deleteConnection": "Xóa connection",
   "deletePrompt": "Xóa prompt",
   "deleteWorkspace": "Xóa workspace",
+  "deleteWorkspaceDescription": "Xóa vĩnh viễn workspace này và tất cả dữ liệu bên trong. Hành động này không thể hoàn tác.",
   "developerModeDescription": "Chế độ developer sẽ hiển thị thông tin chi tiết về tokens cho mỗi message",
   "developerUser": "Người dùng developer",
   "disconnected": "Chưa kết nối",

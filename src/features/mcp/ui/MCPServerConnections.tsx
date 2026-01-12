@@ -323,16 +323,7 @@ export function MCPServerConnections() {
           </div>
 
           {mcpConnections.length === 0 ? (
-            <EmptyState
-              icon={Server}
-              title={t('noConnections')}
-              action={
-                <Button onClick={handleAdd} size="sm">
-                  <Plus className="mr-2 size-4" />
-                  {t('addConnection')}
-                </Button>
-              }
-            />
+            <EmptyState icon={Server} title={t('noConnections')} />
           ) : (
             <ScrollArea className="flex-1 min-h-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
