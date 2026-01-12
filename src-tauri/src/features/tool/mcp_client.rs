@@ -72,9 +72,13 @@ impl MCPClientService {
         runtime_path: Option<String>,
     ) -> Result<Arc<ClientRuntime>, AppError> {
         // Validate transport type
-        if r#type != "sse" && r#type != "http-streamable" && r#type != "stdio" {
+        if r#type != "sse"
+            && r#type != "http-streamable"
+            && r#type != "streamable-http"
+            && r#type != "stdio"
+        {
             return Err(AppError::Validation(format!(
-                "Unsupported transport type: {}. Only 'sse', 'http-streamable', and 'stdio' are supported.",
+                "Unsupported transport type: {}. Only 'sse', 'http-streamable', 'streamable-http', and 'stdio' are supported.",
                 r#type
             )));
         }
@@ -105,7 +109,7 @@ impl MCPClientService {
                 }
             };
             client_runtime::create_client(client_details, transport, handler)
-        } else if r#type == "http-streamable" {
+        } else if r#type == "http-streamable" || r#type == "streamable-http" {
             // Create http-streamable transport with options
             let request_options = RequestOptions {
                 custom_headers,
