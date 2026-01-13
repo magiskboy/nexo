@@ -13,7 +13,6 @@ const MAX_SIDEBAR_WIDTH = 600;
 const DEFAULT_SIDEBAR_WIDTH = 280;
 
 const MIN_RIGHT_AREA_WIDTH = 300;
-const MAX_RIGHT_AREA_WIDTH = 800;
 const DEFAULT_RIGHT_AREA_WIDTH = 400;
 
 export function ChatLayout({ sidebar, content, rightArea }: ChatLayoutProps) {
@@ -29,7 +28,9 @@ export function ChatLayout({ sidebar, content, rightArea }: ChatLayoutProps) {
 
   const [rightAreaWidth, setRightAreaWidth] = useState(() => {
     const saved = localStorage.getItem('rightAreaWidth');
-    return saved ? parseInt(saved, 10) : DEFAULT_RIGHT_AREA_WIDTH;
+    const width = saved ? parseInt(saved, 10) : DEFAULT_RIGHT_AREA_WIDTH;
+    const maxWidth = window.innerWidth / 2;
+    return Math.min(width, maxWidth);
   });
 
   const [resizingType, setResizingType] = useState<
@@ -71,19 +72,27 @@ export function ChatLayout({ sidebar, content, rightArea }: ChatLayoutProps) {
       localStorage.setItem('sidebarWidth', newWidth.toString());
     } else if (resizingTypeRef.current === 'rightPanel') {
       let newWidth = window.innerWidth - e.clientX;
+      const maxWidth = window.innerWidth / 2;
       if (newWidth < MIN_RIGHT_AREA_WIDTH) newWidth = MIN_RIGHT_AREA_WIDTH;
-      if (newWidth > MAX_RIGHT_AREA_WIDTH) newWidth = MAX_RIGHT_AREA_WIDTH;
+      if (newWidth > maxWidth) newWidth = maxWidth;
       setRightAreaWidth(newWidth);
       localStorage.setItem('rightAreaWidth', newWidth.toString());
     }
   }, []);
 
   useEffect(() => {
+    const handleWindowResize = () => {
+      const maxWidth = window.innerWidth / 2;
+      setRightAreaWidth((prev) => Math.min(prev, maxWidth));
+    };
+
     window.addEventListener('mousemove', resize);
     window.addEventListener('mouseup', stopResizing);
+    window.addEventListener('resize', handleWindowResize);
     return () => {
       window.removeEventListener('mousemove', resize);
       window.removeEventListener('mouseup', stopResizing);
+      window.removeEventListener('resize', handleWindowResize);
     };
   }, [resize, stopResizing]);
 
