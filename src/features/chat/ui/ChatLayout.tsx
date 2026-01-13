@@ -5,49 +5,77 @@ import { cn } from '@/lib/utils';
 interface ChatLayoutProps {
   sidebar: ReactNode;
   content: ReactNode;
+  rightArea?: ReactNode;
 }
 
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 600;
 const DEFAULT_SIDEBAR_WIDTH = 280;
 
-export function ChatLayout({ sidebar, content }: ChatLayoutProps) {
+const MIN_RIGHT_AREA_WIDTH = 300;
+const MAX_RIGHT_AREA_WIDTH = 800;
+const DEFAULT_RIGHT_AREA_WIDTH = 400;
+
+export function ChatLayout({ sidebar, content, rightArea }: ChatLayoutProps) {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.ui.isSidebarCollapsed
   );
+  const isRightPanelOpen = useAppSelector((state) => state.ui.isRightPanelOpen);
 
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebarWidth');
     return saved ? parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH;
   });
 
-  const [isResizing, setIsResizing] = useState(false);
-  const isResizingRef = useRef(false);
+  const [rightAreaWidth, setRightAreaWidth] = useState(() => {
+    const saved = localStorage.getItem('rightAreaWidth');
+    return saved ? parseInt(saved, 10) : DEFAULT_RIGHT_AREA_WIDTH;
+  });
 
-  const startResizing = useCallback((e: React.MouseEvent) => {
+  const [resizingType, setResizingType] = useState<
+    'sidebar' | 'rightPanel' | null
+  >(null);
+  const resizingTypeRef = useRef<'sidebar' | 'rightPanel' | null>(null);
+
+  const startResizingSidebar = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    setIsResizing(true);
-    isResizingRef.current = true;
+    setResizingType('sidebar');
+    resizingTypeRef.current = 'sidebar';
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+
+  const startResizingRightPanel = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setResizingType('rightPanel');
+    resizingTypeRef.current = 'rightPanel';
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
   }, []);
 
   const stopResizing = useCallback(() => {
-    setIsResizing(false);
-    isResizingRef.current = false;
+    setResizingType(null);
+    resizingTypeRef.current = null;
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   }, []);
 
   const resize = useCallback((e: MouseEvent) => {
-    if (!isResizingRef.current) return;
+    if (!resizingTypeRef.current) return;
 
-    let newWidth = e.clientX;
-    if (newWidth < MIN_SIDEBAR_WIDTH) newWidth = MIN_SIDEBAR_WIDTH;
-    if (newWidth > MAX_SIDEBAR_WIDTH) newWidth = MAX_SIDEBAR_WIDTH;
-
-    setSidebarWidth(newWidth);
-    localStorage.setItem('sidebarWidth', newWidth.toString());
+    if (resizingTypeRef.current === 'sidebar') {
+      let newWidth = e.clientX;
+      if (newWidth < MIN_SIDEBAR_WIDTH) newWidth = MIN_SIDEBAR_WIDTH;
+      if (newWidth > MAX_SIDEBAR_WIDTH) newWidth = MAX_SIDEBAR_WIDTH;
+      setSidebarWidth(newWidth);
+      localStorage.setItem('sidebarWidth', newWidth.toString());
+    } else if (resizingTypeRef.current === 'rightPanel') {
+      let newWidth = window.innerWidth - e.clientX;
+      if (newWidth < MIN_RIGHT_AREA_WIDTH) newWidth = MIN_RIGHT_AREA_WIDTH;
+      if (newWidth > MAX_RIGHT_AREA_WIDTH) newWidth = MAX_RIGHT_AREA_WIDTH;
+      setRightAreaWidth(newWidth);
+      localStorage.setItem('rightAreaWidth', newWidth.toString());
+    }
   }, []);
 
   useEffect(() => {
@@ -65,7 +93,7 @@ export function ChatLayout({ sidebar, content }: ChatLayoutProps) {
       <div
         className={cn(
           'relative shrink-0 overflow-hidden border-r border-border bg-sidebar transition-all duration-300 ease-in-out',
-          isResizing && 'transition-none duration-0',
+          resizingType === 'sidebar' && 'transition-none duration-0',
           isSidebarCollapsed ? 'w-0 border-r-0' : ''
         )}
         style={{ width: isSidebarCollapsed ? 0 : sidebarWidth }}
@@ -83,11 +111,13 @@ export function ChatLayout({ sidebar, content }: ChatLayoutProps) {
         {/* Resize Handle - Invisible but draggable handle */}
         {!isSidebarCollapsed && (
           <div
-            onMouseDown={startResizing}
+            onMouseDown={startResizingSidebar}
             className={cn(
               'absolute top-0 right-0 bottom-0 w-0.5 cursor-col-resize z-50 transition-colors',
               'hover:bg-primary/20 hover:w-0.5',
-              isResizing ? 'bg-primary/40 w-0.5' : 'bg-transparent'
+              resizingType === 'sidebar'
+                ? 'bg-primary/40 w-0.5'
+                : 'bg-transparent'
             )}
           />
         )}
@@ -96,6 +126,40 @@ export function ChatLayout({ sidebar, content }: ChatLayoutProps) {
       {/* Chat Area */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
         {content}
+      </div>
+
+      {/* Right Area Container */}
+      <div
+        className={cn(
+          'relative shrink-0 overflow-hidden border-l border-border bg-sidebar transition-all duration-300 ease-in-out',
+          resizingType === 'rightPanel' && 'transition-none duration-0',
+          !isRightPanelOpen ? 'w-0 border-l-0' : ''
+        )}
+        style={{ width: isRightPanelOpen ? rightAreaWidth : 0 }}
+      >
+        {/* Resize Handle - Left side of the right panel */}
+        {isRightPanelOpen && (
+          <div
+            onMouseDown={startResizingRightPanel}
+            className={cn(
+              'absolute top-0 left-0 bottom-0 w-0.5 cursor-col-resize z-50 transition-colors',
+              'hover:bg-primary/20 hover:w-0.5',
+              resizingType === 'rightPanel'
+                ? 'bg-primary/40 w-0.5'
+                : 'bg-transparent'
+            )}
+          />
+        )}
+
+        <div
+          className={cn(
+            'h-full transition-opacity duration-300 ease-in-out',
+            !isRightPanelOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          )}
+          style={{ width: rightAreaWidth }}
+        >
+          {rightArea}
+        </div>
       </div>
     </div>
   );

@@ -44,6 +44,7 @@ interface UIState {
   agentChatHistoryAgentId: string | null;
   imagePreviewOpen: boolean;
   imagePreviewUrl: string | null;
+  isRightPanelOpen: boolean;
 }
 
 // Load all app settings from database
@@ -214,6 +215,7 @@ const initialState: UIState = {
   agentChatHistoryAgentId: null,
   imagePreviewOpen: false,
   imagePreviewUrl: null,
+  isRightPanelOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -321,6 +323,12 @@ const uiSlice = createSlice({
         state.imagePreviewUrl = null;
       }
     },
+    toggleRightPanel: (state) => {
+      state.isRightPanelOpen = !state.isRightPanelOpen;
+    },
+    setRightPanelOpen: (state, action: PayloadAction<boolean>) => {
+      state.isRightPanelOpen = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -378,5 +386,7 @@ export const {
   setTheme,
   setAgentChatHistoryDrawerOpen,
   setImagePreviewOpen,
+  toggleRightPanel,
+  setRightPanelOpen,
 } = uiSlice.actions;
 export default uiSlice.reducer;
