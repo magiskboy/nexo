@@ -205,6 +205,7 @@ pub fn run() {
             features::runtime::python::commands::install_python_runtime,
             features::runtime::python::commands::uninstall_python_runtime,
             features::runtime::python::commands::execute_python_code,
+            features::runtime::python::commands::install_python_packages,
             // Addon config commands
             features::addon::commands::get_addon_config,
             features::addon::commands::refresh_addon_config,

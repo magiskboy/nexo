@@ -124,9 +124,31 @@ impl PythonRuntime {
         })
     }
 
-    fn get_installed_python(app: &AppHandle, full_version: &str) -> Result<PathBuf, AppError> {
+    pub fn get_installed_python(app: &AppHandle, full_version: &str) -> Result<PathBuf, AppError> {
         let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
-        // We manage Python installations in AppData/python-runtimes/<version>
+        let python_dir = app_data.join("python-runtimes").join(full_version);
+        let venv_dir = python_dir.join("venv");
+
+        // UV venv structure:
+        // Unix: <dir>/bin/python
+        // Windows: <dir>/Scripts/python.exe
+        let python_path = if cfg!(windows) {
+            venv_dir.join("Scripts").join("python.exe")
+        } else {
+            venv_dir.join("bin").join("python")
+        };
+
+        if python_path.exists() {
+            return Ok(python_path);
+        }
+
+        // Fallback for older installations or if venv creation failed but base exists
+        // This maintains backwards compatibility during migration
+        Self::get_base_python(app, full_version)
+    }
+
+    fn get_base_python(app: &AppHandle, full_version: &str) -> Result<PathBuf, AppError> {
+        let app_data = app.path().app_data_dir().map_err(AppError::Tauri)?;
         let python_dir = app_data.join("python-runtimes").join(full_version);
 
         if !python_dir.exists() {
@@ -137,14 +159,15 @@ impl PythonRuntime {
         }
 
         // UV installs into a nested directory like <install_dir>/cpython-3.12.1-.../
-        // We look for the first subdirectory.
         let entries = std::fs::read_dir(&python_dir)?;
         for entry in entries.flatten() {
-            if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+            if entry.file_type().map(|t| t.is_dir()).unwrap_or(false)
+                && name_str.starts_with("cpython")
+            {
                 let install_root = entry.path();
 
-                // On Unix: <dir>/bin/python3
-                // On Windows: <dir>/python.exe
                 let python_path = if cfg!(windows) {
                     install_root.join("python.exe")
                 } else {
@@ -158,7 +181,7 @@ impl PythonRuntime {
         }
 
         Err(AppError::Python(format!(
-            "Python {} binary not found in {}",
+            "Base Python {} binary not found in {}",
             full_version,
             python_dir.display()
         )))
@@ -206,9 +229,105 @@ impl PythonRuntime {
             .output()?;
 
         if !output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
+            eprintln!(
+                "UV python install failed for version {}:\nSTDOUT:\n{}\nSTDERR:\n{}",
+                full_version, stdout, stderr
+            );
             return Err(AppError::Python(format!(
-                "UV python install failed: {}",
+                "UV python install failed. Check terminal for details. Stderr: {}",
+                stderr
+            )));
+        }
+
+        // Create a virtual environment from the base installation
+        let base_python = Self::get_base_python(app, full_version)?;
+        let venv_dir = python_dir.join("venv");
+
+        let mut venv_cmd = Command::new(&uv_path);
+        #[cfg(windows)]
+        venv_cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
+        let venv_output = venv_cmd
+            .arg("venv")
+            .arg(&venv_dir)
+            .arg("--python")
+            .arg(&base_python)
+            .env("UV_CACHE_DIR", &uv_cache)
+            .output()?;
+
+        if !venv_output.status.success() {
+            let stderr = String::from_utf8_lossy(&venv_output.stderr);
+            eprintln!(
+                "UV venv creation failed for version {}:\nSTDERR:\n{}",
+                full_version, stderr
+            );
+            return Err(AppError::Python(format!(
+                "UV venv creation failed: {}",
+                stderr
+            )));
+        }
+
+        // Now install default packages into the venv
+        let python_path = Self::get_installed_python(app, full_version)?;
+        let default_packages = vec![
+            "numpy".to_string(),
+            "scipy".to_string(),
+            "sympy".to_string(),
+            "statsmodels".to_string(),
+            "scikit-learn".to_string(),
+            "tabulate".to_string(),
+            "matplotlib".to_string(),
+        ];
+
+        Self::install_packages(app, &python_path, &default_packages).await?;
+
+        Ok(())
+    }
+
+    /// Install python packages into the runtime using bundled UV
+    pub async fn install_packages(
+        app: &AppHandle,
+        python_path: &PathBuf,
+        packages: &[String],
+    ) -> Result<(), AppError> {
+        if packages.is_empty() {
+            return Ok(());
+        }
+
+        let uv_path = get_bundled_uv_path(app)?;
+
+        // Set up UV cache directory
+        let cache_dir = app.path().app_cache_dir().map_err(AppError::Tauri)?;
+        let uv_cache = cache_dir.join("uv_cache");
+        std::fs::create_dir_all(&uv_cache)?;
+
+        // Command: uv pip install <packages> --python <python_path>
+        let mut command = Command::new(&uv_path);
+
+        #[cfg(windows)]
+        command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
+        command
+            .arg("pip")
+            .arg("install")
+            .args(packages)
+            .arg("--python")
+            .arg(python_path)
+            .env("UV_CACHE_DIR", &uv_cache);
+
+        let output = command.output()?;
+
+        if !output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            eprintln!(
+                "UV pip install failed:\nSTDOUT:\n{}\nSTDERR:\n{}",
+                stdout, stderr
+            );
+            return Err(AppError::Python(format!(
+                "UV pip install failed. Check terminal for details. Stderr: {}",
                 stderr
             )));
         }

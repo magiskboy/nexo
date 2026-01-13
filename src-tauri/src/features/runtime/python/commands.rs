@@ -74,3 +74,27 @@ pub async fn execute_python_code(
 ) -> Result<crate::features::runtime::python::service::ExecutionResult, AppError> {
     PythonRuntime::execute_script(&app, version, &code)
 }
+
+#[command]
+pub async fn install_python_packages(
+    app: AppHandle,
+    packages: Vec<String>,
+    version: Option<String>,
+) -> Result<(), AppError> {
+    let python_path = if let Some(v) = version {
+        PythonRuntime::detect(&app, &v)?.python_path
+    } else {
+        // Find latest installed version
+        let installed = PythonRuntime::list_installed(&app)?;
+        let mut versions: Vec<_> = installed.keys().cloned().collect();
+        versions.sort();
+
+        if let Some(latest) = versions.last() {
+            installed.get(latest).unwrap().clone()
+        } else {
+            return Err(AppError::Python("No Python runtime installed".to_string()));
+        }
+    };
+
+    PythonRuntime::install_packages(&app, &python_path, &packages).await
+}
