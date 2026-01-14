@@ -119,7 +119,7 @@ export function AgentCard({
       >
         <div className="overflow-hidden">
           <div className="px-3 pb-3 pt-0">
-            <div className="bg-muted/30 rounded-md border border-border/50 p-3 text-sm leading-relaxed">
+            <div className="bg-muted/30 rounded-md border border-border/50 p-3 text-sm leading-relaxed select-text">
               {children}
             </div>
           </div>

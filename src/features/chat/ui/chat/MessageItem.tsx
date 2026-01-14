@@ -145,7 +145,7 @@ export const MessageItem = memo(
           <div className="relative flex flex-col gap-1 group">
             <div
               className={cn(
-                'relative min-w-0 wrap-break-words rounded-lg px-3 py-2 text-sm leading-relaxed select-text',
+                'relative min-w-0 wrap-break-words rounded-lg px-3 py-2 text-sm leading-relaxed',
                 isStreaming && 'will-change-contents',
                 message.role === 'user'
                   ? 'bg-primary text-primary-foreground'
@@ -163,7 +163,7 @@ export const MessageItem = memo(
                 <div
                   ref={contentRef}
                   className={cn(
-                    'overflow-hidden transition-[max-height] duration-300 ease-in-out',
+                    'overflow-hidden transition-[max-height] duration-300 ease-in-out select-text',
                     canCollapse && isCollapsed
                       ? 'max-h-[300px]'
                       : 'max-h-[9999px]'

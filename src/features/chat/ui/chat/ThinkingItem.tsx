@@ -16,7 +16,7 @@ export const ThinkingItem = memo(function ThinkingItem({
   if (!content) return null;
 
   return (
-    <div className="rounded-lg border bg-muted/30 p-3 text-sm select-text">
+    <div className="rounded-lg border bg-muted/30 p-3 text-sm">
       <button
         className="flex w-full items-center justify-between gap-2 text-left"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -43,7 +43,7 @@ export const ThinkingItem = memo(function ThinkingItem({
           isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         )}
       >
-        <div className="overflow-hidden">
+        <div className="overflow-hidden select-text">
           <div
             className={cn(
               'pt-2 transition-opacity duration-300 whitespace-pre-wrap text-muted-foreground font-mono leading-relaxed',

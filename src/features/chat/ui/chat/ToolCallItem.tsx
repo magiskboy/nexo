@@ -135,7 +135,7 @@ export const ToolCallItem = memo(
         className="flex min-w-0 w-full justify-start cursor-pointer"
         onClick={handleToggle}
       >
-        <div className="rounded-lg border bg-background/50 p-3 text-xs w-full select-text">
+        <div className="rounded-lg border bg-background/50 p-3 text-xs w-full">
           <button
             className="flex w-full items-center justify-between gap-2 text-left"
             type="button"
@@ -234,7 +234,7 @@ export const ToolCallItem = memo(
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="overflow-hidden">
+            <div className="overflow-hidden select-text">
               <div
                 className={cn(
                   'space-y-2 pt-2 transition-opacity duration-300',
