@@ -245,6 +245,7 @@
   "runPythonCode": "Run Python code",
   "runtimeEnvironment": "Runtime Environment",
   "save": "Save",
+  "saving": "Saving...",
   "saveImage": "Save Image",
   "downloadComplete": "Download complete",
   "downloadFailed": "Download failed",

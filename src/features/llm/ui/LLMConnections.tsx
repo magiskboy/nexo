@@ -440,13 +440,12 @@ export function LLMConnectionForm({
     null
   );
   const [testError, setTestError] = useState<string>('');
-  const [hasTested, setHasTested] = useState(false);
 
   const handleTestConnection = useCallback(async () => {
     if (!baseUrl.trim()) {
       setTestError(t('enterBaseUrl'));
       setTestStatus('error');
-      return;
+      return null;
     }
 
     setIsTesting(true);
@@ -469,7 +468,6 @@ export function LLMConnectionForm({
       const filteredModels = filterPopularModels(fetchedModels, provider);
       setModels(filteredModels);
       setTestStatus('success');
-      setHasTested(true);
 
       // Track successful connection test
       const duration = performance.now() - startTime;
@@ -479,13 +477,14 @@ export function LLMConnectionForm({
       // Track API call performance
       const { trackAPICall } = await import('@/lib/sentry-utils');
       trackAPICall(baseUrl.trim(), 'GET', duration, true);
+
+      return filteredModels;
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : t('cannotConnectToAPI');
       setTestError(errorMessage);
       setTestStatus('error');
       setModels([]);
-      setHasTested(true);
 
       // Track failed connection test
       const duration = performance.now() - startTime;
@@ -499,6 +498,7 @@ export function LLMConnectionForm({
         errorMessage
       );
       trackAPICall(baseUrl.trim(), 'GET', duration, false);
+      return null;
     } finally {
       setIsTesting(false);
     }
@@ -520,18 +520,19 @@ export function LLMConnectionForm({
     return () => clearTimeout(timer);
   }, [handleTestConnection, baseUrl, apiKey, provider]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && baseUrl.trim()) {
-      // If we've tested, use the tested models (even if empty)
-      // Otherwise, keep the existing models from connection
-      const modelsToSave = hasTested
-        ? models && models.length > 0
-          ? models
-          : undefined
-        : connection?.models && connection.models.length > 0
-          ? connection.models
-          : undefined;
+      // Trigger test connection on save to ensure models are up-to-date
+      const currentModels = await handleTestConnection();
+
+      // If test failed, we still save but use existing models if available
+      const modelsToSave =
+        currentModels && currentModels.length > 0
+          ? currentModels
+          : models.length > 0
+            ? models
+            : undefined;
 
       onSave({
         name: name.trim(),
@@ -686,13 +687,20 @@ export function LLMConnectionForm({
         )}
         <Button
           type="submit"
-          disabled={!name.trim() || !baseUrl.trim()}
+          disabled={!name.trim() || !baseUrl.trim() || isTesting}
           className="flex-1"
           data-tour="llm-save-btn"
         >
-          {connection
-            ? t('save', { ns: 'common' })
-            : t('add', { ns: 'common' })}
+          {isTesting ? (
+            <>
+              <RefreshCw className="mr-2 size-4 animate-spin" />
+              {t('saving', { ns: 'common' })}
+            </>
+          ) : connection ? (
+            t('save', { ns: 'common' })
+          ) : (
+            t('add', { ns: 'common' })
+          )}
         </Button>
       </DialogFooter>
     </form>

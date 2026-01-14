@@ -245,6 +245,7 @@
   "runPythonCode": "Chạy Python code",
   "runtimeEnvironment": "Môi trường thực thi",
   "save": "Lưu",
+  "saving": "Đang lưu...",
   "saveImage": "Lưu hình ảnh",
   "downloadComplete": "Đã tải xuống",
   "downloadFailed": "Tải xuống thất bại",
