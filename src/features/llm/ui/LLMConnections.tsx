@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus,
   Trash2,
@@ -442,7 +442,7 @@ export function LLMConnectionForm({
   const [testError, setTestError] = useState<string>('');
   const [hasTested, setHasTested] = useState(false);
 
-  const handleTestConnection = async () => {
+  const handleTestConnection = useCallback(async () => {
     if (!baseUrl.trim()) {
       setTestError(t('enterBaseUrl'));
       setTestStatus('error');
@@ -502,7 +502,23 @@ export function LLMConnectionForm({
     } finally {
       setIsTesting(false);
     }
-  };
+  }, [baseUrl, apiKey, provider, connection?.id, t]);
+
+  useEffect(() => {
+    // Only auto-test if baseUrl is present
+    if (!baseUrl.trim()) {
+      setTestStatus(null);
+      setTestError('');
+      setModels([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      handleTestConnection();
+    }, 800); // 800ms debounce to avoid excessive API calls while typing
+
+    return () => clearTimeout(timer);
+  }, [handleTestConnection, baseUrl, apiKey, provider]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -606,42 +622,29 @@ export function LLMConnectionForm({
               />
             </div>
 
-            {/* Test Connection Button */}
-            <div className="space-y-2 w-full">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleTestConnection}
-                disabled={isTesting || !baseUrl.trim()}
-                className="w-full"
-              >
+            {/* Connection Status */}
+            {(isTesting || testStatus) && (
+              <div className="space-y-2 w-full pt-1">
                 {isTesting ? (
-                  <>
-                    <RefreshCw className="mr-2 size-4 animate-spin" />
-                    {t('testing')}
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 size-4" />
-                    {t('testConnection')}
-                  </>
-                )}
-              </Button>
-              {testStatus === 'success' && (
-                <div className="flex items-center gap-2 text-sm text-success">
-                  <CheckCircle2 className="size-4" />
-                  <span>
-                    {t('connectionSuccess', { count: models.length })}
-                  </span>
-                </div>
-              )}
-              {testStatus === 'error' && (
-                <div className="flex items-center gap-2 text-sm text-destructive">
-                  <XCircle className="size-4" />
-                  <span>{testError || t('connectionFailed')}</span>
-                </div>
-              )}
-            </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
+                    <RefreshCw className="size-4 animate-spin" />
+                    <span>{t('testing')}</span>
+                  </div>
+                ) : testStatus === 'success' ? (
+                  <div className="flex items-center gap-2 text-sm text-success">
+                    <CheckCircle2 className="size-4" />
+                    <span>
+                      {t('connectionSuccess', { count: models.length })}
+                    </span>
+                  </div>
+                ) : testStatus === 'error' ? (
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <XCircle className="size-4" />
+                    <span>{testError || t('connectionFailed')}</span>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* Models List */}
             {models.length > 0 && (
