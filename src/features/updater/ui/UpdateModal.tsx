@@ -13,6 +13,7 @@ import {
 } from '@/ui/atoms/dialog/component';
 import { Button } from '@/ui/atoms/button';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
+import { MarkdownContent } from '@/ui/organisms/markdown/MarkdownContent';
 import { UpdateStatus } from '../lib/useUpdate';
 
 interface UpdateModalProps {
@@ -40,7 +41,7 @@ export function UpdateModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] border-none shadow-2xl p-0 overflow-hidden bg-background/95 backdrop-blur-xl">
+      <DialogContent className="sm:max-w-[650px] border-none shadow-2xl p-0 overflow-hidden bg-background/95 backdrop-blur-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
 
         <DialogHeader className="p-6 pb-2 relative">
@@ -101,9 +102,12 @@ export function UpdateModal({
 
                 {showNotes && (
                   <div className="rounded-xl border border-border/50 bg-muted/20 overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                    <ScrollArea className="h-[150px] w-full">
-                      <div className="p-4 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                        {update.body}
+                    <ScrollArea className="h-[300px] w-full">
+                      <div className="p-4">
+                        <MarkdownContent
+                          content={update.body}
+                          className="text-sm text-muted-foreground"
+                        />
                       </div>
                     </ScrollArea>
                   </div>
