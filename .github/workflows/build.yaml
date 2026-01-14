@@ -80,7 +80,17 @@ jobs:
         with:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'Nexo __VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseBody: |
+            ### Phiên bản mới v0.1.0-alpha.46 có gì mới?
+
+            🌟 **Tính năng mới:**
+            - Tự động nhận diện môi trường Node.js cho các MCP server, giúp việc chạy các công cụ dễ dàng và ổn định hơn.
+
+            🐞 **Sửa lỗi:**
+            - Khắc phục lỗi không lưu được cấu hình (headers và biến môi trường) cho MCP server.
+
+            🛠 **Cải tiến:**
+            - Tối ưu hóa quy trình phát hành và cập nhật hướng dẫn cho các bản release tiếp theo.
           releaseDraft: false
           prerelease: true
           args: ${{ matrix.args }}
