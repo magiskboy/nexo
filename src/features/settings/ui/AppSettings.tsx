@@ -1,11 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import {
-  Languages,
-  Palette,
-  User,
-  FlaskConical,
-  ChevronRight,
-} from 'lucide-react';
+import { Languages, Palette, FlaskConical, ChevronRight } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -44,11 +38,9 @@ export function AppSettings() {
   const { t } = useTranslation(['settings', 'common']);
   const {
     language: currentLanguage,
-    userMode: currentUserMode,
     theme: currentTheme,
     showUsage,
     updateLanguage,
-    updateUserMode,
     updateTheme,
     updateShowUsage,
   } = useAppSettings();
@@ -56,10 +48,6 @@ export function AppSettings() {
   const handleLanguageChange = (lang: 'vi' | 'en') => {
     updateLanguage(lang);
     i18n.changeLanguage(lang);
-  };
-
-  const handleUserModeChange = (mode: 'normal' | 'developer') => {
-    updateUserMode(mode);
   };
 
   const handleThemeChange = (newTheme: Theme) => {
@@ -130,37 +118,6 @@ export function AppSettings() {
             <SelectItem value="ayu-dark">{t('ayuDarkTheme')}</SelectItem> */}
           </SelectContent>
         </Select>
-      </div>
-
-      <Separator />
-
-      {/* User Mode */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <User className="size-4 text-muted-foreground shrink-0" />
-          <h3 className="font-medium text-sm leading-none my-0">
-            {t('userMode')}
-          </h3>
-        </div>
-        <Select
-          value={currentUserMode}
-          onValueChange={(value: 'normal' | 'developer') =>
-            handleUserModeChange(value)
-          }
-        >
-          <SelectTrigger id="user-mode-select" className="w-full">
-            <SelectValue placeholder={t('selectUserMode')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="normal">{t('normalUser')}</SelectItem>
-            <SelectItem value="developer">{t('developerUser')}</SelectItem>
-          </SelectContent>
-        </Select>
-        {currentUserMode === 'developer' && (
-          <p className="text-xs text-muted-foreground">
-            {t('developerModeDescription')}
-          </p>
-        )}
       </div>
 
       <Separator />

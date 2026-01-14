@@ -22,7 +22,6 @@ interface UIState {
     | 'experiments'
     | 'about';
   language: 'vi' | 'en';
-  userMode: 'normal' | 'developer';
   theme:
     | 'light'
     | 'dark'
@@ -62,9 +61,6 @@ export const loadAppSettings = createAsyncThunk(
           key: 'language',
         }),
         invokeCommand<string | null>(TauriCommands.GET_APP_SETTING, {
-          key: 'userMode',
-        }),
-        invokeCommand<string | null>(TauriCommands.GET_APP_SETTING, {
           key: 'theme',
         }),
         invokeCommand<string | null>(TauriCommands.GET_APP_SETTING, {
@@ -72,7 +68,7 @@ export const loadAppSettings = createAsyncThunk(
         }),
       ]);
 
-      const [language, userMode, theme, showUsage] = settingsResults;
+      const [language, theme, showUsage] = settingsResults;
 
       // Validate and set language
       let finalLanguage: 'vi' | 'en' = 'vi';
@@ -83,18 +79,6 @@ export const loadAppSettings = createAsyncThunk(
         await invokeCommand(TauriCommands.SAVE_APP_SETTING, {
           key: 'language',
           value: 'vi',
-        });
-      }
-
-      // Validate and set userMode
-      let finalUserMode: 'normal' | 'developer' = 'normal';
-      if (userMode === 'normal' || userMode === 'developer') {
-        finalUserMode = userMode;
-      } else {
-        // If not found, save default value
-        await invokeCommand(TauriCommands.SAVE_APP_SETTING, {
-          key: 'userMode',
-          value: 'normal',
         });
       }
 
@@ -129,22 +113,18 @@ export const loadAppSettings = createAsyncThunk(
 
       return {
         language: finalLanguage,
-        userMode: finalUserMode,
         theme: finalTheme,
         experiments: {
-          showUsage:
-            showUsage === 'true' ||
-            (showUsage === null && finalUserMode === 'developer'),
+          showUsage: showUsage === 'true' || showUsage === null, // Default to true for developer mode
         },
       };
     } catch (error) {
       console.error('Failed to load app settings from database:', error);
       return {
         language: 'vi' as const,
-        userMode: 'normal' as const,
         theme: 'light' as const,
         experiments: {
-          showUsage: false,
+          showUsage: true,
         },
       };
     }
@@ -169,29 +149,6 @@ export const checkFirstLaunch = createAsyncThunk(
     }
   }
 );
-
-// Keep individual loaders for backward compatibility (can be removed later)
-export const loadUserMode = createAsyncThunk('ui/loadUserMode', async () => {
-  try {
-    const userMode = await invokeCommand<string | null>(
-      TauriCommands.GET_APP_SETTING,
-      {
-        key: 'userMode',
-      }
-    );
-    if (userMode === 'normal' || userMode === 'developer') {
-      return userMode;
-    }
-    await invokeCommand(TauriCommands.SAVE_APP_SETTING, {
-      key: 'userMode',
-      value: 'normal',
-    });
-    return 'normal' as const;
-  } catch (error) {
-    console.error('Failed to load userMode from database:', error);
-    return 'normal' as const;
-  }
-});
 
 export const loadLanguage = createAsyncThunk('ui/loadLanguage', async () => {
   try {
@@ -224,7 +181,6 @@ const initialState: UIState = {
   keyboardShortcutsOpen: false,
   settingsSection: 'general',
   language: 'vi',
-  userMode: 'normal',
   theme: 'light',
   loading: false,
   agentChatHistoryDrawerOpen: false,
@@ -298,15 +254,6 @@ const uiSlice = createSlice({
         console.error('Failed to save language to database:', error);
       });
     },
-    setUserMode: (state, action: PayloadAction<'normal' | 'developer'>) => {
-      state.userMode = action.payload;
-      invokeCommand(TauriCommands.SAVE_APP_SETTING, {
-        key: 'userMode',
-        value: action.payload,
-      }).catch((error) => {
-        console.error('Failed to save userMode to database:', error);
-      });
-    },
     setTheme: (state, action: PayloadAction<UIState['theme']>) => {
       state.theme = action.payload;
       invokeCommand(TauriCommands.SAVE_APP_SETTING, {
@@ -367,22 +314,11 @@ const uiSlice = createSlice({
       })
       .addCase(loadAppSettings.fulfilled, (state, action) => {
         state.language = action.payload.language;
-        state.userMode = action.payload.userMode;
         state.theme = action.payload.theme;
         state.experiments = action.payload.experiments;
         state.loading = false;
       })
       .addCase(loadAppSettings.rejected, (state) => {
-        state.loading = false;
-      })
-      .addCase(loadUserMode.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(loadUserMode.fulfilled, (state, action) => {
-        state.userMode = action.payload;
-        state.loading = false;
-      })
-      .addCase(loadUserMode.rejected, (state) => {
         state.loading = false;
       })
       .addCase(loadLanguage.pending, (state) => {
@@ -413,7 +349,6 @@ export const {
   setAboutOpen,
   setKeyboardShortcutsOpen,
   setLanguage,
-  setUserMode,
   setTheme,
   setAgentChatHistoryDrawerOpen,
   setImagePreviewOpen,

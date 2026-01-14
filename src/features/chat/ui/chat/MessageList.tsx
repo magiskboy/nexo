@@ -46,7 +46,7 @@ interface MessageListProps {
   onCancelToolExecution?: () => void;
 
   // Other
-  userMode: 'normal' | 'developer';
+
   showUsage?: boolean;
   t: (key: string) => string;
   isLoading?: boolean;
@@ -77,7 +77,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
       onPermissionRespond,
       onViewAgentDetails,
       onCancelToolExecution,
-      userMode,
+
       showUsage = false,
       t,
       className,
@@ -265,7 +265,6 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                 onToggle={toggleToolCall}
                 onCancel={onCancelToolExecution}
                 t={t}
-                userMode={userMode}
               />
             );
           }
@@ -297,7 +296,6 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                 <MessageItem
                   key={`content-${message.id}`}
                   message={message}
-                  userMode={userMode}
                   showUsage={showUsage}
                   markdownEnabled={isMarkdownEnabled}
                   isCopied={copiedId === message.id}
@@ -349,7 +347,6 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                               )
                           : undefined
                       }
-                      userMode={userMode}
                     />
                   );
                 })}

@@ -1,7 +1,6 @@
 import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import {
   setLanguage,
-  setUserMode,
   setTheme,
   setShowUsage,
   loadAppSettings,
@@ -24,22 +23,17 @@ type Theme =
   | 'ayu-dark';
 
 /**
- * Hook to access and manage app settings (language, userMode, and theme)
+ * Hook to access and manage app settings (language and theme)
  */
 export function useAppSettings() {
   const dispatch = useAppDispatch();
   const language = useAppSelector((state) => state.ui.language);
-  const userMode = useAppSelector((state) => state.ui.userMode);
   const theme = useAppSelector((state) => state.ui.theme);
   const loading = useAppSelector((state) => state.ui.loading);
   const showUsage = useAppSelector((state) => state.ui.experiments.showUsage);
 
   const updateLanguage = (lang: 'vi' | 'en') => {
     dispatch(setLanguage(lang));
-  };
-
-  const updateUserMode = (mode: 'normal' | 'developer') => {
-    dispatch(setUserMode(mode));
   };
 
   const updateTheme = (newTheme: Theme) => {
@@ -56,12 +50,10 @@ export function useAppSettings() {
 
   return {
     language,
-    userMode,
     theme,
     loading,
     showUsage,
     updateLanguage,
-    updateUserMode,
     updateTheme,
     updateShowUsage,
     reloadSettings,

@@ -31,7 +31,6 @@ export interface ToolCallItemProps {
   onRespond?: (allow: boolean) => void;
   onCancel?: () => void;
   timeLeft?: number; // Countdown in seconds for pending permission
-  userMode?: 'normal' | 'developer';
 }
 
 export const ToolCallItem = memo(
@@ -44,7 +43,6 @@ export const ToolCallItem = memo(
     onRespond,
     onCancel,
     timeLeft,
-    userMode = 'normal',
   }: ToolCallItemProps) {
     const { toolCallData, parseError } = useMemo(() => {
       if (data) return { toolCallData: data, parseError: null };
@@ -108,7 +106,7 @@ export const ToolCallItem = memo(
                 Failed to parse tool call data: {parseError}
               </div>
               {/* Developer mode: show raw content */}
-              {userMode === 'developer' && message?.content && (
+              {message?.content && (
                 <details className="mt-2">
                   <summary className="cursor-pointer text-xs font-medium hover:underline">
                     Raw content
@@ -303,7 +301,6 @@ export const ToolCallItem = memo(
       prevId === nextId &&
       prevDataStr === nextDataStr &&
       prevProps.isExpanded === nextProps.isExpanded &&
-      prevProps.userMode === nextProps.userMode &&
       prevProps.timeLeft === nextProps.timeLeft // ← Added for countdown
     );
   }

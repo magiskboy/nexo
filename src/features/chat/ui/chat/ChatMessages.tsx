@@ -37,7 +37,7 @@ export function ChatMessages({
   });
 
   const { t } = useTranslation('chat');
-  const { userMode, showUsage } = useAppSettings();
+  const { showUsage } = useAppSettings();
   const dispatch = useAppDispatch();
   const selectedChatId = useAppSelector((state) => state.chats.selectedChatId);
   const pendingRequests = useAppSelector(
@@ -264,7 +264,6 @@ export function ChatMessages({
         onCancelToolExecution={onCancelToolExecution}
         onEditingMessageIdChange={onEditMessage}
         permissionTimeLeft={permissionTimeLeft}
-        userMode={userMode}
         showUsage={showUsage}
         t={t}
         isLoading={isLoading && !streamingMessageId}

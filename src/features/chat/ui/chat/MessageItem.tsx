@@ -26,7 +26,7 @@ import type { Message } from '../../types';
 
 export interface MessageItemProps {
   message: Message;
-  userMode: 'normal' | 'developer';
+
   showUsage?: boolean;
   markdownEnabled: boolean;
   isCopied: boolean;
@@ -530,7 +530,6 @@ export const MessageItem = memo(
       prevProps.message.codeBlocks === nextProps.message.codeBlocks &&
       prevProps.message.tokenUsage === nextProps.message.tokenUsage &&
       prevProps.message.metadata === nextProps.message.metadata && // Include metadata for agent card updates
-      prevProps.userMode === nextProps.userMode &&
       prevProps.showUsage === nextProps.showUsage &&
       prevProps.markdownEnabled === nextProps.markdownEnabled &&
       prevProps.isCopied === nextProps.isCopied &&

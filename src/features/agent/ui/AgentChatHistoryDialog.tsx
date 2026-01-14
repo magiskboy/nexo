@@ -30,7 +30,7 @@ export function AgentChatHistoryDialog({
   agentId,
 }: AgentChatHistoryDialogProps) {
   const { t: tChat } = useTranslation('chat');
-  const { userMode } = useAppSettings();
+  useAppSettings();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -198,7 +198,6 @@ export function AgentChatHistoryDialog({
                     enableThinkingItem={false}
                     enablePendingPermissions={false}
                     onSaveEdit={handleSaveEdit}
-                    userMode={userMode}
                     t={tChat}
                   />
                 </div>
