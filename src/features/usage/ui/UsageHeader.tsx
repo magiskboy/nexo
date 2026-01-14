@@ -38,7 +38,7 @@ export function UsageHeader({
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="flex gap-3">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card">
+          <div className="flex items-center gap-2 px-3 rounded-lg border bg-card">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <Select value={interval} onValueChange={onIntervalChange}>
               <SelectTrigger className="w-[110px] border-0 h-auto p-0 bg-transparent focus:ring-0">
@@ -52,7 +52,7 @@ export function UsageHeader({
             </Select>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card">
+          <div className="flex items-center gap-2 px-3 rounded-lg border bg-card">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <Select
               onValueChange={(val) => {
@@ -98,7 +98,7 @@ export function UsageHeader({
             <Button
               variant="destructive"
               size="sm"
-              className="gap-2 bg-destructive/10 text-destructive hover:bg-destructive/20"
+              className="bg-destructive/10 text-destructive hover:bg-destructive/20"
             >
               <Trash2 className="h-4 w-4" />
               Clear Data
