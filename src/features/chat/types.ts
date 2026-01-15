@@ -1,3 +1,15 @@
+import type { Node, Edge } from '@xyflow/react';
+
+export interface FlowData {
+  nodes: Node[];
+  edges: Edge[];
+  viewport?: {
+    x: number;
+    y: number;
+    zoom: number;
+  };
+}
+
 export interface ChatItem {
   id: string;
   title: string;
@@ -21,6 +33,7 @@ export interface TokenUsage {
   totalTokens?: number;
   tokensPerSecond?: number;
   responseTimeMs?: number;
+  responseTimeMs_?: number;
 }
 
 export interface CodeBlock {

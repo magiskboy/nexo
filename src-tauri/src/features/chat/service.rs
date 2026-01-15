@@ -7,7 +7,10 @@ use crate::features::message::{Message, MessageEmitter, MessageService};
 use crate::features::tool::service::ToolService;
 use crate::features::usage::UsageService;
 use crate::features::workspace::settings::{WorkspaceSettings, WorkspaceSettingsService};
-use crate::models::llm_types::{ChatCompletionTool, ToolChoice, LLMChatRequest, LLMChatResponse, ChatMessage, AssistantContent, UserContent, ContentPart, ImageUrl, FileUrl};
+use crate::models::llm_types::{
+    AssistantContent, ChatCompletionTool, ChatMessage, ContentPart, FileUrl, ImageUrl,
+    LLMChatRequest, LLMChatResponse, ToolChoice, UserContent,
+};
 use crate::services::LLMService;
 use base64::{engine::general_purpose, Engine as _};
 use rust_mcp_sdk::{schema::CallToolRequestParams, McpClient};
@@ -116,9 +119,8 @@ impl ChatService {
         let files_dir = app_data_dir.join("files");
 
         if !files_dir.exists() {
-            fs::create_dir_all(&files_dir).map_err(|e| {
-                AppError::Generic(format!("Failed to create files directory: {e}"))
-            })?;
+            fs::create_dir_all(&files_dir)
+                .map_err(|e| AppError::Generic(format!("Failed to create files directory: {e}")))?;
         }
 
         let filename = format!("{}.{}", uuid::Uuid::new_v4(), ext);
@@ -147,6 +149,53 @@ impl ChatService {
         } else {
             Ok(None)
         }
+    }
+
+    /// Extract a text description of a flow from its metadata JSON.
+    fn extract_flow_description(&self, metadata: &str) -> Option<String> {
+        let meta_json: serde_json::Value = serde_json::from_str(metadata).ok()?;
+
+        if meta_json.get("type")?.as_str()? != "flow_attachment" {
+            return None;
+        }
+
+        let flow = meta_json.get("flow")?;
+        let nodes = flow.get("nodes")?.as_array()?;
+        let edges = flow.get("edges")?.as_array()?;
+
+        let mut description = String::from("\n\n[Attached Flow Workflow]\n");
+
+        description.push_str("Nodes:\n");
+        for node in nodes {
+            let id = node.get("id").and_then(|v| v.as_str()).unwrap_or("unknown");
+            let label = node
+                .get("data")
+                .and_then(|d| d.get("label"))
+                .and_then(|l| l.as_str())
+                .unwrap_or(id);
+            let node_type = node
+                .get("type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("default");
+            description.push_str(&format!(
+                "- {} (Label: {}, Type: {})\n",
+                id, label, node_type
+            ));
+        }
+
+        description.push_str("\nConnections:\n");
+        if edges.is_empty() {
+            description.push_str("- No connections\n");
+        } else {
+            for edge in edges {
+                let source = edge.get("source").and_then(|v| v.as_str()).unwrap_or("?");
+                let target = edge.get("target").and_then(|v| v.as_str()).unwrap_or("?");
+                description.push_str(&format!("- {} -> {}\n", source, target));
+            }
+        }
+        description.push_str("[End Flow]\n");
+
+        Some(description)
     }
 
     /// Load a file from a path and convert to base64 data URL with mime type.
@@ -195,10 +244,7 @@ impl ChatService {
                     "mov" => "video/quicktime",
                     _ => "application/octet-stream",
                 };
-                Ok((
-                    format!("data:{mime};base64,{encoded}"),
-                    mime.to_string(),
-                ))
+                Ok((format!("data:{mime};base64,{encoded}"), mime.to_string()))
             } else {
                 Ok((
                     path_or_data.to_string(),
@@ -343,6 +389,7 @@ impl ChatService {
                     None,
                     None,
                     None,
+                    None,
                     app.clone(),
                 )
                 .await;
@@ -356,6 +403,7 @@ impl ChatService {
         chat_id: String,
         content: String,
         files: Option<Vec<String>>,
+        metadata: Option<String>,
         selected_model: Option<String>,
         reasoning_effort: Option<String>,
         llm_connection_id_override: Option<String>,
@@ -419,7 +467,17 @@ impl ChatService {
             .as_secs() as i64;
         let user_message_id = uuid::Uuid::new_v4().to_string();
 
-        let metadata = if let Some(file_list) = &processed_files {
+        // Merge incoming metadata with processed files
+        let final_metadata = if let Some(meta_str) = &metadata {
+            let mut meta_obj: serde_json::Value =
+                serde_json::from_str(meta_str).unwrap_or(serde_json::json!({}));
+            if let Some(file_list) = &processed_files {
+                if !file_list.is_empty() {
+                    meta_obj["files"] = serde_json::json!(file_list);
+                }
+            }
+            Some(meta_obj.to_string())
+        } else if let Some(file_list) = &processed_files {
             if file_list.is_empty() {
                 None
             } else {
@@ -437,7 +495,7 @@ impl ChatService {
             Some(user_timestamp),
             None,
             None,
-            metadata,
+            final_metadata,
         )?;
 
         // 6.5 Check for Agent Mention (Routing)
@@ -636,13 +694,12 @@ impl ChatService {
             &workspace_settings,
             &content,
             processed_files.as_deref(),
+            metadata.as_deref(),
             system_prompt_override.clone(),
         )?;
 
         // 10. Determine if streaming is enabled
-        let stream_enabled = workspace_settings
-            .stream_enabled
-            .map_or(true, |v| v == 1); // Default to true
+        let stream_enabled = workspace_settings.stream_enabled.map_or(true, |v| v == 1); // Default to true
 
         let tool_choice: Option<ToolChoice> = None; // Use "auto" by default
 
@@ -808,6 +865,7 @@ impl ChatService {
                         chat_id,
                         content,
                         user_message_id,
+                        metadata,
                         selected_model,
                         reasoning_effort,
                         assistant_message_id,
@@ -853,6 +911,7 @@ impl ChatService {
                         chat_id,
                         new_content,
                         processed_new_files,
+                        None,
                         selected_model,
                         reasoning_effort,
                         llm_connection_id,
@@ -877,6 +936,7 @@ impl ChatService {
             chat_id,
             new_content,
             processed_new_files,
+            None,
             selected_model,
             reasoning_effort,
             llm_connection_id,
@@ -891,6 +951,7 @@ impl ChatService {
         chat_id: String,
         user_content: String,
         user_message_id: String,
+        user_metadata: Option<String>,
         selected_model: Option<String>,
         reasoning_effort: Option<String>,
         initial_assistant_message_id: String,
@@ -932,9 +993,7 @@ impl ChatService {
             .or(llm_connection.default_model.clone())
             .ok_or_else(|| AppError::Validation("No model selected".to_string()))?;
 
-        let stream_enabled = workspace_settings
-            .stream_enabled
-            .map_or(true, |v| v == 1);
+        let stream_enabled = workspace_settings.stream_enabled.map_or(true, |v| v == 1);
 
         // Get tools
         // Get tools if not provided
@@ -954,6 +1013,7 @@ impl ChatService {
             &chat_id,
             &workspace_settings,
             &user_content,
+            user_metadata.as_deref(),
             system_prompt_override.clone(),
         )?;
 
@@ -1794,6 +1854,7 @@ impl ChatService {
         chat_id: &str,
         workspace_settings: &WorkspaceSettings,
         user_content: &str,
+        user_metadata: Option<&str>,
         system_prompt_override: Option<String>,
     ) -> Result<Vec<ChatMessage>, AppError> {
         let existing_messages = self.message_service.get_by_chat_id(chat_id)?;
@@ -1802,6 +1863,7 @@ impl ChatService {
             workspace_settings,
             user_content,
             None,
+            user_metadata,
             system_prompt_override,
         )
     }
@@ -1812,6 +1874,7 @@ impl ChatService {
         workspace_settings: &WorkspaceSettings,
         user_content: &str,
         user_files: Option<&[String]>,
+        user_metadata: Option<&str>,
         system_prompt_override: Option<String>,
     ) -> Result<Vec<ChatMessage>, AppError> {
         let mut api_messages: Vec<ChatMessage> = Vec::new();
@@ -1837,17 +1900,28 @@ impl ChatService {
 
             let chat_msg = match msg.role.as_str() {
                 "user" => {
-                    // Check for files in metadata (new format) or images (old format for backward compatibility)
-                    let files = if let Some(metadata) = &msg.metadata {
+                    // Check for files and flow in metadata
+                    let mut effective_content = msg.content.clone();
+                    let mut files = None;
+
+                    if let Some(metadata) = &msg.metadata {
+                        // 1. Extract flow description if present
+                        if let Some(flow_desc) = self.extract_flow_description(metadata) {
+                            effective_content.push_str(&flow_desc);
+                        }
+
+                        // 2. Extract files
                         if let Ok(meta_json) = serde_json::from_str::<serde_json::Value>(metadata) {
                             // Try new format first (files array)
                             if let Some(file_array) =
                                 meta_json.get("files").and_then(|f| f.as_array())
                             {
-                                Some(
+                                files = Some(
                                     file_array
                                         .iter()
-                                        .filter_map(|f| f.as_str().map(std::string::ToString::to_string))
+                                        .filter_map(|f| {
+                                            f.as_str().map(std::string::ToString::to_string)
+                                        })
                                         .collect::<Vec<String>>(),
                                 )
                             }
@@ -1855,30 +1929,26 @@ impl ChatService {
                             else if let Some(imgs) =
                                 meta_json.get("images").and_then(|i| i.as_array())
                             {
-                                Some(
+                                files = Some(
                                     imgs.iter()
-                                        .filter_map(|i| i.as_str().map(std::string::ToString::to_string))
+                                        .filter_map(|i| {
+                                            i.as_str().map(std::string::ToString::to_string)
+                                        })
                                         .collect::<Vec<String>>(),
                                 )
-                            } else {
-                                None
                             }
-                        } else {
-                            None
                         }
-                    } else {
-                        None
-                    };
+                    }
 
                     let content = if let Some(file_list) = files {
                         if file_list.is_empty() {
-                            UserContent::Text(msg.content.clone())
+                            UserContent::Text(effective_content)
                         } else {
                             let mut parts = Vec::new();
-                            // Text part
-                            if !msg.content.is_empty() {
+                            // Text part (with flow desc if any)
+                            if !effective_content.is_empty() {
                                 parts.push(ContentPart::Text {
-                                    text: msg.content.clone(),
+                                    text: effective_content,
                                 });
                             }
                             // File parts
@@ -1906,7 +1976,7 @@ impl ChatService {
                             UserContent::Parts(parts)
                         }
                     } else {
-                        UserContent::Text(msg.content.clone())
+                        UserContent::Text(effective_content)
                     };
 
                     ChatMessage::User { content }
@@ -1938,15 +2008,22 @@ impl ChatService {
         }
 
         // Add current user message
+        let mut effective_user_content = user_content.to_string();
+        if let Some(metadata) = user_metadata {
+            if let Some(flow_desc) = self.extract_flow_description(metadata) {
+                effective_user_content.push_str(&flow_desc);
+            }
+        }
+
         let content = if let Some(file_list) = user_files {
             if file_list.is_empty() {
-                UserContent::Text(user_content.to_string())
+                UserContent::Text(effective_user_content)
             } else {
                 let mut parts = Vec::new();
                 // Text part
-                if !user_content.is_empty() {
+                if !effective_user_content.is_empty() {
                     parts.push(ContentPart::Text {
-                        text: user_content.to_string(),
+                        text: effective_user_content,
                     });
                 }
                 // File parts
@@ -1974,7 +2051,7 @@ impl ChatService {
                 UserContent::Parts(parts)
             }
         } else {
-            UserContent::Text(user_content.to_string())
+            UserContent::Text(effective_user_content)
         };
 
         api_messages.push(ChatMessage::User { content });

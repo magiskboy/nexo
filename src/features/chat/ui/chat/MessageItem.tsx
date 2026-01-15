@@ -10,9 +10,11 @@ import {
 } from 'lucide-react';
 import { MessageImage } from './MessageImage';
 import { MessageFile } from './MessageFile';
+import { FlowAttachment } from './FlowAttachment';
 import { cn } from '@/lib/utils';
 import { MarkdownContent } from '@/ui/organisms/markdown/MarkdownContent';
 import { AgentCard } from './AgentCard';
+import { FlowEditorDialog } from '@/ui/molecules/FlowEditorDialog';
 import { MessageMentions } from './MessageMentions';
 import { parseMessageMentions } from './utils/mentionUtils';
 import { useComponentPerformance } from '@/hooks/useComponentPerformance';
@@ -54,6 +56,7 @@ export const MessageItem = memo(
       threshold: 30,
     });
     const dispatch = useAppDispatch();
+    const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
     // Determine if message is long (more than 500 characters or more than 10 lines)
     const isLongMessage =
       message.content.length > 500 || message.content.split('\n').length > 10;
@@ -95,11 +98,14 @@ export const MessageItem = memo(
 
     // Check for Agent Card metadata
     let agentCardData = null;
+    let flowData = null;
     if (message.metadata) {
       try {
         const parsed = JSON.parse(message.metadata);
         if (parsed && parsed.type === 'agent_card') {
           agentCardData = parsed;
+        } else if (parsed && parsed.type === 'flow_attachment') {
+          flowData = parsed.flow;
         }
       } catch (_) {
         // Ignore JSON parse errors
@@ -290,6 +296,23 @@ export const MessageItem = memo(
                         return null;
                       }
                     })()}
+
+                  {/* Flow Attachment from metadata */}
+                  {flowData && (
+                    <div className="mb-2">
+                      <FlowAttachment
+                        flow={flowData}
+                        mode="message"
+                        onClick={() => setIsFlowDialogOpen(true)}
+                      />
+                      <FlowEditorDialog
+                        open={isFlowDialogOpen}
+                        initialFlow={flowData}
+                        onClose={() => setIsFlowDialogOpen(false)}
+                        readOnly={true}
+                      />
+                    </div>
+                  )}
 
                   {(() => {
                     const { cleanedContent } = parseMessageMentions(

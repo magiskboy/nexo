@@ -4,6 +4,7 @@ import {
   setInput,
   setSelectedModel,
   setAttachedFiles,
+  setAttachedFlow,
   clearInput,
   restoreChatInputSettings,
   setIsThinkingEnabled,
@@ -15,6 +16,7 @@ import {
 } from '../state/chatInputApi';
 import { useWorkspaces } from '@/features/workspace';
 import { useGetLLMConnectionsQuery } from '@/features/llm';
+import { FlowData } from '../types';
 
 /**
  * Hook to access and manage chat input state
@@ -43,6 +45,7 @@ export function useChatInput(selectedWorkspaceId: string | null) {
   const attachedFiles = useAppSelector(
     (state) => state.chatInput.attachedFiles
   );
+  const attachedFlow = useAppSelector((state) => state.chatInput.attachedFlow);
   const isLoading = useAppSelector((state) => state.chatInput.isLoading);
   const isThinkingEnabled = useAppSelector(
     (state) => state.chatInput.isThinkingEnabled
@@ -204,6 +207,13 @@ export function useChatInput(selectedWorkspaceId: string | null) {
     [dispatch]
   );
 
+  const setFlow = useCallback(
+    (flow: FlowData | null) => {
+      dispatch(setAttachedFlow(flow));
+    },
+    [dispatch]
+  );
+
   const handleClearInput = useCallback(() => {
     dispatch(clearInput());
   }, [dispatch]);
@@ -224,10 +234,12 @@ export function useChatInput(selectedWorkspaceId: string | null) {
     selectedModel,
     streamEnabled,
     attachedFiles,
+    attachedFlow,
     isLoading,
     handleInputChange,
     handleModelChange,
     handleFileUpload,
+    setFlow,
     handleClearInput,
     isThinkingEnabled,
     reasoningEffort,

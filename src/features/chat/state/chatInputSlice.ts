@@ -1,10 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { FlowData } from '../types';
 
 interface ChatInputState {
   input: string;
   selectedModel: string | undefined;
   streamEnabled: boolean;
   attachedFiles: File[];
+  attachedFlow: FlowData | null;
   isLoading: boolean;
   isThinkingEnabled: boolean;
   reasoningEffort: 'low' | 'medium' | 'high';
@@ -15,6 +17,7 @@ const initialState: ChatInputState = {
   selectedModel: undefined,
   streamEnabled: true,
   attachedFiles: [],
+  attachedFlow: null,
   isLoading: false,
   isThinkingEnabled: false,
   reasoningEffort: 'medium',
@@ -36,9 +39,13 @@ const chatInputSlice = createSlice({
     setAttachedFiles: (state, action: PayloadAction<File[]>) => {
       state.attachedFiles = action.payload;
     },
+    setAttachedFlow: (state, action: PayloadAction<FlowData | null>) => {
+      state.attachedFlow = action.payload;
+    },
     clearInput: (state) => {
       state.input = '';
       state.attachedFiles = [];
+      state.attachedFlow = null;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
@@ -57,6 +64,7 @@ const chatInputSlice = createSlice({
       state.selectedModel = undefined;
       state.streamEnabled = true;
       state.attachedFiles = [];
+      state.attachedFlow = null;
       state.isThinkingEnabled = false;
       state.reasoningEffort = 'medium';
       state.isLoading = false;
@@ -83,6 +91,7 @@ export const {
   setSelectedModel,
   setStreamEnabled,
   setAttachedFiles,
+  setAttachedFlow,
   clearInput,
   setLoading,
   setIsThinkingEnabled,

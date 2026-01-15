@@ -7,6 +7,7 @@ import {
   Brain,
   Search,
   X,
+  Workflow,
 } from 'lucide-react';
 import { Input } from '@/ui/atoms/input';
 import {
@@ -50,9 +51,11 @@ import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import { SlashCommandDropdown } from '@/ui/molecules/SlashCommandDropdown';
 import { AgentMentionDropdown } from '@/features/agent';
 import { VariableInputDialog } from '@/ui/molecules/VariableInputDialog';
+import { FlowEditorDialog } from '@/ui/molecules/FlowEditorDialog';
 import { PromptPanel } from './PromptPanel';
 import { AgentMentionChips } from './AgentBadgeOverlay';
 import { AttachedFileItem } from './AttachedFileItem';
+import { FlowAttachment } from './FlowAttachment';
 
 import {
   parsePromptVariables,
@@ -64,7 +67,7 @@ interface ChatInputProps {
   selectedWorkspaceId: string | null;
   selectedChatId: string | null;
   selectedLLMConnectionId?: string;
-  onSend: (content?: string, images?: string[]) => void;
+  onSend: (content?: string, images?: string[], metadata?: string) => void;
   disabled?: boolean;
   dropdownDirection?: 'up' | 'down';
   timeLeft?: number | null;
@@ -116,14 +119,18 @@ export function ChatInput({
   // State for selected agents (to show as chips)
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
 
+  const [flowDialogOpen, setFlowDialogOpen] = useState(false);
+
   // Use chat input hook
   const {
     input,
     selectedModel,
     attachedFiles,
+    attachedFlow,
     handleInputChange,
     handleModelChange,
     handleFileUpload,
+    setFlow,
     isThinkingEnabled,
     reasoningEffort,
     handleThinkingToggle,
@@ -295,8 +302,8 @@ export function ChatInput({
       combinedInput += input;
     }
 
-    // Only proceed if we have something to send or attached files
-    if (combinedInput.trim() || attachedFiles.length > 0) {
+    // Only proceed if we have something to send, attached files, or flow
+    if (combinedInput.trim() || attachedFiles.length > 0 || attachedFlow) {
       // Process attached files
       let images: string[] = [];
       if (attachedFiles.length > 0) {
@@ -318,14 +325,25 @@ export function ChatInput({
         }
       }
 
+      // If we have a flow attachment, we need to add it to metadata
+      let metadata: string | undefined;
+      if (attachedFlow) {
+        metadata = JSON.stringify({
+          type: 'flow_attachment',
+          flow: attachedFlow,
+          timestamp: Date.now(),
+        });
+      }
+
       // Clear states
       setInsertedPrompt(null);
       setSelectedAgentIds([]);
+      setFlow(null); // Changed from setAttachedFlow(null)
       handleFileUpload([]); // Clear attached files
 
       // Send the combined content directly
       // This avoids the race condition of updating state -> re-rendering -> reading state in child
-      onSend(combinedInput, images);
+      onSend(combinedInput, images, metadata);
     }
   };
 
@@ -727,6 +745,17 @@ export function ChatInput({
               </div>
             )}
 
+            {/* Attached Flow */}
+            {attachedFlow && (
+              <div className="flex gap-2 p-2 pt-0">
+                <FlowAttachment
+                  flow={attachedFlow}
+                  onRemove={() => setFlow(null)}
+                  mode="chatinput"
+                />
+              </div>
+            )}
+
             {/* Inserted Prompt Panel */}
             {insertedPrompt && (
               <PromptPanel
@@ -818,6 +847,20 @@ export function ChatInput({
                   }
                 >
                   <Paperclip className="size-4" />
+                </Button>
+
+                {/* Flow Button */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setFlowDialogOpen(true)}
+                  disabled={disabled}
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground border-0 shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Add workflow"
+                  title="Add workflow"
+                >
+                  <Workflow className="size-4" />
                 </Button>
 
                 {/* Tools Button with Hover Tooltip */}
@@ -1146,6 +1189,17 @@ export function ChatInput({
         onVariableChange={(name, value) =>
           setPromptVariables((prev) => ({ ...prev, [name]: value }))
         }
+      />
+
+      {/* Flow Editor Dialog */}
+      <FlowEditorDialog
+        open={flowDialogOpen}
+        initialFlow={attachedFlow || undefined}
+        onClose={() => setFlowDialogOpen(false)}
+        onSave={(flow) => {
+          setFlow(flow);
+          setFlowDialogOpen(false);
+        }}
       />
     </>
   );

@@ -16,6 +16,7 @@ import {
   clearInput,
   setInput,
   setAttachedFiles,
+  setAttachedFlow,
 } from '../../state/chatInputSlice';
 import { showError } from '@/features/notifications/state/notificationSlice';
 import { setAgentChatHistoryDrawerOpen } from '@/features/ui/state/uiSlice';
@@ -86,6 +87,8 @@ export function ChatArea() {
     if (message) {
       setEditingMessageId(messageId);
       dispatch(setInput(message.content));
+      dispatch(setAttachedFiles([]));
+      dispatch(setAttachedFlow(null));
 
       // Restore files if available (supports both old 'images' format and new 'files' format)
       try {
@@ -93,6 +96,12 @@ export function ChatArea() {
           const parsed = JSON.parse(message.metadata);
           // Try new format first, fallback to old format
           const fileList = parsed.files || parsed.images;
+
+          // Restore flow attachment if available
+          if (parsed.type === 'flow_attachment' && parsed.flow) {
+            dispatch(setAttachedFlow(parsed.flow));
+          }
+
           if (Array.isArray(fileList) && fileList.length > 0) {
             const promises = fileList.map(
               async (filePath: string, index: number) => {
@@ -201,7 +210,11 @@ export function ChatArea() {
     }
   };
 
-  const handleSend = async (overrideContent?: string, files?: string[]) => {
+  const handleSend = async (
+    overrideContent?: string,
+    files?: string[],
+    metadata?: string
+  ) => {
     // If overrideContent is provided, use it. Otherwise use state input.
     const contentToSend =
       overrideContent !== undefined ? overrideContent : input;
@@ -209,7 +222,7 @@ export function ChatArea() {
     const hasFiles = files && files.length > 0;
     const userInput = contentToSend.trim();
 
-    if ((!userInput && !hasFiles) || !selectedWorkspace) {
+    if ((!userInput && !hasFiles && !metadata) || !selectedWorkspace) {
       return;
     }
 
@@ -335,6 +348,7 @@ export function ChatArea() {
             chatId: currentChatId,
             content: userInput,
             files,
+            metadata,
           })
         ).unwrap();
 
