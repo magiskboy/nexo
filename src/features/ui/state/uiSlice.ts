@@ -3,7 +3,7 @@ import { invokeCommand, TauriCommands } from '@/lib/tauri';
 
 export type Page = 'chat' | 'settings' | 'workspaceSettings';
 
-interface UIState {
+export interface UIState {
   activePage: Page;
   isSidebarCollapsed: boolean;
   titleBarText: string | null;

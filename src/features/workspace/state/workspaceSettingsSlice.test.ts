@@ -4,6 +4,7 @@ import workspaceSettingsReducer, {
   updateWorkspaceSettings,
   fetchWorkspaceSettings,
   saveWorkspaceSettings,
+  WorkspaceSettingsState,
 } from './workspaceSettingsSlice';
 import { invokeCommand } from '@/lib/tauri';
 import type { WorkspaceSettings } from '../types';
@@ -17,7 +18,7 @@ vi.mock('@/lib/tauri', () => ({
 }));
 
 describe('workspaceSettingsSlice', () => {
-  const initialState = {
+  const initialState: WorkspaceSettingsState = {
     settingsByWorkspaceId: {},
     loading: false,
     error: null,

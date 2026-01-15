@@ -31,6 +31,9 @@ jobs:
       - name: Run lint
         run: yarn lint
 
+      - name: Run typecheck
+        run: yarn typecheck
+
       - name: Run tests with coverage
         run: yarn test:coverage
 

@@ -7,6 +7,7 @@ import uiReducer, {
   setTheme,
   loadAppSettings,
   checkFirstLaunch,
+  UIState,
 } from './uiSlice';
 import { invokeCommand } from '@/lib/tauri';
 
@@ -19,7 +20,7 @@ vi.mock('@/lib/tauri', () => ({
 }));
 
 describe('uiSlice', () => {
-  const initialState = {
+  const initialState: UIState = {
     activePage: 'chat',
     isSidebarCollapsed: false,
     titleBarText: null,

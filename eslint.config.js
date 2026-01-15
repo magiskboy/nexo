@@ -20,6 +20,8 @@ export default [
       '*.cjs',
       '*.config.js',
       '*.config.ts',
+      '**/*.test.ts',
+      '**/*.test.tsx',
     ],
   },
 

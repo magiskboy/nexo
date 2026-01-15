@@ -15,7 +15,7 @@ interface DbWorkspaceSettings {
   updated_at: number;
 }
 
-interface WorkspaceSettingsState {
+export interface WorkspaceSettingsState {
   settingsByWorkspaceId: Record<string, WorkspaceSettings>;
   loading: boolean;
   error: string | null;
