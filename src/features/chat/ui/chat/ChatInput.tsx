@@ -750,6 +750,7 @@ export function ChatInput({
               <div className="flex gap-2 p-2 pt-0">
                 <FlowAttachment
                   flow={attachedFlow}
+                  onClick={() => setFlowDialogOpen(true)}
                   onRemove={() => setFlow(null)}
                   mode="chatinput"
                 />
