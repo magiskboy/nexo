@@ -1,0 +1,136 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { SettingsScreen } from './SettingsScreen';
+import {
+  setSettingsSection,
+  navigateToChat,
+} from '@/features/ui/state/uiSlice';
+
+// Mock dependencies
+const mockDispatch = vi.fn();
+const mockSelector = vi.fn();
+
+vi.mock('@/app/hooks', () => ({
+  useAppDispatch: () => mockDispatch,
+  useAppSelector: (
+    fn: (state: { ui: { settingsSection: string } }) => string
+  ) => mockSelector(fn),
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+vi.mock('lucide-react', () => ({
+  Settings: () => <div data-testid="settings-icon" />,
+  Network: () => <div data-testid="network-icon" />,
+  Server: () => <div data-testid="server-icon" />,
+  FileText: () => <div data-testid="file-icon" />,
+  Info: () => <div data-testid="info-icon" />,
+  Package: () => <div data-testid="package-icon" />,
+  BarChart: () => <div data-testid="chart-icon" />,
+  Bot: () => <div data-testid="bot-icon" />,
+  Globe: () => <div data-testid="globe-icon" />,
+  Github: () => <div data-testid="github-icon" />,
+  BookOpen: () => <div data-testid="book-icon" />,
+}));
+
+vi.mock('@/features/ui/state/uiSlice', () => ({
+  setSettingsSection: vi.fn((id: string) => ({
+    type: 'ui/setSettingsSection',
+    payload: id,
+  })),
+  navigateToChat: vi.fn(() => ({ type: 'ui/navigateToChat' })),
+}));
+
+// Mock sub-components
+vi.mock('@/features/llm', () => ({
+  LLMConnections: () => <div>LLM Connections</div>,
+}));
+vi.mock('@/features/mcp', () => ({
+  MCPServerConnections: () => <div>MCP Connections</div>,
+}));
+vi.mock('@/features/settings', () => ({
+  AppSettings: () => <div>App Settings</div>,
+  PromptManagement: () => <div>Prompt Management</div>,
+}));
+vi.mock('@/features/addon', () => ({
+  AddonSettings: () => <div>Addon Settings</div>,
+}));
+vi.mock('@/features/hub/ui/HubScreen', () => ({
+  HubScreen: () => <div>Hub Screen</div>,
+}));
+vi.mock('@/features/usage', () => ({ UsagePage: () => <div>Usage Page</div> }));
+vi.mock('@/features/agent', () => ({
+  AgentSettings: () => <div>Agent Settings</div>,
+}));
+vi.mock('@/features/updater/ui/UpdateSection', () => ({
+  UpdateSection: () => <div>Update Section</div>,
+}));
+
+vi.mock('@/ui/atoms/separator', () => ({ Separator: () => <hr /> }));
+vi.mock('@/ui/atoms/button/button', () => ({
+  Button: ({
+    children,
+    onClick,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+  }) => <button onClick={onClick}>{children}</button>,
+}));
+vi.mock('@/ui/atoms/scroll-area', () => ({
+  ScrollArea: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+
+describe('SettingsScreen', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelector.mockImplementation(
+      (selectorFn: (state: { ui: { settingsSection: string } }) => string) => {
+        // Mock the state object for the selector
+        const state = { ui: { settingsSection: 'general' } };
+        return selectorFn(state);
+      }
+    );
+  });
+
+  it('renders sidebar with sections', () => {
+    render(<SettingsScreen />);
+
+    expect(screen.getAllByText('generalSetting')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('llmConnections')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('mcpServerConnections')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('about')[0]).toBeInTheDocument();
+  });
+
+  it('renders the correct content based on selected section', () => {
+    mockSelector.mockImplementation((selectorFn) => {
+      const state = { ui: { settingsSection: 'llm' } };
+      return selectorFn(state);
+    });
+
+    render(<SettingsScreen />);
+    expect(screen.getByText('LLM Connections')).toBeInTheDocument();
+  });
+
+  it('dispatches setSettingsSection when a sidebar item is clicked', () => {
+    render(<SettingsScreen />);
+
+    const llmTab = screen.getByText('llmConnections').closest('button');
+    if (llmTab) fireEvent.click(llmTab);
+
+    expect(mockDispatch).toHaveBeenCalledWith(setSettingsSection('llm'));
+  });
+
+  it('navigates back to chat when Escape key is pressed', () => {
+    render(<SettingsScreen />);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(mockDispatch).toHaveBeenCalledWith(navigateToChat());
+  });
+});
