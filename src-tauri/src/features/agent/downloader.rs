@@ -91,7 +91,7 @@ pub async fn git_clone(
             .context("Failed to execute git checkout")?;
 
         if !status.success() {
-            anyhow::bail!("Git checkout failed for revision: {}", rev);
+            anyhow::bail!("Git checkout failed for revision: {rev}");
         }
     }
 

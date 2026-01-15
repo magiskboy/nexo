@@ -100,10 +100,9 @@ pub fn get_bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
     }
 
     Err(AppError::Python(format!(
-        "Bundled UV '{}' not found. Please ensure UV binary is downloaded.\n\
+        "Bundled UV '{uv_name}' not found. Please ensure UV binary is downloaded.\n\
              Run: cd src-tauri && cargo build\n\
-             This will trigger build.rs to download UV binaries.",
-        uv_name
+             This will trigger build.rs to download UV binaries."
     )))
 }
 
@@ -153,8 +152,7 @@ impl PythonRuntime {
 
         if !python_dir.exists() {
             return Err(AppError::Python(format!(
-                "Python {} directory not found",
-                full_version
+                "Python {full_version} directory not found"
             )));
         }
 
@@ -232,12 +230,10 @@ impl PythonRuntime {
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
             eprintln!(
-                "UV python install failed for version {}:\nSTDOUT:\n{}\nSTDERR:\n{}",
-                full_version, stdout, stderr
+                "UV python install failed for version {full_version}:\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}"
             );
             return Err(AppError::Python(format!(
-                "UV python install failed. Check terminal for details. Stderr: {}",
-                stderr
+                "UV python install failed. Check terminal for details. Stderr: {stderr}"
             )));
         }
 
@@ -260,12 +256,10 @@ impl PythonRuntime {
         if !venv_output.status.success() {
             let stderr = String::from_utf8_lossy(&venv_output.stderr);
             eprintln!(
-                "UV venv creation failed for version {}:\nSTDERR:\n{}",
-                full_version, stderr
+                "UV venv creation failed for version {full_version}:\nSTDERR:\n{stderr}"
             );
             return Err(AppError::Python(format!(
-                "UV venv creation failed: {}",
-                stderr
+                "UV venv creation failed: {stderr}"
             )));
         }
 
@@ -323,12 +317,10 @@ impl PythonRuntime {
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
             eprintln!(
-                "UV pip install failed:\nSTDOUT:\n{}\nSTDERR:\n{}",
-                stdout, stderr
+                "UV pip install failed:\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}"
             );
             return Err(AppError::Python(format!(
-                "UV pip install failed. Check terminal for details. Stderr: {}",
-                stderr
+                "UV pip install failed. Check terminal for details. Stderr: {stderr}"
             )));
         }
 
@@ -396,7 +388,7 @@ impl PythonRuntime {
         // Create a temporary file for the script
         let mut temp_file = tempfile::Builder::new().suffix(".py").tempfile()?;
 
-        write!(temp_file, "{}", script)?;
+        write!(temp_file, "{script}")?;
 
         // Ensure the file is flushed
         temp_file.flush()?;

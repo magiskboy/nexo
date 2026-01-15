@@ -4,7 +4,7 @@ pub mod openai;
 pub mod openai_compat;
 
 use crate::error::AppError;
-use crate::models::llm_types::*;
+use crate::models::llm_types::{LLMModel, LLMChatRequest, LLMChatResponse};
 use async_trait::async_trait;
 use tauri::AppHandle;
 

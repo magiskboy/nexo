@@ -1,7 +1,7 @@
 use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage, ToolEmitter};
-use crate::models::llm_types::*;
+use crate::models::llm_types::{LLMChatResponse, ToolCall, TokenUsage, SSEChunk, ToolCallFunction, LLMModel, LLMChatRequest};
 use async_trait::async_trait;
 use futures::StreamExt;
 use reqwest::Client;
@@ -13,13 +13,13 @@ pub struct OpenAICompatProvider {
 }
 
 impl OpenAICompatProvider {
-    pub fn new(client: Arc<Client>) -> Self {
+    pub const fn new(client: Arc<Client>) -> Self {
         Self { client }
     }
 
     fn check_model_capabilities(model_id: &str) -> (bool, bool, bool) {
         // Remove provider prefix if exists (e.g., "openai/gpt-4" -> "gpt-4")
-        let clean_id = model_id.split('/').last().unwrap_or(model_id);
+        let clean_id = model_id.split('/').next_back().unwrap_or(model_id);
         let model_lower = clean_id.to_lowercase();
 
         // OpenAI-compatible models that support tools
@@ -82,11 +82,11 @@ impl OpenAICompatProvider {
             // Listen for stream chunks
             next_item = stream.next() => next_item,
             // Listen for cancellation signal
-            _ = async {
+            () = async {
                 if let Some(ref mut rx) = cancellation_rx {
                     let _ = rx.recv().await;
                 }
-                futures::future::pending::<()>().await
+                futures::future::pending::<()>().await;
             }, if cancellation_rx.is_some() => {
                 // Cancellation received
                 message_emitter.emit_message_error(
@@ -346,7 +346,7 @@ impl OpenAICompatProvider {
             .first()
             .and_then(|c| c.get("finish_reason"))
             .and_then(|r| r.as_str())
-            .map(|s| s.to_string());
+            .map(std::string::ToString::to_string);
 
         // Parse tool calls
         let tool_calls: Option<Vec<ToolCall>> = message
@@ -361,7 +361,7 @@ impl OpenAICompatProvider {
                         let name = function.get("name")?.as_str()?.to_string();
                         let arguments = function
                             .get("arguments")
-                            .and_then(|a| a.as_str().map(|s| s.to_string()))
+                            .and_then(|a| a.as_str().map(std::string::ToString::to_string))
                             .or_else(|| {
                                 function
                                     .get("arguments")
@@ -410,15 +410,15 @@ impl OpenAICompatProvider {
         let usage = json_response.get("usage").map(|u| TokenUsage {
             prompt_tokens: u
                 .get("prompt_tokens")
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
                 .map(|v| v as u32),
             completion_tokens: u
                 .get("completion_tokens")
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
                 .map(|v| v as u32),
             total_tokens: u
                 .get("total_tokens")
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
                 .map(|v| v as u32),
         });
 
@@ -506,7 +506,7 @@ impl LLMProvider for OpenAICompatProvider {
                 .or_else(|| item.get("model")) // Ollama uses "model"
                 .or_else(|| item.get("name")) // Some APIs use "name" as id
                 .and_then(|v| v.as_str())
-                .map(|s| s.to_string());
+                .map(std::string::ToString::to_string);
 
             // Try to get name from various possible fields
             let name_opt = item
@@ -514,7 +514,7 @@ impl LLMProvider for OpenAICompatProvider {
                 .or_else(|| item.get("model")) // Ollama uses "model" for both
                 .or_else(|| item.get("id")) // Fallback to id
                 .and_then(|v| v.as_str())
-                .map(|s| s.to_string());
+                .map(std::string::ToString::to_string);
 
             // Both id and name are required
             if let (Some(id), Some(name)) = (id_opt, name_opt) {
@@ -525,12 +525,12 @@ impl LLMProvider for OpenAICompatProvider {
                 Some(LLMModel {
                     id,
                     name,
-                    created: item.get("created").and_then(|v| v.as_u64()),
+                    created: item.get("created").and_then(serde_json::Value::as_u64),
                     owned_by: item
                         .get("owned_by")
                         .or_else(|| item.get("ownedBy"))
                         .and_then(|v| v.as_str())
-                        .map(|s| s.to_string()),
+                        .map(std::string::ToString::to_string),
                     supports_tools,
                     supports_thinking,
                     supports_image_generation,
@@ -567,7 +567,7 @@ impl LLMProvider for OpenAICompatProvider {
                 );
                 return Err(AppError::Llm(format!(
                     "Unexpected response format. Expected array or object with 'data' field. Got: {}",
-                    json.to_string()
+                    json
                 )));
             }
         };

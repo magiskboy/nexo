@@ -106,8 +106,7 @@ pub fn track_llm_call<T>(
         add_breadcrumb(
             "llm",
             format!(
-                "LLM call to {} ({}) - {} - {}ms",
-                provider, model, operation, latency_ms
+                "LLM call to {provider} ({model}) - {operation} - {latency_ms}ms"
             ),
             if result.is_ok() {
                 sentry::Level::Info
@@ -118,7 +117,7 @@ pub fn track_llm_call<T>(
 
         // Capture error if failed
         if let Err(e) = result {
-            sentry::capture_message(&format!("LLM call failed: {}", e), sentry::Level::Error);
+            sentry::capture_message(&format!("LLM call failed: {e}"), sentry::Level::Error);
         }
     }
 }
@@ -155,7 +154,7 @@ pub fn track_tool_execution<T>(
 
         if let Err(e) = result {
             sentry::capture_message(
-                &format!("Tool execution failed: {}", e),
+                &format!("Tool execution failed: {e}"),
                 sentry::Level::Error,
             );
         }
@@ -174,8 +173,7 @@ pub fn track_chat_message(
         add_breadcrumb(
             "chat.message",
             format!(
-                "Message {} ({}) - {} - {}",
-                message_id, message_type, action, chat_id
+                "Message {message_id} ({message_type}) - {action} - {chat_id}"
             ),
             sentry::Level::Info,
         );
@@ -192,7 +190,7 @@ pub fn track_workspace_operation(workspace_id: &str, operation: &str) {
 
         add_breadcrumb(
             "workspace",
-            format!("Workspace {} - {}", workspace_id, operation),
+            format!("Workspace {workspace_id} - {operation}"),
             sentry::Level::Info,
         );
     }
@@ -220,8 +218,7 @@ pub fn track_db_operation<T, E>(
             add_breadcrumb(
                 "db",
                 format!(
-                    "SLOW QUERY: {} on {} took {}ms",
-                    operation, table, duration_ms
+                    "SLOW QUERY: {operation} on {table} took {duration_ms}ms"
                 ),
                 sentry::Level::Warning,
             );
@@ -229,7 +226,7 @@ pub fn track_db_operation<T, E>(
 
         if let Err(e) = result {
             sentry::capture_message(
-                &format!("DB operation {} on {} failed: {}", operation, table, e),
+                &format!("DB operation {operation} on {table} failed: {e}"),
                 sentry::Level::Error,
             );
         }

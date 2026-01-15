@@ -1,7 +1,7 @@
 pub mod providers;
 
 use crate::error::AppError;
-use crate::models::llm_types::*;
+use crate::models::llm_types::{LLMModel, LLMChatRequest, LLMChatResponse};
 use providers::{
     AnthropicProvider, GoogleProvider, LLMProvider, OpenAICompatProvider, OpenAIProvider,
 };

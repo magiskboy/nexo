@@ -28,7 +28,7 @@ pub struct SqliteChatRepository {
 }
 
 impl SqliteChatRepository {
-    pub fn new(app: Arc<AppHandle>) -> Self {
+    pub const fn new(app: Arc<AppHandle>) -> Self {
         Self { app }
     }
 }

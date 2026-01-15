@@ -3,7 +3,7 @@ use crate::error::AppError;
 use crate::events::{
     MessageEmitter, TokenUsage as EventTokenUsage, ToolCall as EventToolCall, ToolEmitter,
 };
-use crate::models::llm_types::*;
+use crate::models::llm_types::{LLMChatResponse, ToolCall, ToolCallFunction, TokenUsage, LLMModel, LLMChatRequest, ChatMessage, UserContent, ContentPart, AssistantContent, ToolChoice};
 use async_trait::async_trait;
 use futures::StreamExt;
 use reqwest::Client;
@@ -113,12 +113,12 @@ struct AnthropicResponse {
 }
 
 impl AnthropicProvider {
-    pub fn new(client: Arc<Client>) -> Self {
+    pub const fn new(client: Arc<Client>) -> Self {
         Self { client }
     }
 
     fn check_model_capabilities(model_id: &str) -> (bool, bool, bool) {
-        let clean_id = model_id.split('/').last().unwrap_or(model_id);
+        let clean_id = model_id.split('/').next_back().unwrap_or(model_id);
         let model_lower = clean_id.to_lowercase();
 
         let supports_tools = model_lower.contains("claude-3");
@@ -175,11 +175,11 @@ impl AnthropicProvider {
 
         while let Some(item) = tokio::select! {
             next = stream.next() => next,
-             _ = async {
+             () = async {
                 if let Some(ref mut rx) = cancellation_rx {
                     let _ = rx.recv().await;
                 }
-                futures::future::pending::<()>().await
+                futures::future::pending::<()>().await;
             }, if cancellation_rx.is_some() => {
                 let _ = message_emitter.emit_message_error(chat_id, message_id, "Cancelled".into());
                 return Err(AppError::Cancelled);
@@ -207,7 +207,7 @@ impl AnthropicProvider {
 
                 if event_type == "content_block_start" {
                     if let Ok(val) = serde_json::from_str::<Value>(event_data) {
-                        if let Some(index) = val.get("index").and_then(|i| i.as_u64()) {
+                        if let Some(index) = val.get("index").and_then(serde_json::Value::as_u64) {
                             _current_block_index = Some(index as u32);
                         }
                         if let Some(content_block) = val.get("content_block") {
@@ -306,7 +306,7 @@ impl AnthropicProvider {
                 } else if event_type == "message_start" {
                     if let Ok(val) = serde_json::from_str::<Value>(event_data) {
                         if let Some(usage) = val.get("message").and_then(|m| m.get("usage")) {
-                            if let Some(it) = usage.get("input_tokens").and_then(|t| t.as_u64()) {
+                            if let Some(it) = usage.get("input_tokens").and_then(serde_json::Value::as_u64) {
                                 input_tokens = it as u32;
                             }
                         }
@@ -314,7 +314,7 @@ impl AnthropicProvider {
                 } else if event_type == "message_delta" {
                     if let Ok(val) = serde_json::from_str::<Value>(event_data) {
                         if let Some(usage) = val.get("usage") {
-                            if let Some(ot) = usage.get("output_tokens").and_then(|t| t.as_u64()) {
+                            if let Some(ot) = usage.get("output_tokens").and_then(serde_json::Value::as_u64) {
                                 output_tokens = ot as u32;
                             }
                         }
@@ -403,7 +403,7 @@ impl AnthropicProvider {
             match block {
                 AnthropicContentBlock::Text { text } => content_str.push_str(&text),
                 AnthropicContentBlock::Thinking { thinking, .. } => {
-                    thinking_str.push_str(&thinking)
+                    thinking_str.push_str(&thinking);
                 }
                 AnthropicContentBlock::ToolUse { id, name, input } => {
                     tool_calls.push(ToolCall {
@@ -563,7 +563,7 @@ impl LLMProvider for AnthropicProvider {
             match msg {
                 ChatMessage::System { content } => {
                     if let Some(existing) = system_prompt {
-                        system_prompt = Some(format!("{}\n\n{}", existing, content));
+                        system_prompt = Some(format!("{existing}\n\n{content}"));
                     } else {
                         system_prompt = Some(content);
                     }
@@ -723,9 +723,7 @@ impl LLMProvider for AnthropicProvider {
         }
 
         // Handle Tools
-        let tools = if let Some(req_tools) = request.tools {
-            Some(
-                req_tools
+        let tools = request.tools.map(|req_tools| req_tools
                     .into_iter()
                     .map(|t| AnthropicTool {
                         name: t.function.name,
@@ -735,11 +733,7 @@ impl LLMProvider for AnthropicProvider {
                             .parameters
                             .unwrap_or(serde_json::json!({"type": "object", "properties": {}})),
                     })
-                    .collect(),
-            )
-        } else {
-            None
-        };
+                    .collect());
 
         // Handle Tool Choice
         let tool_choice = if let Some(tc) = request.tool_choice {

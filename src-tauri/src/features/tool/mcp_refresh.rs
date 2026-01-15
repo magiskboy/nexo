@@ -32,7 +32,7 @@ impl MCPToolRefreshService {
 
             // Initial refresh
             if let Err(e) = self.refresh_all_tools().await {
-                eprintln!("Initial MCP tools refresh failed: {}", e);
+                eprintln!("Initial MCP tools refresh failed: {e}");
             }
 
             // Then refresh every 5 minutes
@@ -42,7 +42,7 @@ impl MCPToolRefreshService {
             loop {
                 interval.tick().await;
                 if let Err(e) = self.refresh_all_tools().await {
-                    eprintln!("MCP tools refresh failed: {}", e);
+                    eprintln!("MCP tools refresh failed: {e}");
                 }
             }
         });
@@ -77,7 +77,7 @@ impl MCPToolRefreshService {
                 Ok(tools) => {
                     // Serialize tools to JSON
                     let tools_json = serde_json::to_string(&tools).map_err(|e| {
-                        AppError::Generic(format!("Failed to serialize tools: {}", e))
+                        AppError::Generic(format!("Failed to serialize tools: {e}"))
                     })?;
 
                     // Update connection with new tools

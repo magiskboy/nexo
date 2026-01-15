@@ -7,12 +7,12 @@ use std::collections::HashMap;
 pub struct MCPConfigService;
 
 impl MCPConfigService {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 
     /// Replace variables in config with provided values
-    /// If a variable is not provided, convert {variable_name} to {{variable_name}} format
+    /// If a variable is not provided, convert {`variable_name`} to {{`variable_name`}} format
     /// so users know they need to edit it
     pub fn replace_variables_in_config(
         &self,
@@ -100,8 +100,8 @@ impl MCPConfigService {
     }
 
     /// Build MCP connection config from hub config
-    /// Converts hub config format to MCPServerConnection format
-    /// Returns (url, headers, env_vars, runtime_path)
+    /// Converts hub config format to `MCPServerConnection` format
+    /// Returns (url, headers, `env_vars`, `runtime_path`)
     pub fn build_mcp_connection_config(
         &self,
         config: &HubMCPServerConfig,
@@ -138,8 +138,7 @@ impl MCPConfigService {
                 // For sse/http-streamable: url is direct, headers is JSON string
                 let url = config.url.clone().ok_or_else(|| {
                     AppError::Hub(format!(
-                        "Missing 'url' in {} MCP server config",
-                        server_type
+                        "Missing 'url' in {server_type} MCP server config"
                     ))
                 })?;
 

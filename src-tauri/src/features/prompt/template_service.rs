@@ -8,15 +8,15 @@ const HUB_BASE_URL: &str = "https://raw.githubusercontent.com/Nexo-Agent/officia
 pub struct PromptTemplateService;
 
 impl PromptTemplateService {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 
     /// Fetch markdown file from GitHub raw URL
     pub async fn fetch_prompt_template(&self, path: &str) -> Result<String, AppError> {
-        let url = format!("{}/{}", HUB_BASE_URL, path);
+        let url = format!("{HUB_BASE_URL}/{path}");
         let response = reqwest::get(&url).await.map_err(|e| {
-            AppError::PromptTemplate(format!("Failed to fetch template from {}: {}", url, e))
+            AppError::PromptTemplate(format!("Failed to fetch template from {url}: {e}"))
         })?;
 
         if !response.status().is_success() {
@@ -28,7 +28,7 @@ impl PromptTemplateService {
         }
 
         let markdown = response.text().await.map_err(|e| {
-            AppError::PromptTemplate(format!("Failed to read response from {}: {}", url, e))
+            AppError::PromptTemplate(format!("Failed to read response from {url}: {e}"))
         })?;
 
         Ok(markdown)
@@ -154,7 +154,7 @@ impl PromptTemplateService {
         content_lines.join("\n").trim().to_string()
     }
 
-    /// Extract variables from content using regex {{variable_name}}
+    /// Extract variables from content using regex {{`variable_name`}}
     fn extract_variables(&self, content: &str) -> Vec<String> {
         let variable_regex = Regex::new(r"\{\{(\w+)\}\}").unwrap();
         let mut variables = std::collections::HashSet::new();

@@ -5,7 +5,7 @@ use crate::features::addon::models::AddonIndex;
 pub struct IndexConfigService;
 
 impl IndexConfigService {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 

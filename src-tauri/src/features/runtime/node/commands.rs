@@ -47,8 +47,7 @@ pub async fn install_node_runtime(
     // Verify version exists in config
     if !config.addons.nodejs.versions.contains(&version) {
         return Err(AppError::Node(format!(
-            "Version {} not found in config",
-            version
+            "Version {version} not found in config"
         )));
     }
 

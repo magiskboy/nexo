@@ -28,7 +28,7 @@ pub struct SqliteLLMConnectionRepository {
 }
 
 impl SqliteLLMConnectionRepository {
-    pub fn new(app: Arc<AppHandle>) -> Self {
+    pub const fn new(app: Arc<AppHandle>) -> Self {
         Self { app }
     }
 }
@@ -166,7 +166,7 @@ impl LLMConnectionRepository for SqliteLLMConnectionRepository {
         if let Some(enabled) = enabled {
             conn.execute(
                 "UPDATE llm_connections SET enabled = ?1, updated_at = ?2 WHERE id = ?3",
-                params![enabled as i64, now, id],
+                params![i64::from(enabled), now, id],
             )?;
         }
 

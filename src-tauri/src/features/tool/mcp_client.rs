@@ -79,8 +79,7 @@ impl MCPClientService {
             && r#type != "stdio"
         {
             return Err(AppError::Validation(format!(
-                "Unsupported transport type: {}. Only 'sse', 'http-streamable', 'streamable-http', and 'stdio' are supported.",
-                r#type
+                "Unsupported transport type: {type}. Only 'sse', 'http-streamable', 'streamable-http', and 'stdio' are supported."
             )));
         }
 
@@ -104,8 +103,8 @@ impl MCPClientService {
             let transport = match ClientSseTransport::new(&url, sse_options) {
                 Ok(t) => t,
                 Err(e) => {
-                    let err_msg = format!("Failed to create SSE transport for {}: {}", url, e);
-                    eprintln!("{}", err_msg);
+                    let err_msg = format!("Failed to create SSE transport for {url}: {e}");
+                    eprintln!("{err_msg}");
                     return Err(AppError::Generic(err_msg));
                 }
             };
@@ -131,15 +130,15 @@ impl MCPClientService {
             let parts = match shell_words::split(&url) {
                 Ok(p) => p,
                 Err(e) => {
-                    let err_msg = format!("Invalid stdio URL '{}': parse error: {}", url, e);
-                    eprintln!("{}", err_msg);
+                    let err_msg = format!("Invalid stdio URL '{url}': parse error: {e}");
+                    eprintln!("{err_msg}");
                     return Err(AppError::Validation(err_msg));
                 }
             };
 
             if parts.is_empty() {
-                let err_msg = format!("Invalid stdio URL '{}': command cannot be empty", url);
-                eprintln!("{}", err_msg);
+                let err_msg = format!("Invalid stdio URL '{url}': command cannot be empty");
+                eprintln!("{err_msg}");
                 return Err(AppError::Validation(err_msg));
             }
 
@@ -230,7 +229,7 @@ impl MCPClientService {
                             // npm or npx
                             if let Some(parent) = rt.node_path.parent() {
                                 let binary_name = if cfg!(windows) {
-                                    format!("{}.cmd", command)
+                                    format!("{command}.cmd")
                                 } else {
                                     command.clone()
                                 };
@@ -275,10 +274,9 @@ impl MCPClientService {
                 Ok(t) => t,
                 Err(e) => {
                     let err_msg = format!(
-                        "Failed to create stdio transport for command '{}' with args {:?}: {}",
-                        command, args, e
+                        "Failed to create stdio transport for command '{command}' with args {args:?}: {e}"
                     );
-                    eprintln!("{}", err_msg);
+                    eprintln!("{err_msg}");
                     return Err(AppError::Generic(err_msg));
                 }
             };
@@ -288,8 +286,8 @@ impl MCPClientService {
 
         // Start the client
         if let Err(e) = client.clone().start().await {
-            let err_msg = format!("Failed to start MCP client for {}: {}", url, e);
-            eprintln!("{}", err_msg);
+            let err_msg = format!("Failed to start MCP client for {url}: {e}");
+            eprintln!("{err_msg}");
             return Err(AppError::Generic(err_msg));
         }
 
@@ -324,7 +322,7 @@ impl MCPClientService {
                     url.clone(),
                     e
                 );
-                eprintln!("{}", err_msg);
+                eprintln!("{err_msg}");
                 return Err(AppError::Generic(err_msg));
             }
         };
@@ -393,7 +391,7 @@ impl MCPClientService {
                     url.clone(),
                     e
                 );
-                eprintln!("{}", err_msg);
+                eprintln!("{err_msg}");
                 return Err(AppError::Generic(err_msg));
             }
         };

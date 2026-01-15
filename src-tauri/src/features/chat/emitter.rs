@@ -8,7 +8,7 @@ pub struct ChatEmitter {
 }
 
 impl ChatEmitter {
-    pub fn new(app: AppHandle) -> Self {
+    pub const fn new(app: AppHandle) -> Self {
         Self { app }
     }
 

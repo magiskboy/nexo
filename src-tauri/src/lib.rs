@@ -76,13 +76,13 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 // Maximize first
                 if let Err(e) = window.maximize() {
-                    eprintln!("Failed to maximize window: {}", e);
+                    eprintln!("Failed to maximize window: {e}");
                 }
                 // On macOS, ensure window is at position (0, 0) to remove any gap
                 #[cfg(target_os = "macos")]
                 {
                     // Set position to (0, 0) after a short delay to ensure maximize completes
-                    let window_clone = window.clone();
+                    let window_clone = window;
                     std::thread::spawn(move || {
                         std::thread::sleep(std::time::Duration::from_millis(100));
                         if let Err(e) =
@@ -91,7 +91,7 @@ pub fn run() {
                                 y: 0,
                             }))
                         {
-                            eprintln!("Failed to set window position: {}", e);
+                            eprintln!("Failed to set window position: {e}");
                         }
                     });
                 }

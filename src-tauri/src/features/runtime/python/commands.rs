@@ -51,8 +51,7 @@ pub async fn install_python_runtime(
     // Verify version exists in config
     if !config.addons.python.versions.contains(&version) {
         return Err(AppError::Python(format!(
-            "Version {} not found in config",
-            version
+            "Version {version} not found in config"
         )));
     }
 

@@ -1,7 +1,7 @@
 use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage};
-use crate::models::llm_types::*;
+use crate::models::llm_types::{LLMModel, LLMChatResponse, TokenUsage, ToolCall, InlineData, ToolCallFunction, LLMChatRequest, ChatMessage, UserContent, ContentPart, AssistantContent};
 use async_trait::async_trait;
 use base64::Engine as _;
 use futures::StreamExt;
@@ -16,7 +16,7 @@ pub struct GoogleProvider {
 }
 
 impl GoogleProvider {
-    pub fn new(client: Arc<Client>) -> Self {
+    pub const fn new(client: Arc<Client>) -> Self {
         Self { client }
     }
 
@@ -59,8 +59,7 @@ impl GoogleProvider {
         let upload_url = format!("{}/files", upload_url.trim_end_matches('/'));
 
         eprintln!(
-            "Uploading file to Google File API: {} (size: {} bytes, mime: {})",
-            upload_url, num_bytes, mime_type
+            "Uploading file to Google File API: {upload_url} (size: {num_bytes} bytes, mime: {mime_type})"
         );
 
         // Step 2: Initial resumable request
@@ -81,7 +80,7 @@ impl GoogleProvider {
             .await
             .map_err(|e| {
                 let err_msg = format!("Failed to initiate upload: {e}");
-                eprintln!("{}", err_msg);
+                eprintln!("{err_msg}");
                 AppError::Generic(err_msg)
             })?;
 
@@ -92,10 +91,9 @@ impl GoogleProvider {
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let err_msg = format!(
-                "Failed to initiate upload (status {}): {}",
-                status, error_text
+                "Failed to initiate upload (status {status}): {error_text}"
             );
-            eprintln!("{}", err_msg);
+            eprintln!("{err_msg}");
             return Err(AppError::Generic(err_msg));
         }
 
@@ -106,12 +104,12 @@ impl GoogleProvider {
             .and_then(|h| h.to_str().ok())
             .ok_or_else(|| {
                 let err_msg = "No upload URL in response headers".to_string();
-                eprintln!("{}", err_msg);
+                eprintln!("{err_msg}");
                 AppError::Generic(err_msg)
             })?
             .to_string();
 
-        eprintln!("Got upload session URL: {}", upload_session_url);
+        eprintln!("Got upload session URL: {upload_session_url}");
 
         // Step 3: Upload the actual bytes
         let upload_response = client
@@ -124,7 +122,7 @@ impl GoogleProvider {
             .await
             .map_err(|e| {
                 let err_msg = format!("Failed to upload file bytes: {e}");
-                eprintln!("{}", err_msg);
+                eprintln!("{err_msg}");
                 AppError::Generic(err_msg)
             })?;
 
@@ -135,17 +133,16 @@ impl GoogleProvider {
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let err_msg = format!(
-                "Failed to upload file bytes (status {}): {}",
-                status, error_text
+                "Failed to upload file bytes (status {status}): {error_text}"
             );
-            eprintln!("{}", err_msg);
+            eprintln!("{err_msg}");
             return Err(AppError::Generic(err_msg));
         }
 
         // Parse response to get file URI and name
         let response_json: serde_json::Value = upload_response.json().await.map_err(|e| {
             let err_msg = format!("Failed to parse upload response: {e}");
-            eprintln!("{}", err_msg);
+            eprintln!("{err_msg}");
             AppError::Generic(err_msg)
         })?;
 
@@ -159,8 +156,8 @@ impl GoogleProvider {
             .and_then(|f| f.get("uri"))
             .and_then(|u| u.as_str())
             .ok_or_else(|| {
-                let err_msg = format!("No file URI in response: {:?}", response_json);
-                eprintln!("{}", err_msg);
+                let err_msg = format!("No file URI in response: {response_json:?}");
+                eprintln!("{err_msg}");
                 AppError::Generic(err_msg)
             })?
             .to_string();
@@ -170,15 +167,14 @@ impl GoogleProvider {
             .and_then(|f| f.get("name"))
             .and_then(|n| n.as_str())
             .ok_or_else(|| {
-                let err_msg = format!("No file name in response: {:?}", response_json);
-                eprintln!("{}", err_msg);
+                let err_msg = format!("No file name in response: {response_json:?}");
+                eprintln!("{err_msg}");
                 AppError::Generic(err_msg)
             })?
             .to_string();
 
         eprintln!(
-            "Successfully uploaded file: {} (URI: {})",
-            file_name, file_uri
+            "Successfully uploaded file: {file_name} (URI: {file_uri})"
         );
         Ok((file_uri, file_name))
     }
@@ -367,11 +363,11 @@ impl GoogleProvider {
 
         while let Some(item) = tokio::select! {
             next_item = stream.next() => next_item,
-            _ = async {
+            () = async {
                 if let Some(ref mut rx) = cancellation_rx {
                     let _ = rx.recv().await;
                 }
-                futures::future::pending::<()>().await
+                futures::future::pending::<()>().await;
             }, if cancellation_rx.is_some() => {
                 message_emitter.emit_message_error(
                     chat_id.clone(),
@@ -427,7 +423,7 @@ impl GoogleProvider {
                                             // Google API marks thought parts with "thought": true
                                             let is_thought = part
                                                 .get("thought")
-                                                .and_then(|t| t.as_bool())
+                                                .and_then(serde_json::Value::as_bool)
                                                 .unwrap_or(false);
 
                                             if let Some(text) =
@@ -517,15 +513,15 @@ impl GoogleProvider {
                             final_usage = Some(TokenUsage {
                                 prompt_tokens: usage
                                     .get("promptTokenCount")
-                                    .and_then(|v| v.as_u64())
+                                    .and_then(serde_json::Value::as_u64)
                                     .map(|v| v as u32),
                                 completion_tokens: usage
                                     .get("candidatesTokenCount")
-                                    .and_then(|v| v.as_u64())
+                                    .and_then(serde_json::Value::as_u64)
                                     .map(|v| v as u32),
                                 total_tokens: usage
                                     .get("totalTokenCount")
-                                    .and_then(|v| v.as_u64())
+                                    .and_then(serde_json::Value::as_u64)
                                     .map(|v| v as u32),
                             });
                         }
@@ -624,7 +620,7 @@ impl GoogleProvider {
                             // Check if this part is a thought summary
                             let is_thought = part
                                 .get("thought")
-                                .and_then(|t| t.as_bool())
+                                .and_then(serde_json::Value::as_bool)
                                 .unwrap_or(false);
 
                             if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
@@ -679,15 +675,15 @@ impl GoogleProvider {
         let usage = json.get("usageMetadata").map(|u| TokenUsage {
             prompt_tokens: u
                 .get("promptTokenCount")
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
                 .map(|v| v as u32),
             completion_tokens: u
                 .get("candidatesTokenCount")
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
                 .map(|v| v as u32),
             total_tokens: u
                 .get("totalTokenCount")
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
                 .map(|v| v as u32),
         });
 
@@ -752,14 +748,12 @@ impl LLMProvider for GoogleProvider {
                                     let supports_generate = m
                                         .get("supportedGenerationMethods")
                                         .and_then(|v| v.as_array())
-                                        .map(|methods| {
+                                        .is_some_and(|methods| {
                                             methods.iter().any(|method| {
                                                 method
-                                                    .as_str()
-                                                    .map_or(false, |s| s == "generateContent")
+                                                    .as_str() == Some("generateContent")
                                             })
-                                        })
-                                        .unwrap_or(false); // If field missing, assume false or check docs? Docs say it's there.
+                                        }); // If field missing, assume false or check docs? Docs say it's there.
 
                                     if !supports_generate {
                                         return None;

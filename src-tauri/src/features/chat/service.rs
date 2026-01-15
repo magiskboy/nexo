@@ -7,7 +7,7 @@ use crate::features::message::{Message, MessageEmitter, MessageService};
 use crate::features::tool::service::ToolService;
 use crate::features::usage::UsageService;
 use crate::features::workspace::settings::{WorkspaceSettings, WorkspaceSettingsService};
-use crate::models::llm_types::*;
+use crate::models::llm_types::{ChatCompletionTool, ToolChoice, LLMChatRequest, LLMChatResponse, ChatMessage, AssistantContent, UserContent, ContentPart, ImageUrl, FileUrl};
 use crate::services::LLMService;
 use base64::{engine::general_purpose, Engine as _};
 use rust_mcp_sdk::{schema::CallToolRequestParams, McpClient};
@@ -106,7 +106,7 @@ impl ChatService {
         // 3. Decode base64
         let bytes = general_purpose::STANDARD
             .decode(data)
-            .map_err(|e| AppError::Validation(format!("Failed to decode base64 file: {}", e)))?;
+            .map_err(|e| AppError::Validation(format!("Failed to decode base64 file: {e}")))?;
 
         // 4. Determine path
         let app_data_dir = app
@@ -117,7 +117,7 @@ impl ChatService {
 
         if !files_dir.exists() {
             fs::create_dir_all(&files_dir).map_err(|e| {
-                AppError::Generic(format!("Failed to create files directory: {}", e))
+                AppError::Generic(format!("Failed to create files directory: {e}"))
             })?;
         }
 
@@ -126,7 +126,7 @@ impl ChatService {
 
         // 5. Write to disk
         fs::write(&file_path, bytes)
-            .map_err(|e| AppError::Generic(format!("Failed to write file: {}", e)))?;
+            .map_err(|e| AppError::Generic(format!("Failed to write file: {e}")))?;
 
         Ok(file_path.to_string_lossy().to_string())
     }
@@ -165,7 +165,7 @@ impl ChatService {
             let path = PathBuf::from(path_or_data);
             if path.exists() {
                 let bytes = fs::read(&path)
-                    .map_err(|e| AppError::Generic(format!("Failed to read file: {}", e)))?;
+                    .map_err(|e| AppError::Generic(format!("Failed to read file: {e}")))?;
                 let encoded = general_purpose::STANDARD.encode(&bytes);
 
                 // Guess mime type from extension
@@ -196,7 +196,7 @@ impl ChatService {
                     _ => "application/octet-stream",
                 };
                 Ok((
-                    format!("data:{};base64,{}", mime, encoded),
+                    format!("data:{mime};base64,{encoded}"),
                     mime.to_string(),
                 ))
             } else {
@@ -364,7 +364,7 @@ impl ChatService {
         // Track chat message operation
         crate::lib::sentry_helpers::add_breadcrumb(
             "chat",
-            format!("Sending message to chat {}", chat_id),
+            format!("Sending message to chat {chat_id}"),
             sentry::Level::Info,
         );
 
@@ -420,10 +420,10 @@ impl ChatService {
         let user_message_id = uuid::Uuid::new_v4().to_string();
 
         let metadata = if let Some(file_list) = &processed_files {
-            if !file_list.is_empty() {
-                Some(serde_json::json!({ "files": file_list }).to_string())
-            } else {
+            if file_list.is_empty() {
                 None
+            } else {
+                Some(serde_json::json!({ "files": file_list }).to_string())
             }
         } else {
             None
@@ -489,7 +489,7 @@ impl ChatService {
 
                 // 3. Spawn Task to run Agent
                 let agent_prompt_owner = agent_prompt.to_string();
-                let specialist_chat_id = specialist_chat.id.clone();
+                let specialist_chat_id = specialist_chat.id;
                 let parent_chat_id = chat_id.clone(); // Main chat ID for emitting events
                 let app_handle = app.clone();
                 let app_handle_for_emit = app.clone(); // Clone for emitting events later
@@ -512,7 +512,7 @@ impl ChatService {
                         .await;
 
                     if let Err(e) = &result {
-                        eprintln!("Agent request failed: {}", e);
+                        eprintln!("Agent request failed: {e}");
                     }
 
                     let status = if result.is_ok() {
@@ -535,7 +535,7 @@ impl ChatService {
                         .update_metadata(status_message_id.clone(), Some(metadata.to_string()));
 
                     if let Err(e) = update_result {
-                        eprintln!("Failed to update agent status: {}", e);
+                        eprintln!("Failed to update agent status: {e}");
                     } else {
                         // Emit event to notify frontend that metadata was updated
                         let message_emitter = MessageEmitter::new(app_handle_for_emit.clone());
@@ -543,7 +543,7 @@ impl ChatService {
                             parent_chat_id.clone(),
                             status_message_id.clone(),
                         ) {
-                            eprintln!("Failed to emit metadata-updated event: {}", e);
+                            eprintln!("Failed to emit metadata-updated event: {e}");
                         }
                     }
                 });
@@ -560,7 +560,7 @@ impl ChatService {
             assistant_message_id.clone(),
             chat_id.clone(),
             "assistant".to_string(),
-            "".to_string(),
+            String::new(),
             Some(assistant_timestamp),
             None,
             None,
@@ -642,8 +642,7 @@ impl ChatService {
         // 10. Determine if streaming is enabled
         let stream_enabled = workspace_settings
             .stream_enabled
-            .map(|v| v == 1)
-            .unwrap_or(true); // Default to true
+            .map_or(true, |v| v == 1); // Default to true
 
         let tool_choice: Option<ToolChoice> = None; // Use "auto" by default
 
@@ -717,7 +716,7 @@ impl ChatService {
                 r_is_stream,
                 "success".to_string(),
             ) {
-                eprintln!("Failed to record usage: {}", e);
+                eprintln!("Failed to record usage: {e}");
             }
         });
 
@@ -766,7 +765,7 @@ impl ChatService {
                 if let Err(e) = message_emitter
                     .emit_message_metadata_updated(chat_id_clone, assistant_message_id_clone)
                 {
-                    eprintln!("Failed to emit metadata-updated event: {}", e);
+                    eprintln!("Failed to emit metadata-updated event: {e}");
                 }
             });
         }
@@ -935,8 +934,7 @@ impl ChatService {
 
         let stream_enabled = workspace_settings
             .stream_enabled
-            .map(|v| v == 1)
-            .unwrap_or(true);
+            .map_or(true, |v| v == 1);
 
         // Get tools
         // Get tools if not provided
@@ -990,7 +988,7 @@ impl ChatService {
                     new_assistant_message_id.clone(),
                     chat_id.clone(),
                     "assistant".to_string(),
-                    "".to_string(),
+                    String::new(),
                     Some(timestamp),
                     None,
                     None,
@@ -1075,7 +1073,7 @@ impl ChatService {
                         r_is_stream,
                         "success".to_string(),
                     ) {
-                        eprintln!("Failed to record usage: {}", e);
+                        eprintln!("Failed to record usage: {e}");
                     }
                 });
 
@@ -1128,8 +1126,7 @@ impl ChatService {
                         Err(e) => {
                             // Log error but continue with empty results
                             eprintln!(
-                                "Tool execution failed in agent loop (chat_id: {}): {}",
-                                chat_id, e
+                                "Tool execution failed in agent loop (chat_id: {chat_id}): {e}"
                             );
                             // Emit error event to notify frontend
                             let tool_emitter = ToolEmitter::new(app.clone());
@@ -1138,7 +1135,7 @@ impl ChatService {
                                 assistant_message_id.clone(),
                                 "agent_loop_error".to_string(),
                                 "tool_execution".to_string(),
-                                format!("Tool execution failed: {}", e),
+                                format!("Tool execution failed: {e}"),
                             );
                             // Return empty results to continue agent loop
                             Vec::new()
@@ -1317,7 +1314,7 @@ impl ChatService {
                     }
                 }
             } else if let Err(e) = result {
-                eprintln!("Error generating chat title for chat_id {}: {}", chat_id, e);
+                eprintln!("Error generating chat title for chat_id {chat_id}: {e}");
             }
         });
     }
@@ -1345,7 +1342,7 @@ impl ChatService {
         let require_permission = tool_calls.iter().any(|tc| {
             match tool_permission_config
                 .get(&tc.function.name)
-                .map(|s| s.as_str())
+                .map(std::string::String::as_str)
             {
                 Some("require") => true,
                 _ => false,
@@ -1535,7 +1532,7 @@ impl ChatService {
                         Ok(serde_json::Value::Object(map)) => Some(map),
                         Ok(_) => Some(serde_json::Map::new()),
                         Err(e) => {
-                            return Err(AppError::Validation(format!("Invalid arguments: {}", e)));
+                            return Err(AppError::Validation(format!("Invalid arguments: {e}")));
                         }
                     }
                 };
@@ -1596,12 +1593,11 @@ impl ChatService {
                                         }
                                     }
                                     Err(e) => Err(AppError::Generic(format!(
-                                        "Failed to serialize tool response: {}",
-                                        e
+                                        "Failed to serialize tool response: {e}"
                                     ))),
                                 }
                             }
-                            Ok(Err(e)) => Err(AppError::Generic(format!("Tool execution failed: {}", e))),
+                            Ok(Err(e)) => Err(AppError::Generic(format!("Tool execution failed: {e}"))),
                             Err(_) => Err(AppError::Generic(
                                 "Tool execution timed out after 60 seconds".to_string(),
                             )),
@@ -1618,7 +1614,7 @@ impl ChatService {
                     Some(id) => id,
                     None => {
                         // Return error instead of using ?, so it gets handled in match below
-                        &"".to_string() // Dummy value, will be caught below
+                        &String::new() // Dummy value, will be caught below
                     }
                 };
 
@@ -1827,7 +1823,7 @@ impl ChatService {
         if let Some(system_message) = system_message {
             if !system_message.trim().is_empty() {
                 api_messages.push(ChatMessage::System {
-                    content: system_message.clone(),
+                    content: system_message,
                 });
             }
         }
@@ -1851,7 +1847,7 @@ impl ChatService {
                                 Some(
                                     file_array
                                         .iter()
-                                        .filter_map(|f| f.as_str().map(|s| s.to_string()))
+                                        .filter_map(|f| f.as_str().map(std::string::ToString::to_string))
                                         .collect::<Vec<String>>(),
                                 )
                             }
@@ -1861,7 +1857,7 @@ impl ChatService {
                             {
                                 Some(
                                     imgs.iter()
-                                        .filter_map(|i| i.as_str().map(|s| s.to_string()))
+                                        .filter_map(|i| i.as_str().map(std::string::ToString::to_string))
                                         .collect::<Vec<String>>(),
                                 )
                             } else {

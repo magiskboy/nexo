@@ -1,7 +1,10 @@
 use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage, ToolEmitter};
-use crate::models::llm_types::*;
+use crate::models::llm_types::{
+    AssistantContent, ChatMessage, ContentPart, LLMChatRequest, LLMChatResponse, LLMModel,
+    TokenUsage, ToolCall, UserContent,
+};
 use async_trait::async_trait;
 use futures::StreamExt;
 use reqwest::Client;
@@ -14,13 +17,13 @@ pub struct OpenAIProvider {
 }
 
 impl OpenAIProvider {
-    pub fn new(client: Arc<Client>) -> Self {
+    pub const fn new(client: Arc<Client>) -> Self {
         Self { client }
     }
 
     fn check_model_capabilities(model_id: &str) -> (bool, bool, bool) {
         // Remove provider prefix if exists (e.g., "openai/gpt-4" -> "gpt-4")
-        let clean_id = model_id.split('/').last().unwrap_or(model_id);
+        let clean_id = model_id.split('/').next_back().unwrap_or(model_id);
         let model_lower = clean_id.to_lowercase();
 
         // Image Generation Support:
@@ -201,15 +204,15 @@ impl OpenAIProvider {
         let mut tool_calls: Vec<ToolCall> = Vec::new();
         let mut finish_reason: Option<String> = None;
         let mut final_usage: Option<TokenUsage> = None;
-        let mut tool_calls_emitted = false;
+        let tool_calls_emitted = false;
 
         while let Some(item) = tokio::select! {
             next_item = stream.next() => next_item,
-            _ = async {
+            () = async {
                 if let Some(ref mut rx) = cancellation_rx {
                     let _ = rx.recv().await;
                 }
-                futures::future::pending::<()>().await
+                futures::future::pending::<()>().await;
             }, if cancellation_rx.is_some() => {
                 message_emitter.emit_message_error(
                     chat_id.clone(),
@@ -325,15 +328,15 @@ impl OpenAIProvider {
                                     final_usage = u.as_object().map(|obj| TokenUsage {
                                         prompt_tokens: obj
                                             .get("prompt_tokens")
-                                            .and_then(|v| v.as_u64())
+                                            .and_then(serde_json::Value::as_u64)
                                             .map(|v| v as u32),
                                         completion_tokens: obj
                                             .get("completion_tokens")
-                                            .and_then(|v| v.as_u64())
+                                            .and_then(serde_json::Value::as_u64)
                                             .map(|v| v as u32),
                                         total_tokens: obj
                                             .get("total_tokens")
-                                            .and_then(|v| v.as_u64())
+                                            .and_then(serde_json::Value::as_u64)
                                             .map(|v| v as u32),
                                     });
                                 }
@@ -347,15 +350,15 @@ impl OpenAIProvider {
                                     final_usage = u.as_object().map(|obj| TokenUsage {
                                         prompt_tokens: obj
                                             .get("prompt_tokens")
-                                            .and_then(|v| v.as_u64())
+                                            .and_then(serde_json::Value::as_u64)
                                             .map(|v| v as u32),
                                         completion_tokens: obj
                                             .get("completion_tokens")
-                                            .and_then(|v| v.as_u64())
+                                            .and_then(serde_json::Value::as_u64)
                                             .map(|v| v as u32),
                                         total_tokens: obj
                                             .get("total_tokens")
-                                            .and_then(|v| v.as_u64())
+                                            .and_then(serde_json::Value::as_u64)
                                             .map(|v| v as u32),
                                     });
                                 }
@@ -396,7 +399,7 @@ impl OpenAIProvider {
                     }
                     Err(e) => {
                         if !event_data_str.is_empty() {
-                            eprintln!("Failed to parse SSE data: {} - Data: {}", e, event_data_str);
+                            eprintln!("Failed to parse SSE data: {e} - Data: {event_data_str}");
                         }
                     }
                 }
@@ -493,11 +496,11 @@ impl LLMProvider for OpenAIProvider {
             Some(LLMModel {
                 id,
                 name,
-                created: item.get("created").and_then(|v| v.as_u64()),
+                created: item.get("created").and_then(serde_json::Value::as_u64),
                 owned_by: item
                     .get("owned_by")
                     .and_then(|v| v.as_str())
-                    .map(|s| s.to_string()),
+                    .map(std::string::ToString::to_string),
                 supports_tools,
                 supports_thinking,
                 supports_image_generation,
@@ -511,7 +514,7 @@ impl LLMProvider for OpenAIProvider {
             // Fallback just in case
             return Err(AppError::Llm(format!(
                 "Unexpected response format. Expected object with 'data' field. Got: {}",
-                json.to_string()
+                json
             )));
         };
 

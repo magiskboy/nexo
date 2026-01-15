@@ -28,7 +28,7 @@ impl WorkspaceSettingsService {
             .unwrap()
             .as_secs() as i64;
 
-        let stream_enabled_i64: Option<i64> = stream_enabled.map(|v| if v { 1 } else { 0 });
+        let stream_enabled_i64: Option<i64> = stream_enabled.map(|v| i64::from(v));
 
         let settings = WorkspaceSettings {
             workspace_id,

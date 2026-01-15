@@ -32,8 +32,8 @@ impl UsageService {
 
         for (key, input_price, output_price) in price_map {
             if model_lower.contains(key) {
-                let input_cost = (input_tokens as f64 / 1_000_000.0) * input_price;
-                let output_cost = (output_tokens as f64 / 1_000_000.0) * output_price;
+                let input_cost = (f64::from(input_tokens) / 1_000_000.0) * input_price;
+                let output_cost = (f64::from(output_tokens) / 1_000_000.0) * output_price;
                 return input_cost + output_cost;
             }
         }
@@ -72,7 +72,7 @@ impl UsageService {
             chat_id,
             message_id,
             provider,
-            model: model.clone(),
+            model,
             input_tokens,
             output_tokens,
             total_tokens,

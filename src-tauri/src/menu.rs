@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Emitter};
 
 pub fn create_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
-    use tauri::menu::*;
+    use tauri::menu::{MenuItemBuilder, SubmenuBuilder, Submenu, PredefinedMenuItem, MenuBuilder};
 
     // File menu items
     let new_chat = MenuItemBuilder::with_id("new_chat", "New Chat")

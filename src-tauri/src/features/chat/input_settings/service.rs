@@ -23,11 +23,11 @@ impl ChatInputSettingsService {
             .unwrap()
             .as_secs() as i64;
 
-        let stream_enabled_i64: i64 = if stream_enabled { 1 } else { 0 };
+        let stream_enabled_i64: i64 = i64::from(stream_enabled);
 
         let settings = ChatInputSettings {
             workspace_id: workspace_id.to_string(),
-            selected_model: selected_model.map(|s| s.to_string()),
+            selected_model: selected_model.map(std::string::ToString::to_string),
             stream_enabled: stream_enabled_i64,
             created_at: now,
             updated_at: now,

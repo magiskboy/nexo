@@ -13,14 +13,14 @@ pub fn get_db_path(app: &tauri::AppHandle) -> Result<PathBuf> {
         }
     };
     match std::fs::create_dir_all(&app_data_dir) {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(e) => {
             return Err(rusqlite::Error::SqliteFailure(
                 rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_IOERR),
                 Some(format!("Failed to create directory: {e}")),
             ))
         }
-    };
+    }
     Ok(app_data_dir.join("database.db"))
 }
 

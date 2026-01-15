@@ -72,7 +72,7 @@ impl NodeRuntime {
         let version_dir = if full_version.starts_with('v') {
             full_version.to_string()
         } else {
-            format!("v{}", full_version)
+            format!("v{full_version}")
         };
 
         let installation_dir = fnm_dir
@@ -82,8 +82,7 @@ impl NodeRuntime {
 
         if !installation_dir.exists() {
             return Err(AppError::Node(format!(
-                "Node {} not installed (dir not found)",
-                full_version
+                "Node {full_version} not installed (dir not found)"
             )));
         }
 
@@ -150,8 +149,7 @@ impl NodeRuntime {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
             return Err(AppError::Node(format!(
-                "FNM install failed: {}\nOutput: {}",
-                stderr, stdout
+                "FNM install failed: {stderr}\nOutput: {stdout}"
             )));
         }
 
@@ -178,7 +176,7 @@ impl NodeRuntime {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(AppError::Node(format!("FNM uninstall failed: {}", stderr)));
+            return Err(AppError::Node(format!("FNM uninstall failed: {stderr}")));
         }
 
         Ok(())

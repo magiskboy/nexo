@@ -41,7 +41,7 @@ pub struct AgentManager {
 }
 
 impl AgentManager {
-    pub fn new(app_data_dir: PathBuf, uv_path: PathBuf) -> Self {
+    pub const fn new(app_data_dir: PathBuf, uv_path: PathBuf) -> Self {
         Self {
             base_dir: app_data_dir,
             uv_path,
@@ -66,7 +66,7 @@ impl AgentManager {
         std::io::copy(&mut file, &mut hasher).context("Failed to read zip for hashing")?;
         let hash = hex::encode(hasher.finalize());
 
-        let extract_dir = self.tmp_dir().join(format!("{}_extracted", hash));
+        let extract_dir = self.tmp_dir().join(format!("{hash}_extracted"));
 
         // 2. Extract
         common::extract_zip(zip_path, &extract_dir)?;
@@ -82,7 +82,7 @@ impl AgentManager {
 
         let info = InstallInfo {
             source: AgentSource::Local {
-                path: zip_path.to_str().map(|s| s.to_string()),
+                path: zip_path.to_str().map(std::string::ToString::to_string),
             },
             installed_at: now,
             updated_at: now,
@@ -103,7 +103,7 @@ impl AgentManager {
         // Safe repo name for directory
         let repo_name = repo_url
             .split('/')
-            .last()
+            .next_back()
             .unwrap_or("repo")
             .replace(".git", "");
         let clone_dir = self.tmp_dir().join("git").join(&repo_name);
@@ -138,13 +138,13 @@ impl AgentManager {
             .unwrap_or_default()
             .as_secs() as i64;
 
-        let installed_at = existing_info.map(|i| i.installed_at).unwrap_or(now);
+        let installed_at = existing_info.map_or(now, |i| i.installed_at);
 
         let info = InstallInfo {
             source: AgentSource::Git {
                 url: repo_url.to_string(),
-                revision: revision.map(|s| s.to_string()),
-                sub_path: sub_path.map(|s| s.to_string()),
+                revision: revision.map(std::string::ToString::to_string),
+                sub_path: sub_path.map(std::string::ToString::to_string),
             },
             installed_at,
             updated_at: now,
@@ -335,7 +335,7 @@ impl AgentManager {
 
         // 1. Check if client exists
         let client_state = app.state::<MCPClientState>();
-        let client_key = format!("agent:{}", agent_id);
+        let client_key = format!("agent:{agent_id}");
 
         {
             let clients = client_state.active_clients.lock().await;
@@ -348,7 +348,7 @@ impl AgentManager {
         // Find agent path
         let agent_path = self.agents_dir().join(agent_id).join("current");
         if !agent_path.exists() {
-            anyhow::bail!("Agent not found: {}", agent_id);
+            anyhow::bail!("Agent not found: {agent_id}");
         }
 
         // Read Manifest
@@ -398,12 +398,12 @@ impl AgentManager {
     pub fn get_agent_instructions(&self, agent_id: &str) -> Result<String> {
         let agent_path = self.agents_dir().join(agent_id).join("current");
         if !agent_path.exists() {
-            anyhow::bail!("Agent not found: {}", agent_id);
+            anyhow::bail!("Agent not found: {agent_id}");
         }
 
         let persona_path = agent_path.join("instructions/persona.md");
         if !persona_path.exists() {
-            anyhow::bail!("Persona file not found for agent: {}", agent_id);
+            anyhow::bail!("Persona file not found for agent: {agent_id}");
         }
 
         let content = std::fs::read_to_string(persona_path)?;
@@ -425,7 +425,7 @@ impl AgentManager {
         // 2. Get tools by creating a temporary client
         let agent_path = self.agents_dir().join(agent_id).join("current");
         if !agent_path.exists() {
-            anyhow::bail!("Agent not found: {}", agent_id);
+            anyhow::bail!("Agent not found: {agent_id}");
         }
 
         let entrypoint = "tools/main.py";
@@ -451,13 +451,13 @@ impl AgentManager {
             None,
         )
         .await
-        .map_err(|e| anyhow::anyhow!("Failed to create agent client: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to create agent client: {e}"))?;
 
         // List tools
         let tools_result = client
             .list_tools(None)
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to list tools: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to list tools: {e}"))?;
 
         // Convert to MCPTool format
         let tools: Vec<MCPTool> = tools_result
@@ -477,7 +477,7 @@ impl AgentManager {
         client
             .shut_down()
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to close client: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to close client: {e}"))?;
 
         Ok((tools, instructions))
     }
@@ -487,7 +487,7 @@ impl AgentManager {
         let agent_root = self.agents_dir().join(agent_id);
 
         if !agent_root.exists() {
-            anyhow::bail!("Agent not found: {}", agent_id);
+            anyhow::bail!("Agent not found: {agent_id}");
         }
 
         // Remove the entire agent directory (includes all versions and the current symlink)

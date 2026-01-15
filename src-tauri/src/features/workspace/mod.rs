@@ -8,7 +8,7 @@ pub struct WorkspaceFeature {
 }
 
 impl WorkspaceFeature {
-    pub fn new(
+    pub const fn new(
         service: Arc<management::WorkspaceService>,
         settings_service: Arc<settings::WorkspaceSettingsService>,
     ) -> Self {

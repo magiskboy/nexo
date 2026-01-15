@@ -16,7 +16,7 @@ pub struct SqliteUsageRepository {
 }
 
 impl SqliteUsageRepository {
-    pub fn new(app: Arc<AppHandle>) -> Self {
+    pub const fn new(app: Arc<AppHandle>) -> Self {
         Self { app }
     }
 }
@@ -44,7 +44,7 @@ impl UsageRepository for SqliteUsageRepository {
                 stat.latency_ms,
                 stat.cost,
                 stat.timestamp,
-                stat.is_stream as i32,
+                i32::from(stat.is_stream),
                 stat.status,
                 stat.request_type
             ],
@@ -79,7 +79,7 @@ impl UsageRepository for SqliteUsageRepository {
 
         let mut stmt = conn.prepare(&query)?;
 
-        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(std::convert::AsRef::as_ref).collect();
 
         let rows = stmt.query_map(params_ref.as_slice(), |row| {
             Ok(UsageStat {
@@ -135,7 +135,7 @@ impl UsageRepository for SqliteUsageRepository {
             params.push(Box::new(end));
         }
 
-        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(std::convert::AsRef::as_ref).collect();
 
         conn.query_row(&query, params_ref.as_slice(), |row| {
             Ok(UsageSummary {
@@ -160,13 +160,12 @@ impl UsageRepository for SqliteUsageRepository {
 
         let mut query = format!(
             "SELECT 
-                (timestamp / {0}) * {0} as bucket,
+                (timestamp / {interval_seconds}) * {interval_seconds} as bucket,
                 COUNT(*) as requests,
                 COALESCE(SUM(input_tokens), 0) as input,
                 COALESCE(SUM(output_tokens), 0) as output,
                 COALESCE(SUM(cost), 0.0) as cost
-             FROM usage_stats WHERE 1=1",
-            interval_seconds
+             FROM usage_stats WHERE 1=1"
         );
 
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
@@ -186,7 +185,7 @@ impl UsageRepository for SqliteUsageRepository {
 
         query.push_str(" GROUP BY bucket ORDER BY bucket ASC");
 
-        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(std::convert::AsRef::as_ref).collect();
 
         let mut stmt = conn.prepare(&query)?;
         let rows = stmt.query_map(params_ref.as_slice(), |row| {

@@ -37,7 +37,7 @@ impl HubService {
                 self.update_cache(index.clone());
                 Ok(index)
             }
-            Err(e) => Err(AppError::Hub(format!("Failed to fetch hub index: {}", e))),
+            Err(e) => Err(AppError::Hub(format!("Failed to fetch hub index: {e}"))),
         }
     }
 
@@ -83,7 +83,7 @@ impl HubService {
     async fn fetch_remote_index(&self) -> Result<HubIndex, String> {
         let response = reqwest::get(HUB_INDEX_URL)
             .await
-            .map_err(|e| format!("HTTP request failed: {}", e))?;
+            .map_err(|e| format!("HTTP request failed: {e}"))?;
 
         if !response.status().is_success() {
             return Err(format!("HTTP {} error", response.status()));
@@ -92,9 +92,9 @@ impl HubService {
         let json_text = response
             .text()
             .await
-            .map_err(|e| format!("Failed to read response: {}", e))?;
+            .map_err(|e| format!("Failed to read response: {e}"))?;
 
-        serde_json::from_str(&json_text).map_err(|e| format!("Failed to parse JSON: {}", e))
+        serde_json::from_str(&json_text).map_err(|e| format!("Failed to parse JSON: {e}"))
     }
 
     /// Force refresh index from remote
@@ -103,7 +103,7 @@ impl HubService {
         let index = self
             .fetch_remote_index()
             .await
-            .map_err(|e| AppError::Hub(format!("Failed to refresh hub index: {}", e)))?;
+            .map_err(|e| AppError::Hub(format!("Failed to refresh hub index: {e}")))?;
         self.update_cache(index.clone());
         Ok(index)
     }

@@ -25,7 +25,7 @@ use crate::features::workspace::{
     WorkspaceFeature,
 };
 
-use crate::services::*;
+use crate::services::LLMService;
 use rusqlite::Connection;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -111,7 +111,7 @@ impl AppState {
 
         // Feature: Workspace
         let workspace_feature = Arc::new(WorkspaceFeature::new(
-            workspace_service.clone(),
+            workspace_service,
             workspace_settings_service.clone(),
         ));
 
@@ -132,9 +132,9 @@ impl AppState {
         ));
         let chat_service = Arc::new(ChatService::new(
             chat_repo,
-            llm_service.clone(),
+            llm_service,
             message_service.clone(),
-            workspace_settings_service.clone(),
+            workspace_settings_service,
             llm_connection_service.clone(),
             tool_service.clone(),
             usage_service.clone(),
@@ -152,7 +152,7 @@ impl AppState {
         ));
 
         // Start background refresh job (runs every 5 minutes)
-        mcp_tool_refresh_service.clone().start_background_refresh();
+        mcp_tool_refresh_service.start_background_refresh();
 
         Ok(Self {
             db_state,

@@ -8,7 +8,7 @@ pub struct AgentEmitter {
 }
 
 impl AgentEmitter {
-    pub fn new(app: AppHandle) -> Self {
+    pub const fn new(app: AppHandle) -> Self {
         Self { app }
     }
 

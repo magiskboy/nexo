@@ -15,7 +15,7 @@ pub struct ToolService {
 }
 
 impl ToolService {
-    pub fn new(
+    pub const fn new(
         app: AppHandle,
         mcp_connection_service: Arc<MCPConnectionService>,
         workspace_settings_service: Arc<WorkspaceSettingsService>,
@@ -27,8 +27,8 @@ impl ToolService {
         }
     }
 
-    /// Get MCP tools for a workspace and convert them to OpenAI format
-    /// Now reads from cached tools_json in SQLite instead of calling MCP server
+    /// Get MCP tools for a workspace and convert them to `OpenAI` format
+    /// Now reads from cached `tools_json` in `SQLite` instead of calling MCP server
     pub fn get_tools_for_workspace(
         &self,
         workspace_id: &str,
@@ -121,8 +121,7 @@ impl ToolService {
         crate::lib::sentry_helpers::add_breadcrumb(
             "mcp.tool",
             format!(
-                "Executing tool {} via connection {}",
-                tool_name, connection_id
+                "Executing tool {tool_name} via connection {connection_id}"
             ),
             sentry::Level::Info,
         );

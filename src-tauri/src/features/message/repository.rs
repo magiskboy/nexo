@@ -25,7 +25,7 @@ pub struct SqliteMessageRepository {
 }
 
 impl SqliteMessageRepository {
-    pub fn new(app: Arc<AppHandle>) -> Self {
+    pub const fn new(app: Arc<AppHandle>) -> Self {
         Self { app }
     }
 }

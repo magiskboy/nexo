@@ -24,7 +24,7 @@ pub struct Manifest {
 pub fn verify_agent_directory(path: &Path) -> Result<Manifest> {
     let manifest_path = path.join("manifest.yaml");
     if !manifest_path.exists() {
-        anyhow::bail!("manifest.yaml not found in {:?}", path);
+        anyhow::bail!("manifest.yaml not found in {path:?}");
     }
 
     let content = fs::read_to_string(&manifest_path).context("Failed to read manifest.yaml")?;
