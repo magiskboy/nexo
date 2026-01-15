@@ -59,6 +59,7 @@ const chatInputSlice = createSlice({
       state.attachedFiles = [];
       state.isThinkingEnabled = false;
       state.reasoningEffort = 'medium';
+      state.isLoading = false;
     },
     restoreChatInputSettings: (
       state,
