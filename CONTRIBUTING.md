@@ -20,7 +20,7 @@ Thank you for your interest in contributing to Nexo! We welcome contributions fr
 
 ### 3. Submitting Pull Requests (PRs)
 
-1.  **Fork** the repo and create your branch from `main`.
+1.  **Fork** the repo and create your branch from `main`. (Note: We do not use a `develop` branch. All PRs should target `main`.)
 2.  **Naming**: Use a descriptive branch name (e.g., `feature/new-sidebar`,`fix/memory-leak`).
 3.  **Code Style**:
     - Ensure your code passes `yarn lint` and `yarn format`.
