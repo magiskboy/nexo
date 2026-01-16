@@ -81,14 +81,14 @@ jobs:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'Nexo __VERSION__'
           releaseBody: |
-            ### Phiên bản mới v0.1.0-alpha.49 có gì mới?
+            ### Phiên bản mới v0.1.0-alpha.50 có gì mới?
 
             🌟 **Tính năng & Cải tiến nổi bật:**
-            - **Sửa lỗi Conflict Test**: Giải quyết vấn đề trùng lặp ID trong phần cài đặt thử nghiệm, đảm bảo hệ thống test hoạt động chính xác.
-            - **Cải thiện Accessibility**: Bổ sung nhãn hỗ trợ tiếp cận (Accessible Labels) cho các thành phần điều khiển, nâng cao trải nghiệm người dùng.
-            - **Tối ưu hóa Flow Editor**: Cấu trúc lại mã nguồn và cải thiện tích hợp với ReactFlow để chuẩn bị cho các tính năng kéo thả nâng cao.
+            - **Thiết kế lại UI Setup**: Làm mới hoàn toàn giao diện cài đặt lần đầu khởi chạy (First-Run Setup) với phong cách hiện đại, cao cấp và mượt mà hơn.
+            - **Mở rộng hỗ trợ LLM Provider**: Bổ sung đầy đủ các nhà cung cấp AI phổ biến (OpenAI, Claude, Gemini, Ollama, DeepSeek...) với cấu hình URL thông minh.
+            - **Cải thiện trải nghiệm khởi đầu**: Tối ưu hóa các bước cài đặt runtime (Python, Node.js) giúp người dùng mới dễ dàng bắt đầu với Nexo.
 
-            🚀 Hãy cập nhật ngay để trải nghiệm phiên bản mượt mà và ổn định hơn!
+            🚀 Hãy cập nhật ngay để trải nghiệm giao diện mới chuyên nghiệp và ổn định hơn!
           releaseDraft: false
           prerelease: true
           args: ${{ matrix.args }}
