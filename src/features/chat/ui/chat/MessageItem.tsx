@@ -20,6 +20,7 @@ import { parseMessageMentions } from './utils/mentionUtils';
 import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import { useAppDispatch } from '@/app/hooks';
 import { setImagePreviewOpen } from '@/features/ui/state/uiSlice';
+import { FLOW_NODES } from '@/constants/flow-nodes';
 import type { Message } from '../../types';
 
 export interface MessageItemProps {
@@ -308,6 +309,7 @@ export const MessageItem = memo(
                       <FlowEditorDialog
                         open={isFlowDialogOpen}
                         initialFlow={flowData}
+                        availableNodes={FLOW_NODES}
                         onClose={() => setIsFlowDialogOpen(false)}
                         readOnly={true}
                       />
