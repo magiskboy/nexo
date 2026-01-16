@@ -237,6 +237,8 @@
   "theme": "Giao diện",
   "title": "Cài đặt",
   "generalSetting": "Cài đặt chung",
+  "agents": "Agents",
+  "addons": "Add-ons",
   "tools": "tools",
   "toolsList": "Danh sách Tools ({{count}})",
   "type": "Type",

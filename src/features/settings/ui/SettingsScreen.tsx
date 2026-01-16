@@ -74,12 +74,12 @@ export function SettingsScreen() {
     },
     {
       id: 'agent',
-      label: 'Agent',
+      label: t('agents'),
       icon: <Bot className="size-4" />,
     },
     {
       id: 'addon',
-      label: 'Addon',
+      label: t('addons'),
       icon: <Package className="size-4" />,
     },
     {
@@ -251,16 +251,19 @@ export function SettingsScreen() {
                   section.id === 'llm' ? 'settings-llm-tab' : undefined
                 }
                 className={cn(
-                  'mb-2 w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all',
+                  'relative mb-1 w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all group',
                   'hover:bg-accent hover:text-accent-foreground',
                   selectedSection === section.id
-                    ? 'bg-accent text-accent-foreground shadow-sm'
+                    ? 'bg-accent/80 text-accent-foreground shadow-sm'
                     : 'text-muted-foreground'
                 )}
               >
+                {selectedSection === section.id && (
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary rounded-l-md" />
+                )}
                 <span
                   className={cn(
-                    'transition-transform',
+                    'transition-transform duration-200',
                     selectedSection === section.id && 'scale-110'
                   )}
                 >

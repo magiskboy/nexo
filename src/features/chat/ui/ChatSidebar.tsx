@@ -199,21 +199,6 @@ export function ChatSidebar() {
                     }}
                     onContextMenu={(e) => handleContextMenu(e, chat.id)}
                   >
-                    <div
-                      className={cn(
-                        'transition-transform shrink-0',
-                        selectedChatId === chat.id && 'scale-110'
-                      )}
-                    >
-                      <MessageSquare
-                        className={cn(
-                          'size-4',
-                          selectedChatId === chat.id
-                            ? 'text-primary'
-                            : 'text-muted-foreground'
-                        )}
-                      />
-                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <div
