@@ -85,15 +85,27 @@ vi.mock('@/ui/atoms/switch', () => ({
     checked: boolean;
     onCheckedChange: (checked: boolean) => void;
     id: string;
-  }) => (
-    <input
-      type="checkbox"
-      id={id}
-      data-testid="switch"
-      checked={checked}
-      onChange={(e) => onCheckedChange(e.target.checked)}
-    />
-  ),
+  }) => {
+    // Extract label from id (e.g., "show-usage-switch" -> "showUsage")
+    const label = id
+      .replace('-switch', '')
+      .split('-')
+      .map((word, index) =>
+        index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
+      )
+      .join('');
+
+    return (
+      <input
+        type="checkbox"
+        id={id}
+        data-testid="switch"
+        aria-label={label}
+        checked={checked}
+        onChange={(e) => onCheckedChange(e.target.checked)}
+      />
+    );
+  },
 }));
 
 vi.mock('@/ui/atoms/collapsible', () => ({
@@ -164,7 +176,7 @@ describe('AppSettings', () => {
   it('handles show usage toggle', async () => {
     render(<AppSettings />);
 
-    const switchElement = screen.getByTestId('switch');
+    const switchElement = screen.getByLabelText('showUsage');
     fireEvent.click(switchElement);
 
     expect(mockUpdateShowUsage).toHaveBeenCalled();

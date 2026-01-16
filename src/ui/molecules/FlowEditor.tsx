@@ -14,15 +14,6 @@ import {
   type OnSelectionChangeParams,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {
-  DndContext,
-  useDraggable,
-  useDroppable,
-  type DragEndEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
 import { Input } from '@/ui/atoms/input';
 import { Label } from '@/ui/atoms/label';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
@@ -53,58 +44,28 @@ const nodeTypes = {
   simple: SimpleNode,
 };
 
-// --- Draggable Node Item Component ---
-interface DraggableNodeItemProps {
+// --- Node Item Component ---
+interface NodeItemProps {
   node: FlowNodeType;
   readOnly: boolean;
   onDoubleClick: () => void;
 }
 
-const DraggableNodeItem = ({
-  node,
-  readOnly,
-  onDoubleClick,
-}: DraggableNodeItemProps) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `draggable-${node.type}-${node.label}`,
-    data: node,
-    disabled: readOnly,
-  });
-
+const NodeItem = ({ node, readOnly, onDoubleClick }: NodeItemProps) => {
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       className={cn(
         'p-3 border rounded-md bg-card shadow-sm transition-all select-none',
         readOnly
           ? 'cursor-not-allowed opacity-70'
-          : 'cursor-grab active:cursor-grabbing hover:bg-accent hover:border-primary/50',
-        isDragging && 'opacity-50'
+          : 'cursor-pointer hover:bg-accent hover:border-primary/50'
       )}
       onDoubleClick={onDoubleClick}
     >
       <div className="text-sm font-medium">{node.label}</div>
-    </div>
-  );
-};
-
-// --- Droppable Canvas Component ---
-const DroppableCanvas = ({ children }: { children: React.ReactNode }) => {
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'flow-canvas-droppable',
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        'flex-1 min-w-0 bg-background relative h-full transition-colors',
-        isOver && 'bg-primary/5 ring-2 ring-inset ring-primary/20'
-      )}
-    >
-      {children}
+      <div className="text-xs text-muted-foreground mt-1">
+        Double-click to add
+      </div>
     </div>
   );
 };
@@ -127,7 +88,7 @@ const NodePalette = ({
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-3">
           {nodes.map((node) => (
-            <DraggableNodeItem
+            <NodeItem
               key={node.type + node.label}
               node={node}
               readOnly={readOnly}
@@ -226,15 +187,6 @@ function FlowEditorInner({
   // Track selected node for the property panel
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  // Configure sensors for @dnd-kit
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts
-      },
-    })
-  );
-
   const defaultNodeTypes: FlowNodeType[] = useMemo(
     () => [
       {
@@ -307,45 +259,6 @@ function FlowEditorInner({
     [setEdges]
   );
 
-  // Handle drag end from @dnd-kit
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      if (readOnly || !event.over) return;
-
-      const nodeTemplate = event.active.data.current as FlowNodeType;
-      if (!nodeTemplate) return;
-
-      try {
-        // Get the drop position from the active draggable
-        // We'll use the center of the viewport as fallback
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-
-        const position = screenToFlowPosition({
-          x: centerX,
-          y: centerY,
-        });
-
-        const newNode: Node = {
-          id: `node-${Date.now()}`,
-          type: nodeTemplate.type,
-          position,
-          data: {
-            ...nodeTemplate.initialData,
-            label: nodeTemplate.initialData?.label || nodeTemplate.label,
-            className: nodeTemplate.className,
-            style: nodeTemplate.style,
-          },
-        };
-
-        setNodes((nds) => nds.concat(newNode));
-      } catch (err) {
-        console.error('Failed to add node during drag end', err);
-      }
-    },
-    [readOnly, screenToFlowPosition, setNodes]
-  );
-
   const handleSelectionChange = useCallback(
     ({ nodes: selectedNodes }: OnSelectionChangeParams) => {
       if (selectedNodes.length > 0) {
@@ -380,50 +293,48 @@ function FlowEditorInner({
   );
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div
-        className={cn(
-          'flex w-full h-full bg-background overflow-hidden relative',
-          className
-        )}
-      >
-        {/* 1. Left Sidebar: Nodes */}
-        <NodePalette
-          nodes={nodeLibrary}
-          readOnly={readOnly}
-          onNodeDoubleClick={handleAddNodeAtCenter}
-        />
+    <div
+      className={cn(
+        'flex w-full h-full bg-background overflow-hidden relative',
+        className
+      )}
+    >
+      {/* 1. Left Sidebar: Nodes */}
+      <NodePalette
+        nodes={nodeLibrary}
+        readOnly={readOnly}
+        onNodeDoubleClick={handleAddNodeAtCenter}
+      />
 
-        {/* 2. Main Area: Flow Canvas */}
-        <DroppableCanvas>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={readOnly ? undefined : onNodesChange}
-            onEdgesChange={readOnly ? undefined : onEdgesChange}
-            onConnect={readOnly ? undefined : onConnect}
-            onSelectionChange={handleSelectionChange}
-            nodeTypes={nodeTypes}
-            fitView
-            nodesDraggable={!readOnly}
-            nodesConnectable={!readOnly}
-            elementsSelectable={true}
-            style={{ width: '100%', height: '100%' }}
-          >
-            <Background />
-            <Controls />
-            <MiniMap />
-          </ReactFlow>
-        </DroppableCanvas>
-
-        {/* 3. Right Sidebar: Properties */}
-        <PropertyPanel
-          selectedNode={selectedNode}
-          onNodeUpdate={handleNodeUpdate}
-          readOnly={readOnly}
-        />
+      {/* 2. Main Area: Flow Canvas */}
+      <div className="flex-1 min-w-0 bg-background relative h-full">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={readOnly ? undefined : onNodesChange}
+          onEdgesChange={readOnly ? undefined : onEdgesChange}
+          onConnect={readOnly ? undefined : onConnect}
+          onSelectionChange={handleSelectionChange}
+          nodeTypes={nodeTypes}
+          fitView
+          nodesDraggable={!readOnly}
+          nodesConnectable={!readOnly}
+          elementsSelectable={true}
+          style={{ width: '100%', height: '100%' }}
+        >
+          <Background />
+          <Controls />
+          <MiniMap />
+        </ReactFlow>
       </div>
-    </DndContext>
+
+      {/* 3. Right Sidebar: Properties */}
+      <PropertyPanel
+        selectedNode={selectedNode}
+        onNodeUpdate={handleNodeUpdate}
+        readOnly={readOnly}
+      />
+    </div>
   );
 }
 
