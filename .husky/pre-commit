@@ -1,1 +1,6 @@
 npx lint-staged
+
+# Run tests
+echo "Running tests..."
+yarn test run
+
