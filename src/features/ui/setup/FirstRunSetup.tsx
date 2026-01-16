@@ -105,8 +105,7 @@ export function FirstRunSetup({ open }: { open: boolean }) {
     dispatch(setSetupCompleted(true));
   };
 
-  const installRuntimes = async () => {
-    // Python
+  const installPython = async () => {
     try {
       setInstallStatus((prev) => ({ ...prev, python: 'installing' }));
       const pyStatuses = await invokeCommand<RuntimeStatus[]>(
@@ -140,15 +139,15 @@ export function FirstRunSetup({ open }: { open: boolean }) {
         setInstallStatus((prev) => ({ ...prev, python: 'success' }));
       } else {
         console.error('No Python runtimes available to install');
-        // Treat as error or handled? If no definition found, we can't install.
         setInstallStatus((prev) => ({ ...prev, python: 'error' }));
       }
     } catch (error) {
       console.error('Python install failed', error);
       setInstallStatus((prev) => ({ ...prev, python: 'error' }));
     }
+  };
 
-    // Node
+  const installNode = async () => {
     try {
       setInstallStatus((prev) => ({ ...prev, node: 'installing' }));
       const nodeStatuses = await invokeCommand<RuntimeStatus[]>(
@@ -188,6 +187,10 @@ export function FirstRunSetup({ open }: { open: boolean }) {
       console.error('Node install failed', error);
       setInstallStatus((prev) => ({ ...prev, node: 'error' }));
     }
+  };
+
+  const installRuntimes = async () => {
+    await Promise.all([installPython(), installNode()]);
 
     // Move to next step
     setTimeout(() => {

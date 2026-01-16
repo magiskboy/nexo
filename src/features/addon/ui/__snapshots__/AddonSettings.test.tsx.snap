@@ -151,7 +151,6 @@ exports[`AddonSettings > Loaded State > should match snapshot for loaded state 1
             />
             uninstall
           </button>
-          0
         </div>
       </div>
       <div
@@ -250,7 +249,6 @@ exports[`AddonSettings > Loaded State > should match snapshot for loaded state 1
             />
             uninstall
           </button>
-          0
         </div>
       </div>
     </div>
@@ -468,7 +466,6 @@ exports[`AddonSettings > Not Installed State > should match snapshot for not ins
             />
             install
           </button>
-          0
         </div>
       </div>
       <div
@@ -567,7 +564,6 @@ exports[`AddonSettings > Not Installed State > should match snapshot for not ins
             />
             uninstall
           </button>
-          0
         </div>
       </div>
     </div>

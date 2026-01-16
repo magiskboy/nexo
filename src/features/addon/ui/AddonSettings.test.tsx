@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -319,97 +319,6 @@ describe('AddonSettings', () => {
       renderComponent();
 
       expect(screen.getByText('installing')).toBeInTheDocument();
-    });
-  });
-
-  describe('Cleanup Old Versions', () => {
-    it('should show cleanup button when there are other installed versions', () => {
-      const pythonWithMultipleInstalled: PythonRuntimeStatus[] = [
-        {
-          version: '3.12.0',
-          installed: true,
-          path: '/usr/local/bin/python3.12',
-        },
-        {
-          version: '3.11.0',
-          installed: true,
-          path: '/usr/local/bin/python3.11',
-        },
-      ];
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (useAddons as any).mockReturnValue({
-        addonConfig: mockAddonConfig,
-        pythonRuntimes: pythonWithMultipleInstalled,
-        nodeRuntimes: mockNodeRuntimes,
-        isLoading: false,
-        installingPython: null,
-        installingNode: null,
-        actions: mockActions,
-      });
-
-      renderComponent();
-
-      expect(screen.getByText(/cleanupOldVersions/)).toBeInTheDocument();
-    });
-
-    it('should call uninstallPython for all old versions when cleanup is clicked', async () => {
-      const user = userEvent.setup();
-      const pythonWithMultipleInstalled: PythonRuntimeStatus[] = [
-        {
-          version: '3.12.0',
-          installed: true,
-          path: '/usr/local/bin/python3.12',
-        },
-        {
-          version: '3.11.0',
-          installed: true,
-          path: '/usr/local/bin/python3.11',
-        },
-        {
-          version: '3.10.0',
-          installed: true,
-          path: '/usr/local/bin/python3.10',
-        },
-      ];
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (useAddons as any).mockReturnValue({
-        addonConfig: mockAddonConfig,
-        pythonRuntimes: pythonWithMultipleInstalled,
-        nodeRuntimes: mockNodeRuntimes,
-        isLoading: false,
-        installingPython: null,
-        installingNode: null,
-        actions: mockActions,
-      });
-
-      renderComponent();
-
-      const cleanupButton = screen.getByText(/cleanupOldVersions/);
-      await user.click(cleanupButton);
-
-      await waitFor(() => {
-        expect(mockActions.uninstallPython).toHaveBeenCalledWith('3.11.0');
-        expect(mockActions.uninstallPython).toHaveBeenCalledWith('3.10.0');
-      });
-    });
-
-    it('should not show cleanup button when only one version is installed', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (useAddons as any).mockReturnValue({
-        addonConfig: mockAddonConfig,
-        pythonRuntimes: mockPythonRuntimes,
-        nodeRuntimes: mockNodeRuntimes,
-        isLoading: false,
-        installingPython: null,
-        installingNode: null,
-        actions: mockActions,
-      });
-
-      renderComponent();
-
-      expect(screen.queryByText(/cleanupOldVersions/)).not.toBeInTheDocument();
     });
   });
 
