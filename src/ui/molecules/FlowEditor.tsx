@@ -18,6 +18,8 @@ import { Input } from '@/ui/atoms/input';
 import { Label } from '@/ui/atoms/label';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { Separator } from '@/ui/atoms/separator';
+import { Switch } from '@/ui/atoms/switch';
+import { Textarea } from '@/ui/atoms/textarea';
 import { cn } from '@/lib/utils';
 
 import type { FlowData } from '@/features/chat/types';
@@ -104,6 +106,121 @@ const NodePalette = ({
   );
 };
 
+// --- Helper: Detect property type ---
+type PropertyType = 'string' | 'number' | 'boolean' | 'object' | 'unknown';
+
+function detectPropertyType(value: unknown): PropertyType {
+  if (typeof value === 'string') return 'string';
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'boolean';
+  if (typeof value === 'object' && value !== null) return 'object';
+  return 'unknown';
+}
+
+// --- Property Field Component ---
+interface PropertyFieldProps {
+  propertyKey: string;
+  value: unknown;
+  type: PropertyType;
+  onChange: (key: string, value: unknown) => void;
+  readOnly: boolean;
+}
+
+const PropertyField = ({
+  propertyKey,
+  value,
+  type,
+  onChange,
+  readOnly,
+}: PropertyFieldProps) => {
+  const label = propertyKey
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (str) => str.toUpperCase())
+    .trim();
+
+  switch (type) {
+    case 'string':
+      return (
+        <div className="space-y-2">
+          <Label htmlFor={`prop-${propertyKey}`}>{label}</Label>
+          <Input
+            id={`prop-${propertyKey}`}
+            value={(value as string) || ''}
+            onChange={(e) => onChange(propertyKey, e.target.value)}
+            disabled={readOnly}
+            placeholder={`Enter ${label.toLowerCase()}`}
+          />
+        </div>
+      );
+
+    case 'number':
+      return (
+        <div className="space-y-2">
+          <Label htmlFor={`prop-${propertyKey}`}>{label}</Label>
+          <Input
+            id={`prop-${propertyKey}`}
+            type="number"
+            value={(value as number) || 0}
+            onChange={(e) => onChange(propertyKey, parseFloat(e.target.value))}
+            disabled={readOnly}
+            placeholder={`Enter ${label.toLowerCase()}`}
+          />
+        </div>
+      );
+
+    case 'boolean':
+      return (
+        <div className="flex items-center justify-between space-x-2">
+          <Label htmlFor={`prop-${propertyKey}`} className="cursor-pointer">
+            {label}
+          </Label>
+          <Switch
+            id={`prop-${propertyKey}`}
+            checked={value as boolean}
+            onCheckedChange={(checked) => onChange(propertyKey, checked)}
+            disabled={readOnly}
+          />
+        </div>
+      );
+
+    case 'object':
+      return (
+        <div className="space-y-2">
+          <Label htmlFor={`prop-${propertyKey}`}>{label}</Label>
+          <Textarea
+            id={`prop-${propertyKey}`}
+            value={JSON.stringify(value, null, 2)}
+            onChange={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                onChange(propertyKey, parsed);
+              } catch {
+                // Invalid JSON, ignore
+              }
+            }}
+            disabled={readOnly}
+            placeholder={`JSON object for ${label.toLowerCase()}`}
+            className="font-mono text-xs"
+            rows={4}
+          />
+          <p className="text-xs text-muted-foreground">
+            Edit as JSON (must be valid)
+          </p>
+        </div>
+      );
+
+    default:
+      return (
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">{label}</Label>
+          <div className="text-sm text-muted-foreground italic">
+            Unsupported type: {typeof value}
+          </div>
+        </div>
+      );
+  }
+};
+
 // --- Right Sidebar: Property Panel ---
 const PropertyPanel = ({
   selectedNode,
@@ -125,18 +242,28 @@ const PropertyPanel = ({
     );
   }
 
-  const handleChange = (key: string, value: string) => {
+  const handleChange = (key: string, value: unknown) => {
     onNodeUpdate(selectedNode.id, {
       ...selectedNode.data,
       [key]: value,
     });
   };
 
+  // Extract all properties from node.data, excluding undefined and null
+  const properties = Object.entries(selectedNode.data)
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => ({
+      key,
+      value,
+      type: detectPropertyType(value),
+    }));
+
   return (
     <aside className="w-72 border-l bg-background flex flex-col h-full">
       <div className="p-4 font-semibold border-b">Properties</div>
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
+          {/* Node Type - Read Only */}
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Type</Label>
             <div className="font-medium capitalize">{selectedNode.type}</div>
@@ -144,22 +271,21 @@ const PropertyPanel = ({
 
           <Separator />
 
-          <div className="space-y-2">
-            <Label htmlFor="node-label">Label</Label>
-            <Input
-              id="node-label"
-              value={(selectedNode.data.label as string) || ''}
-              onChange={(e) => handleChange('label', e.target.value)}
-              disabled={readOnly}
-              placeholder="Enter node label"
-            />
-          </div>
-
-          {/* Add specific fields based on node type if needed */}
-          {/* For now, generic data editor or specific known fields could go here */}
-          {selectedNode.type === 'decision' && (
-            <div className="text-xs text-muted-foreground mt-4">
-              * Drag connections from Top/Bottom/Left/Right handles.
+          {/* Dynamic Properties */}
+          {properties.length > 0 ? (
+            properties.map(({ key, value, type }) => (
+              <PropertyField
+                key={key}
+                propertyKey={key}
+                value={value}
+                type={type}
+                onChange={handleChange}
+                readOnly={readOnly}
+              />
+            ))
+          ) : (
+            <div className="text-sm text-muted-foreground italic">
+              No properties to display
             </div>
           )}
         </div>
@@ -225,8 +351,10 @@ function FlowEditorInner({
           data: {
             ...nodeTemplate.initialData,
             label: nodeTemplate.initialData?.label || nodeTemplate.label,
-            className: nodeTemplate.className,
-            style: nodeTemplate.style,
+            ...(nodeTemplate.className && {
+              className: nodeTemplate.className,
+            }),
+            ...(nodeTemplate.style && { style: nodeTemplate.style }),
           },
         };
 
