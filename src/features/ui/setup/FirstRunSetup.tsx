@@ -159,12 +159,17 @@ export function FirstRunSetup({ open }: { open: boolean }) {
         models_json: null,
         default_model: null,
       });
-      // Complete
-      dispatch(setSetupCompleted(true));
     } catch (error) {
       console.error('Failed to create LLM connection', error);
-      // Show error? For now assume success or user can retry
+      // Show error toast but still complete setup so user can configure later in Settings
+      const { toast } = await import('sonner');
+      toast.error(
+        'Failed to create LLM connection. You can configure it later in Settings.'
+      );
     } finally {
+      // Always mark setup as completed, even if LLM connection creation failed
+      // This prevents the setup dialog from showing again on next app launch
+      dispatch(setSetupCompleted(true));
       setIsSubmitting(false);
     }
   };
