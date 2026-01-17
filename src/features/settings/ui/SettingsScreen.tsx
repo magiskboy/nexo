@@ -11,6 +11,7 @@ import {
   Github,
   Globe,
   BookOpen,
+  Shield,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,7 @@ import {
 import { Separator } from '@/ui/atoms/separator';
 import { Button } from '@/ui/atoms/button/button';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
+import { Card, CardContent } from '@/ui/atoms/card';
 
 // Section Components
 import { LLMConnections } from '@/features/llm';
@@ -146,98 +148,148 @@ export function SettingsScreen() {
     const DOCS_URL = 'https://nexo-docs.nkthanh.dev';
 
     return (
-      <div className="space-y-6">
-        <UpdateSection />
-
-        {/* Description */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">{tCommon('aboutTitle')}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {tSettings('aboutDescription') || tCommon('appDescription')}
-          </p>
-        </div>
-
-        <Separator />
-
-        {/* Features Grid */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm text-foreground">
-            {tCommon('keyFeatures', { defaultValue: 'Key Features' })}
-          </h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-xs font-medium text-foreground">
-                Multi-LLM Support
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Connect to multiple AI providers
-              </div>
+      <div className="max-w-3xl mx-auto pb-10 space-y-8 animate-in fade-in duration-500">
+        {/* Header Section */}
+        <div className="flex flex-col items-center text-center space-y-4 pt-4">
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur opacity-40 group-hover:opacity-75 transition duration-500" />
+            <div className="relative flex items-center justify-center size-24 rounded-2xl bg-background shadow-xl ring-1 ring-border/50">
+              <img
+                src="/icon.svg"
+                alt="Nexo Logo"
+                className="size-14 drop-shadow-sm"
+              />
             </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-xs font-medium text-foreground">
-                MCP Integration
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Model Context Protocol support
-              </div>
-            </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-xs font-medium text-foreground">
-                Custom Prompts
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Manage prompt templates
-              </div>
-            </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-xs font-medium text-foreground">
-                Privacy First
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Local data storage
-              </div>
-            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+              {tCommon('aboutTitle', { defaultValue: 'Nexo Agent' })}
+            </h3>
+            <p className="text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
+              {tSettings('aboutDescription') || tCommon('appDescription')}
+            </p>
           </div>
         </div>
 
-        <Separator />
+        {/* Update Section */}
+        <div className="max-w-xl mx-auto w-full">
+          <UpdateSection />
+        </div>
 
-        {/* Links */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm text-foreground">
+        <Separator className="opacity-50" />
+
+        {/* Features/Highlights */}
+        <div className="space-y-4">
+          <h4 className="font-semibold text-sm text-foreground/80 uppercase tracking-wider px-1">
+            {tCommon('keyFeatures', { defaultValue: 'Core Capabilities' })}
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FeatureCard
+              icon={<Network className="size-5" />}
+              title="Multi-LLM Support"
+              description="Connect seamlessly to OpenAI, Anthropic, Gemini, and Local LLMs."
+            />
+            <FeatureCard
+              icon={<Server className="size-5" />}
+              title="MCP Integration"
+              description="Full support for Model Context Protocol servers and tools."
+            />
+            <FeatureCard
+              icon={<FileText className="size-5" />}
+              title="Custom Prompts"
+              description="Create, manage, and reuse your own specialized system prompts."
+            />
+            <FeatureCard
+              icon={<Shield className="size-5" />}
+              title="Privacy First"
+              description="Your data stays locally on your device. No cloud collection."
+            />
+          </div>
+        </div>
+
+        {/* Resources & Links */}
+        <div className="space-y-4">
+          <h4 className="font-semibold text-sm text-foreground/80 uppercase tracking-wider px-1">
             {tCommon('resources', { defaultValue: 'Resources' })}
           </h4>
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full h-auto flex-col gap-2 py-3"
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <ResourceButton
+              icon={<Github className="size-4" />}
+              label="GitHub"
               onClick={() => openExternalLink(GITHUB_URL)}
-            >
-              <Github className="size-4" />
-              <span className="text-xs">GitHub</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full h-auto flex-col gap-2 py-3"
+            />
+            <ResourceButton
+              icon={<Globe className="size-4" />}
+              label="Website"
               onClick={() => openExternalLink(WEBSITE_URL)}
-            >
-              <Globe className="size-4" />
-              <span className="text-xs">Website</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full h-auto flex-col gap-2 py-3"
+            />
+            <ResourceButton
+              icon={<BookOpen className="size-4" />}
+              label="Documentation"
               onClick={() => openExternalLink(DOCS_URL)}
-            >
-              <BookOpen className="size-4" />
-              <span className="text-xs">Docs</span>
-            </Button>
+            />
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="pt-8 text-center space-y-1">
+          <p className="text-xs text-muted-foreground">
+            Built with Tauri, React & Rust
+          </p>
+          <p className="text-[10px] text-muted-foreground/60">
+            © {new Date().getFullYear()} Nexo Agent. Open Source Software.
+          </p>
+        </div>
       </div>
+    );
+  }
+
+  function FeatureCard({
+    icon,
+    title,
+    description,
+  }: {
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+  }) {
+    return (
+      <Card className="border bg-card/50 hover:bg-card hover:shadow-md transition-all duration-300 group">
+        <CardContent className="p-4 flex gap-4">
+          <div className="p-2.5 rounded-xl bg-primary/5 text-primary group-hover:bg-primary/10 transition-colors h-fit">
+            {icon}
+          </div>
+          <div className="space-y-1">
+            <h5 className="font-semibold text-sm text-foreground">{title}</h5>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {description}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function ResourceButton({
+    icon,
+    label,
+    onClick,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+  }) {
+    return (
+      <Button
+        variant="outline"
+        className="w-full justify-start h-12 gap-3 hover:bg-accent/50 group border-muted-foreground/20"
+        onClick={onClick}
+      >
+        <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+          {icon}
+        </div>
+        <span className="text-sm font-medium">{label}</span>
+      </Button>
     );
   }
 
@@ -285,9 +337,11 @@ export function SettingsScreen() {
         <ScrollArea className="flex-1">
           <div className="p-6 max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto w-full space-y-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold">
-                {sections.find((s) => s.id === selectedSection)?.label}
-              </h1>
+              {selectedSection !== 'about' && (
+                <h1 className="text-2xl font-bold">
+                  {sections.find((s) => s.id === selectedSection)?.label}
+                </h1>
+              )}
             </div>
             {renderContent()}
           </div>

@@ -22,8 +22,6 @@
     "lint:rust": "cd src-tauri && cargo clippy -- -D warnings",
     "format:rust": "cd src-tauri && cargo fmt",
     "format:rust:check": "cd src-tauri && cargo fmt -- --check",
-    "docs:dev": "cd docs && yarn start",
-    "docs:build": "cd docs && yarn build",
     "prepare": "husky",
     "test": "vitest",
     "test:ui": "vitest --ui",

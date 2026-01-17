@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Info, Github, Globe, BookOpen, Heart } from 'lucide-react';
+import { Github, Globe, BookOpen, Heart } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import {
   Dialog,
@@ -39,8 +39,12 @@ export function About({ open, onOpenChange }: AboutProps) {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
-              <Info className="size-6 text-primary" />
+            <div className="flex items-center justify-center size-14 rounded-2xl bg-background shadow-md ring-1 ring-border/50">
+              <img
+                src="/icon.svg"
+                alt="Nexo Logo"
+                className="size-8 drop-shadow-sm"
+              />
             </div>
             <div>
               <DialogTitle className="text-xl">{APP_NAME}</DialogTitle>

@@ -28,7 +28,6 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
-  Sparkles,
   Cpu,
   Terminal,
   Key,
@@ -296,11 +295,15 @@ export function FirstRunSetup({ open }: { open: boolean }) {
       >
         <DialogHeader className="items-center justify-center shrink-0 h-[220px] pb-6 pt-10 text-center bg-muted/30 border-b border-border/40">
           {step === 'welcome' && (
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-background shadow-sm ring-1 ring-border/50 animate-in zoom-in-50 duration-500">
-              <Sparkles className="h-10 w-10 text-primary" />
+            <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-background shadow-xl ring-1 ring-border/50 animate-in zoom-in-50 duration-700">
+              <img
+                src="/icon.svg"
+                alt="Nexo Logo"
+                className="h-14 w-14 drop-shadow-sm"
+              />
             </div>
           )}
-          <DialogTitle className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent px-6">
+          <DialogTitle className="text-3xl font-bold tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent px-6">
             {step === 'welcome' && 'Welcome to Nexo'}
             {step === 'installing' && 'Setting up Environment'}
             {step === 'llm-setup' && 'Connect Your AI'}
