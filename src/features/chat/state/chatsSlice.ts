@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { logger } from '@/lib/logger';
 import type { ChatItem } from '../types';
 
 // Types matching Rust structs
@@ -70,7 +71,7 @@ export const createChat = createAsyncThunk(
       key: 'lastChatId',
       value: id,
     }).catch((error) => {
-      console.error('Failed to save lastChatId:', error);
+      logger.error('Failed to save lastChatId:', error);
     });
 
     return {
@@ -141,7 +142,7 @@ const chatsSlice = createSlice({
           key: 'lastChatId',
           value: action.payload,
         }).catch((error) => {
-          console.error('Failed to save lastChatId:', error);
+          logger.error('Failed to save lastChatId:', error);
         });
       }
     },

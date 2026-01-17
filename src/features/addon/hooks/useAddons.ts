@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/app/hooks';
 import { showSuccess } from '@/features/notifications/state/notificationSlice';
 import { handleCommandError } from '@/lib/tauri';
+import { useLogger } from '@/hooks/useLogger';
 import type {
   AddonConfig,
   PythonRuntimeStatus,
@@ -13,6 +14,7 @@ import type {
 export function useAddons() {
   const { t } = useTranslation('settings');
   const dispatch = useAppDispatch();
+  const logger = useLogger();
 
   const [addonConfig, setAddonConfig] = useState<AddonConfig | null>(null);
   const [pythonRuntimes, setPythonRuntimes] = useState<PythonRuntimeStatus[]>(
@@ -30,9 +32,9 @@ export function useAddons() {
       const config = await invoke<AddonConfig>('get_addon_config');
       setAddonConfig(config);
     } catch (error) {
-      console.error('Failed to load addon config:', error);
+      logger.error('Failed to load addon config:', error);
     }
-  }, []);
+  }, [logger]);
 
   const loadPythonStatus = useCallback(async () => {
     try {

@@ -14,6 +14,7 @@ import {
   isBundledLanguage,
 } from './bundled-languages';
 import { loadLanguageFromCDN } from './cdn-loader';
+import { logger } from '@/lib/logger';
 
 const jsEngine = createJavaScriptRegexEngine({ forgiving: true });
 
@@ -61,7 +62,7 @@ async function loadLanguageGrammar(
   const grammar = await loadLanguageFromCDN(language, cdnUrl);
 
   if (!grammar) {
-    console.warn(
+    logger.warn(
       `[Streamdown] Language "${language}" not found in bundled languages or CDN. Falling back to plain text.`
     );
   }
@@ -178,12 +179,11 @@ export const getHighlightedTokens = ({
         for (const sub of subs) {
           sub(result);
         }
-        // Clean up subscribers after notifying
-        subscribers.delete(tokensCacheKey);
       }
+      subscribers.delete(tokensCacheKey);
     })
     .catch((error) => {
-      console.error('Failed to highlight code:', error);
+      logger.error('Failed to highlight code:', error);
       // Clean up subscribers on error
       subscribers.delete(tokensCacheKey);
     });

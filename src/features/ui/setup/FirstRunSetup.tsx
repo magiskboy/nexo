@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/atoms/card';
+import { useLogger } from '@/hooks/useLogger';
 
 type Step = 'welcome' | 'installing' | 'llm-setup' | 'completed';
 
@@ -78,6 +79,7 @@ const PROVIDER_OPTIONS = [
 
 export function FirstRunSetup({ open }: { open: boolean }) {
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const [createLLMConnection] = useCreateLLMConnectionMutation();
   const [step, setStep] = useState<Step>('welcome');
   const [installStatus, setInstallStatus] = useState<{
@@ -137,11 +139,11 @@ export function FirstRunSetup({ open }: { open: boolean }) {
         }
         setInstallStatus((prev) => ({ ...prev, python: 'success' }));
       } else {
-        console.error('No Python runtimes available to install');
+        logger.error('No Python runtimes available to install');
         setInstallStatus((prev) => ({ ...prev, python: 'error' }));
       }
     } catch (error) {
-      console.error('Python install failed', error);
+      logger.error('Python install failed', error);
       setInstallStatus((prev) => ({ ...prev, python: 'error' }));
     }
   };
@@ -179,11 +181,11 @@ export function FirstRunSetup({ open }: { open: boolean }) {
         }
         setInstallStatus((prev) => ({ ...prev, node: 'success' }));
       } else {
-        console.error('No Node.js runtimes available to install');
+        logger.error('No Node.js runtimes available to install');
         setInstallStatus((prev) => ({ ...prev, node: 'error' }));
       }
     } catch (error) {
-      console.error('Node install failed', error);
+      logger.error('Node install failed', error);
       setInstallStatus((prev) => ({ ...prev, node: 'error' }));
     }
   };
@@ -214,7 +216,7 @@ export function FirstRunSetup({ open }: { open: boolean }) {
         // Filter popular models like in Settings
         models = filterPopularModels(fetchedModels, llmConfig.provider);
       } catch (error) {
-        console.error('Failed to fetch models during setup:', error);
+        logger.error('Failed to fetch models during setup:', error);
         // We continue even if model fetching fails, saving an empty list
         // which the user can fix later in settings
       }
@@ -229,7 +231,7 @@ export function FirstRunSetup({ open }: { open: boolean }) {
         enabled: true,
       }).unwrap();
     } catch (error) {
-      console.error('Failed to create LLM connection', error);
+      logger.error('Failed to create LLM connection', error);
       const { toast } = await import('sonner');
       toast.error(
         'Failed to create LLM connection. You can configure it later in Settings.'

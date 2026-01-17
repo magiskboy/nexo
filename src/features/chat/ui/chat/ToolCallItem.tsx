@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/atoms/button/button';
+import { logger } from '@/lib/logger';
 import type { Message } from '../../types';
 
 export interface ToolCallData {
@@ -53,11 +54,10 @@ export const ToolCallItem = memo(
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
-          console.error(
-            'Failed to parse tool call data:',
+          logger.error('Failed to parse tool call data:', {
             error,
-            message.content
-          );
+            content: message.content,
+          });
           return { toolCallData: null, parseError: errorMessage };
         }
       }

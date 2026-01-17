@@ -5,6 +5,7 @@
  */
 
 import type { LanguageRegistration } from 'shiki';
+import { logger } from '@/lib/logger';
 import packageJson from '../../package.json';
 
 // Default CDN configuration
@@ -108,7 +109,7 @@ export async function loadLanguageFromCDN(
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';
 
-    console.warn(
+    logger.warn(
       `[Streamdown] Failed to load language "${language}" from CDN: ${errorMessage}`
     );
 

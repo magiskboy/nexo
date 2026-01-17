@@ -12,9 +12,11 @@ import {
   showError,
 } from '@/features/notifications/state/notificationSlice';
 import { useTranslation } from 'react-i18next';
+import { useLogger } from '@/hooks/useLogger';
 
 export function ImagePreviewDialog() {
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const { t } = useTranslation('common');
   const open = useAppSelector((state) => state.ui.imagePreviewOpen);
   const imageUrl = useAppSelector((state) => state.ui.imagePreviewUrl);
@@ -84,7 +86,10 @@ export function ImagePreviewDialog() {
         showSuccess(t('downloadComplete') || 'Download complete', fileName)
       );
     } catch (err) {
-      console.error('Failed to download image:', err);
+      logger.error('Failed to download image from preview:', {
+        url: imageUrl,
+        error: err,
+      });
       dispatch(
         showError(
           t('downloadFailed') || 'Download failed',

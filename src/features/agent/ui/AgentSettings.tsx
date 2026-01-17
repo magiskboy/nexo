@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useLogger } from '@/hooks/useLogger';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Button } from '@/ui/atoms/button/button';
 import {
@@ -42,6 +43,7 @@ import { useGetInstalledAgentsQuery } from '../state/api';
 import type { InstalledAgent } from '../types';
 
 export function AgentSettings() {
+  const logger = useLogger();
   const {
     data: agents = [],
     isLoading: _loading,
@@ -191,7 +193,7 @@ export function AgentSettings() {
       setAgentTools(info.tools || []);
       setAgentInstructions(info.instructions || '');
     } catch (error) {
-      console.error('Failed to fetch agent info:', error);
+      logger.error('Failed to fetch agent info in AgentSettings:', error);
       setAgentTools([]);
       setAgentInstructions('');
     } finally {

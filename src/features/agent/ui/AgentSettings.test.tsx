@@ -34,6 +34,20 @@ vi.mock('../state/api', () => ({
   useGetInstalledAgentsQuery: () => mockUseGetInstalledAgentsQuery(),
 }));
 
+// Mock useLogger with a stable instance
+const mockLogger = {
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  setContext: vi.fn(),
+};
+
+vi.mock('@/hooks/useLogger', () => ({
+  useLogger: () => mockLogger,
+}));
+
+
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
   Loader2: () => <div data-testid="loader-icon" />,
@@ -851,9 +865,6 @@ describe('AgentSettings', () => {
     it('should handle agent info fetch error gracefully', async () => {
       const user = userEvent.setup();
       const { invokeCommand } = await import('@/lib/tauri');
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
 
       (invokeCommand as ReturnType<typeof vi.fn>).mockRejectedValue(
         new Error('Failed to fetch agent info')
@@ -865,13 +876,11 @@ describe('AgentSettings', () => {
       await user.click(agentCard);
 
       await waitFor(() => {
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          'Failed to fetch agent info:',
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          'Failed to fetch agent info in AgentSettings:',
           expect.any(Error)
         );
       });
-
-      consoleErrorSpy.mockRestore();
     });
   });
 

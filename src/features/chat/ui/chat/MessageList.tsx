@@ -7,6 +7,7 @@ import { MessageItem } from './MessageItem';
 import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import { sortMessages } from './utils/messageSorting';
 import { cn } from '@/lib/utils';
+import { useLogger } from '@/hooks/useLogger';
 
 interface MessageListProps {
   // Data
@@ -83,6 +84,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
       componentName: 'MessageList',
       threshold: 100,
     });
+    const logger = useLogger();
 
     // Internal state management (if not controlled from parent)
     const [internalMarkdownEnabled, setInternalMarkdownEnabled] = useState<
@@ -119,10 +121,10 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
             }
           }, 2000);
         } catch (error) {
-          console.error('Failed to copy:', error);
+          logger.error('Failed to copy content:', error);
         }
       },
-      [onCopiedIdChange]
+      [onCopiedIdChange, logger]
     );
 
     const toggleMarkdown = useCallback(

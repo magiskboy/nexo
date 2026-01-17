@@ -44,10 +44,12 @@ import {
   showError,
   showSuccess,
 } from '@/features/notifications/state/notificationSlice';
+import { useLogger } from '@/hooks/useLogger';
 
 export function LLMConnections() {
   const { t } = useTranslation('settings');
   const dispatch = useAppDispatch();
+  const logger = useLogger();
 
   // Use RTK Query hooks
   const { data: llmConnections = [] } = useGetLLMConnectionsQuery();
@@ -85,7 +87,7 @@ export function LLMConnections() {
         showSuccess(t('connectionDeleted'), t('connectionDeletedDescription'))
       );
     } catch (error) {
-      console.error('Error deleting LLM connection:', error);
+      logger.error('Error deleting LLM connection:', error);
       dispatch(showError(t('cannotDeleteConnection')));
     }
   };
@@ -101,7 +103,7 @@ export function LLMConnections() {
       }).unwrap();
       // No toast notification for toggle action
     } catch (error) {
-      console.error('Error toggling LLM connection:', error);
+      logger.error('Error toggling LLM connection:', error);
       dispatch(showError(t('cannotToggleConnection')));
     }
   };
@@ -131,7 +133,7 @@ export function LLMConnections() {
       setDialogOpen(false);
       setEditingConnection(null);
     } catch (error) {
-      console.error('Error saving LLM connection:', error);
+      logger.error('Error saving LLM connection:', error);
       dispatch(showError(t('cannotSaveConnection')));
     }
   };

@@ -9,6 +9,7 @@ import {
   Download,
 } from 'lucide-react';
 import { cn, formatFileSize } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface MessageFileProps {
   src: string;
@@ -115,7 +116,7 @@ const getFileSize = async (src: string): Promise<number | null> => {
       return fileInfo.size;
     }
   } catch (e) {
-    console.error('Failed to get file size:', e);
+    logger.error('Failed to get file size:', e);
   }
   return null;
 };
@@ -142,7 +143,7 @@ export const MessageFile = ({ src, mimeType, className }: MessageFileProps) => {
       }
       // Note: Data URLs and remote files cannot be opened directly
     } catch (error) {
-      console.error('Failed to open file:', error);
+      logger.error('Failed to open file:', error);
     } finally {
       setIsOpening(false);
     }

@@ -1,7 +1,9 @@
 use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage, ToolEmitter};
-use crate::models::llm_types::{LLMChatResponse, ToolCall, TokenUsage, SSEChunk, ToolCallFunction, LLMModel, LLMChatRequest};
+use crate::models::llm_types::{
+    LLMChatRequest, LLMChatResponse, LLMModel, SSEChunk, TokenUsage, ToolCall, ToolCallFunction,
+};
 use async_trait::async_trait;
 use futures::StreamExt;
 use reqwest::Client;
@@ -113,12 +115,12 @@ impl OpenAICompatProvider {
 
                     match serde_json::from_str::<SSEChunk>(data) {
                         Ok(sse_chunk) => {
+                            tracing::debug!(?sse_chunk, "Parsed SSE chunk");
+
                             // Check for usage
                             if let Some(usage) = sse_chunk.usage {
                                 final_usage = Some(usage);
                             }
-
-                            // println!("DEBUG: Parsed SSE chunk: {:?}", sse_chunk);
                             if let Some(choices) = sse_chunk.choices {
                                 for choice in choices {
                                     if let Some(delta) = choice.delta {
@@ -226,7 +228,7 @@ impl OpenAICompatProvider {
                         Err(e) => {
                             // Ignore parse errors for incomplete chunks
                             if !data.is_empty() {
-                                eprintln!("Failed to parse SSE chunk: {e} - Data: {data}");
+                                tracing::error!(error = %e, data = %data, "Failed to parse SSE chunk");
                             }
                         }
                     }
@@ -560,10 +562,9 @@ impl LLMProvider for OpenAICompatProvider {
                 vec![model]
             } else {
                 // Log the response for debugging
-                eprintln!(
-                    "Unexpected response format. Response: {}",
-                    serde_json::to_string_pretty(&json)
-                        .unwrap_or_else(|_| "Failed to serialize".to_string())
+                tracing::error!(
+                    response = %serde_json::to_string_pretty(&json).unwrap_or_else(|_| "Failed to serialize".to_string()),
+                    "Unexpected response format"
                 );
                 return Err(AppError::Llm(format!(
                     "Unexpected response format. Expected array or object with 'data' field. Got: {}",

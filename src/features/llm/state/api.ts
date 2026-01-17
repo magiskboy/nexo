@@ -1,5 +1,6 @@
 import { baseApi } from '@/app/api/baseApi';
 import { TauriCommands } from '@/bindings/commands';
+import { logger } from '@/lib/logger';
 import type { LLMConnection, LLMModel } from '../types';
 
 // Types matching Rust structs
@@ -24,7 +25,7 @@ export function dbToFrontendLLMConnection(
     try {
       models = JSON.parse(dbConn.models_json);
     } catch (e) {
-      console.error('Error parsing models_json:', e);
+      logger.error('Error parsing models_json in LLM connection API:', e);
       models = undefined;
     }
   }

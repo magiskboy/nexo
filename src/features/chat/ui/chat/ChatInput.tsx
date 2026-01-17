@@ -64,6 +64,7 @@ import {
 } from '@/features/settings/lib/prompt-utils';
 import type { Prompt, InstalledAgent } from '@/app/types';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useLogger } from '@/hooks/useLogger';
 
 interface ChatInputProps {
   selectedWorkspaceId: string | null;
@@ -98,6 +99,7 @@ export function ChatInput({
     threshold: 50,
   });
   const { t } = useTranslation(['chat', 'common', 'settings']);
+  const logger = useLogger();
   const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -324,7 +326,7 @@ export function ChatInput({
             })
           );
         } catch (error) {
-          console.error('Failed to process images', error);
+          logger.error('Failed to process images', error);
           dispatch(showError(t('failedToProcessImages', { ns: 'chat' })));
           return;
         }

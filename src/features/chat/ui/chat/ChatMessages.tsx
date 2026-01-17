@@ -12,6 +12,7 @@ import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import type { Message } from '../../types';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { messagesApi } from '../../state/messagesApi';
+import { useLogger } from '@/hooks/useLogger';
 
 interface ChatMessagesProps {
   messages: Message[];
@@ -37,6 +38,7 @@ export function ChatMessages({
   const { t } = useTranslation('chat');
   const { showUsage } = useAppSettings();
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const selectedChatId = useAppSelector((state) => state.chats.selectedChatId);
   const pendingRequests = useAppSelector(
     (state) => state.toolPermission.pendingRequests
@@ -82,10 +84,10 @@ export function ChatMessages({
 
         dispatch(removePermissionRequest(messageId));
       } catch (error) {
-        console.error('Failed to respond to tool permission:', error);
+        logger.error('Failed to respond to tool permission:', error);
       }
     },
-    [dispatch, selectedChatId]
+    [dispatch, selectedChatId, logger]
   );
 
   // Countdown for pending permissions

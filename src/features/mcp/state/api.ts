@@ -1,5 +1,6 @@
 import { baseApi } from '@/app/api/baseApi';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { logger } from '@/lib/logger';
 import type { MCPServerConnection, MCPToolType } from '../types';
 
 // Types matching Rust structs
@@ -26,7 +27,7 @@ function dbToFrontendMCPServerConnection(
     try {
       tools = JSON.parse(dbConn.tools_json);
     } catch (e) {
-      console.error('Error parsing tools_json:', e);
+      logger.error('Error parsing tools_json in MCP API:', e);
       tools = undefined;
     }
   }

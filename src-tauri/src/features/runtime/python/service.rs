@@ -229,7 +229,7 @@ impl PythonRuntime {
         if !output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
-            eprintln!(
+            tracing::error!(
                 "UV python install failed for version {full_version}:\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}"
             );
             return Err(AppError::Python(format!(
@@ -255,7 +255,9 @@ impl PythonRuntime {
 
         if !venv_output.status.success() {
             let stderr = String::from_utf8_lossy(&venv_output.stderr);
-            eprintln!("UV venv creation failed for version {full_version}:\nSTDERR:\n{stderr}");
+            tracing::error!(
+                "UV venv creation failed for version {full_version}:\nSTDERR:\n{stderr}"
+            );
             return Err(AppError::Python(format!(
                 "UV venv creation failed: {stderr}"
             )));
@@ -314,7 +316,7 @@ impl PythonRuntime {
         if !output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
-            eprintln!("UV pip install failed:\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+            tracing::error!("UV pip install failed:\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
             return Err(AppError::Python(format!(
                 "UV pip install failed. Check terminal for details. Stderr: {stderr}"
             )));

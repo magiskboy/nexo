@@ -19,6 +19,7 @@ import {
   showSuccess,
 } from '@/features/notifications/state/notificationSlice';
 import type { HubPrompt, ParsedPromptTemplate } from '@/features/prompt/types';
+import { useLogger } from '@/hooks/useLogger';
 
 export interface InstallPromptDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function InstallPromptDialog({
 }: InstallPromptDialogProps) {
   const { t } = useTranslation(['settings', 'common']);
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const [loading, setLoading] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [template, setTemplate] = useState<ParsedPromptTemplate | null>(null);
@@ -60,7 +62,7 @@ export function InstallPromptDialog({
       );
       setTemplate(parsed);
     } catch (err) {
-      console.error('Error loading template:', err);
+      logger.error('Error loading template:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load prompt template';
       dispatch(showError(errorMessage));
@@ -97,7 +99,7 @@ export function InstallPromptDialog({
       onInstalled();
       onOpenChange(false);
     } catch (err) {
-      console.error('Error installing prompt:', err);
+      logger.error('Error installing prompt:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to install prompt';
       dispatch(showError(errorMessage));

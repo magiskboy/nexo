@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { logger } from '@/lib/logger';
 
 export type Page = 'chat' | 'settings' | 'workspaceSettings';
 
@@ -129,7 +130,7 @@ export const loadAppSettings = createAsyncThunk(
         setupCompleted: setupCompleted === 'true',
       };
     } catch (error) {
-      console.error('Failed to load app settings from database:', error);
+      logger.error('Failed to load app settings from database:', error);
       return {
         language: 'vi' as const,
         theme: 'light' as const,
@@ -160,7 +161,7 @@ export const loadLanguage = createAsyncThunk('ui/loadLanguage', async () => {
     });
     return 'vi' as const;
   } catch (error) {
-    console.error('Failed to load language from SQLite:', error);
+    logger.error('Failed to load language from SQLite:', error);
     return 'vi' as const;
   }
 });
@@ -242,7 +243,7 @@ const uiSlice = createSlice({
         key: 'language',
         value: action.payload,
       }).catch((error) => {
-        console.error('Failed to save language to database:', error);
+        logger.error('Failed to save language to database:', error);
       });
     },
     setTheme: (state, action: PayloadAction<UIState['theme']>) => {
@@ -251,7 +252,7 @@ const uiSlice = createSlice({
         key: 'theme',
         value: action.payload,
       }).catch((error) => {
-        console.error('Failed to save theme to database:', error);
+        logger.error('Failed to save theme to database:', error);
       });
     },
     setAgentChatHistoryDrawerOpen: (
@@ -294,7 +295,7 @@ const uiSlice = createSlice({
         key: 'showUsage',
         value: action.payload ? 'true' : 'false',
       }).catch((error) => {
-        console.error('Failed to save showUsage to database:', error);
+        logger.error('Failed to save showUsage to database:', error);
       });
     },
     setEnableWorkflowEditor: (state, action: PayloadAction<boolean>) => {
@@ -303,10 +304,7 @@ const uiSlice = createSlice({
         key: 'enableWorkflowEditor',
         value: action.payload ? 'true' : 'false',
       }).catch((error) => {
-        console.error(
-          'Failed to save enableWorkflowEditor to database:',
-          error
-        );
+        logger.error('Failed to save enableWorkflowEditor to database:', error);
       });
     },
     setSetupCompleted: (state, action: PayloadAction<boolean>) => {
@@ -315,7 +313,7 @@ const uiSlice = createSlice({
         key: 'setupCompleted',
         value: action.payload ? 'true' : 'false',
       }).catch((error) => {
-        console.error('Failed to save setupCompleted to database:', error);
+        logger.error('Failed to save setupCompleted to database:', error);
       });
     },
   },

@@ -18,6 +18,7 @@ import { addPermissionRequest } from '@/features/tools/state/toolPermissionSlice
 import { useTranslation } from 'react-i18next';
 import { messagesApi } from '@/features/chat/state/messagesApi';
 import { extractCodeBlocks } from '@/features/chat/lib/code-block-extractor';
+import { logger } from '@/lib/logger';
 
 // Event types
 interface MessageStartedEvent {
@@ -396,7 +397,7 @@ export function useChatStreaming() {
     const unlistenToolExecutionError = listenToEvent<ToolExecutionErrorEvent>(
       TauriEvents.TOOL_EXECUTION_ERROR,
       (payload) => {
-        console.error(`Tool error: ${payload.error}`);
+        logger.error(`Tool error: ${payload.error}`);
         dispatch(
           messagesApi.util.invalidateTags([
             { type: 'Message', id: `LIST_${payload.chat_id}` },

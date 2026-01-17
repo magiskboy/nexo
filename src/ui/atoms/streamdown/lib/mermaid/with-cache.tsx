@@ -1,6 +1,7 @@
 import { type ComponentType, useEffect, useState } from 'react';
 import type { MermaidProps } from './index';
 import { getCachePath, getChartHash } from './utils';
+import { logger } from '@/lib/logger';
 
 export function withMermaidCache<P extends MermaidProps>(
   Component: ComponentType<P>
@@ -31,7 +32,7 @@ export function withMermaidCache<P extends MermaidProps>(
             if (isMounted) setCachePath(fullPath);
           }
         } catch (error) {
-          console.error('[MermaidCache] checkCache error:', error);
+          logger.error('[MermaidCache] checkCache error:', error);
         }
       };
 
@@ -51,7 +52,7 @@ export function withMermaidCache<P extends MermaidProps>(
         if (!cachePath) setCachePath(targetPath);
         
       } catch (error) {
-        console.error('[MermaidCache] handleRender error:', error);
+        logger.error('[MermaidCache] handleRender error:', error);
       }
     };
 

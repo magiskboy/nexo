@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
 import { cn } from '@/lib/utils';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { useLogger } from '@/hooks/useLogger';
 
 interface PythonExecutorProps {
   code: string;
@@ -22,6 +23,7 @@ export function PythonExecutor({
   version,
 }: PythonExecutorProps) {
   const { t } = useTranslation('common');
+  const logger = useLogger();
   const [output, setOutput] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
@@ -59,7 +61,7 @@ export function PythonExecutor({
         setError(result.stderr);
       }
     } catch (err: unknown) {
-      console.error('Python execution error:', err);
+      logger.error('Python execution error:', err);
       // Backend errors usually come in a specific format but invokeCommand might throw
       if (err instanceof Error) {
         setError(err.message);
@@ -77,7 +79,7 @@ export function PythonExecutor({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      logger.error('Failed to copy code from PythonExecutor:', err);
     }
   };
 

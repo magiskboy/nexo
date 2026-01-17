@@ -1,5 +1,6 @@
 // @ts-nocheck
 import type { MermaidConfig } from 'mermaid';
+import { logger } from '@/lib/logger';
 
 export const initializeMermaid = async (customConfig?: MermaidConfig) => {
   const defaultConfig: MermaidConfig = {
@@ -97,7 +98,7 @@ export const getCachePath = async (hash: string): Promise<string> => {
 
     return await join(mermaidCacheDir, `${hash}.svg`);
   } catch (err) {
-    console.error('[MermaidCache] Utils Error:', err);
+    logger.error('[MermaidCache] Utils Error:', err);
     throw err;
   }
 };

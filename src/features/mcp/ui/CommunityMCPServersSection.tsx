@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Download, Loader2, Server, RefreshCw, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useLogger } from '@/hooks/useLogger';
 import { Button } from '@/ui/atoms/button/button';
 import { Input } from '@/ui/atoms/input';
 import {
@@ -31,6 +32,7 @@ export function CommunityMCPServersSection({
   onInstall,
 }: CommunityMCPServersSectionProps) {
   const { t } = useTranslation('settings');
+  const logger = useLogger();
   const dispatch = useAppDispatch();
   const [servers, setServers] = useState<HubMCPServer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +54,7 @@ export function CommunityMCPServersSection({
       );
       setServers(data);
     } catch (err) {
-      console.error('Error loading hub MCP servers:', err);
+      logger.error('Error loading hub MCP servers:', err);
       const errorMessage =
         err instanceof Error
           ? err.message
@@ -83,7 +85,7 @@ export function CommunityMCPServersSection({
         )
       );
     } catch (err) {
-      console.error('Error refreshing hub index:', err);
+      logger.error('Error refreshing hub index:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to refresh hub index';
       dispatch(showError(errorMessage));

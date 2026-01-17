@@ -570,7 +570,7 @@ impl ChatService {
                         .await;
 
                     if let Err(e) = &result {
-                        eprintln!("Agent request failed: {e}");
+                        tracing::error!(error = ?e, "Agent request failed");
                     }
 
                     let status = if result.is_ok() {
@@ -593,7 +593,7 @@ impl ChatService {
                         .update_metadata(status_message_id.clone(), Some(metadata.to_string()));
 
                     if let Err(e) = update_result {
-                        eprintln!("Failed to update agent status: {e}");
+                        tracing::error!(error = ?e, "Failed to update agent status");
                     } else {
                         // Emit event to notify frontend that metadata was updated
                         let message_emitter = MessageEmitter::new(app_handle_for_emit.clone());
@@ -601,7 +601,7 @@ impl ChatService {
                             parent_chat_id.clone(),
                             status_message_id.clone(),
                         ) {
-                            eprintln!("Failed to emit metadata-updated event: {e}");
+                            tracing::error!(error = ?e, "Failed to emit metadata-updated event");
                         }
                     }
                 });
@@ -773,7 +773,7 @@ impl ChatService {
                 r_is_stream,
                 "success".to_string(),
             ) {
-                eprintln!("Failed to record usage: {e}");
+                tracing::error!(error = ?e, "Failed to record usage");
             }
         });
 
@@ -822,7 +822,7 @@ impl ChatService {
                 if let Err(e) = message_emitter
                     .emit_message_metadata_updated(chat_id_clone, assistant_message_id_clone)
                 {
-                    eprintln!("Failed to emit metadata-updated event: {e}");
+                    tracing::error!(error = ?e, "Failed to emit metadata-updated event");
                 }
             });
         }
@@ -1134,7 +1134,7 @@ impl ChatService {
                         r_is_stream,
                         "success".to_string(),
                     ) {
-                        eprintln!("Failed to record usage: {e}");
+                        tracing::error!(error = ?e, "Failed to record usage");
                     }
                 });
 
@@ -1186,8 +1186,10 @@ impl ChatService {
                         Ok(results) => results,
                         Err(e) => {
                             // Log error but continue with empty results
-                            eprintln!(
-                                "Tool execution failed in agent loop (chat_id: {chat_id}): {e}"
+                            tracing::error!(
+                                chat_id = %chat_id,
+                                error = ?e,
+                                "Tool execution failed in agent loop"
                             );
                             // Emit error event to notify frontend
                             let tool_emitter = ToolEmitter::new(app.clone());
@@ -1375,7 +1377,7 @@ impl ChatService {
                     }
                 }
             } else if let Err(e) = result {
-                eprintln!("Error generating chat title for chat_id {chat_id}: {e}");
+                tracing::error!(chat_id = %chat_id, error = ?e, "Error generating chat title");
             }
         });
     }
@@ -1576,9 +1578,11 @@ impl ChatService {
             )?;
 
             // Log tool execution start for debugging
-            eprintln!(
-                "Starting tool execution: tool={}, chat_id={}, tool_call_id={}",
-                tool_call.function.name, chat_id, tool_call.id
+            tracing::debug!(
+                tool = %tool_call.function.name,
+                chat_id = %chat_id,
+                tool_call_id = %tool_call.id,
+                "Starting tool execution"
             );
 
             // Find connection for this tool
@@ -1760,9 +1764,11 @@ impl ChatService {
                     )?;
 
                     // Log successful tool execution
-                    eprintln!(
-                        "Tool execution completed: tool={}, chat_id={}, tool_call_id={}",
-                        tool_call.function.name, chat_id, tool_call.id
+                    tracing::debug!(
+                        tool = %tool_call.function.name,
+                        chat_id = %chat_id,
+                        tool_call_id = %tool_call.id,
+                        "Tool execution completed"
                     );
 
                     result
@@ -1772,9 +1778,11 @@ impl ChatService {
                     let error_msg = e.to_string();
 
                     // Log error for debugging
-                    eprintln!(
-                        "Tool execution failed: tool={}, chat_id={}, error={}",
-                        tool_call.function.name, chat_id, error_msg
+                    tracing::error!(
+                        tool = %tool_call.function.name,
+                        chat_id = %chat_id,
+                        error = %error_msg,
+                        "Tool execution failed"
                     );
 
                     // Update tool_call message with error

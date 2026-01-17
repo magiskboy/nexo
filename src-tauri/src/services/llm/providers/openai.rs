@@ -83,9 +83,9 @@ impl OpenAIProvider {
                                     "image_url": image_url.url
                                 })),
                                 ContentPart::FileUrl { file_url } => {
-                                    eprintln!(
-                                        "Warning: FileUrl '{}' ignored. Automatic file upload not implemented in logic layer.",
-                                        file_url.mime_type
+                                    tracing::warn!(
+                                        mime_type = %file_url.mime_type,
+                                        "FileUrl ignored. Automatic file upload not implemented in logic layer."
                                     );
                                     None
                                 }
@@ -265,7 +265,11 @@ impl OpenAIProvider {
                         };
 
                         // Log for debugging
-                        // eprintln!("Debug: Received Event: {} | Data keys: {:?}", effective_event_type, data.as_object().map(|o| o.keys().collect::<Vec<_>>()));
+                        tracing::debug!(
+                            event_type = effective_event_type,
+                            data_keys = ?data.as_object().map(|o| o.keys().collect::<Vec<_>>()),
+                            "Received SSE event"
+                        );
 
                         match effective_event_type {
                             "response.output_text.delta" | "response.text.delta" => {
@@ -399,7 +403,7 @@ impl OpenAIProvider {
                     }
                     Err(e) => {
                         if !event_data_str.is_empty() {
-                            eprintln!("Failed to parse SSE data: {e} - Data: {event_data_str}");
+                            tracing::error!(error = %e, data = %event_data_str, "Failed to parse SSE data");
                         }
                     }
                 }

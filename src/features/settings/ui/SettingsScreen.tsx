@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useLogger } from '@/hooks/useLogger';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
   setSettingsSection,
@@ -35,6 +36,7 @@ import { UpdateSection } from '@/features/updater/ui/UpdateSection';
 
 export function SettingsScreen() {
   const { t } = useTranslation(['settings', 'common']);
+  const logger = useLogger();
   const dispatch = useAppDispatch();
   const selectedSection = useAppSelector((state) => state.ui.settingsSection);
 
@@ -133,7 +135,10 @@ export function SettingsScreen() {
         const { openUrl } = await import('@tauri-apps/plugin-opener');
         await openUrl(url);
       } catch (error) {
-        console.error('Failed to open external link:', error);
+        logger.error('Failed to open external link in Settings:', {
+          url,
+          error,
+        });
       }
     };
 

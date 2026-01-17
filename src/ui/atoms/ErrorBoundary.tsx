@@ -2,6 +2,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 import * as Sentry from '@sentry/react';
 import { Button } from '@/ui/atoms/button/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface Props {
   children: ReactNode;
@@ -25,7 +26,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    logger.error('Uncaught error bound by ErrorBoundary:', {
+      error,
+      errorInfo,
+    });
 
     // Report to Sentry with React context
     Sentry.withScope((scope) => {

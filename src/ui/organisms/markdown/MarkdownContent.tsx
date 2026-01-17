@@ -12,6 +12,7 @@ import { Streamdown } from '@/ui/atoms/streamdown';
 import { useAppSelector } from '@/app/hooks';
 import { cn } from '@/lib/utils';
 import { useComponentPerformance } from '@/hooks/useComponentPerformance';
+import { logger } from '@/lib/logger';
 import { CustomCodeComponent } from './CustomCodeComponent';
 import type { BundledTheme } from 'shiki';
 
@@ -202,7 +203,7 @@ class MarkdownErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Markdown rendering error:', error, errorInfo);
+    logger.error('Markdown rendering error:', { error, errorInfo });
   }
 
   render() {

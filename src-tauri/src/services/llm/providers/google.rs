@@ -1,7 +1,10 @@
 use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage};
-use crate::models::llm_types::{LLMModel, LLMChatResponse, TokenUsage, ToolCall, InlineData, ToolCallFunction, LLMChatRequest, ChatMessage, UserContent, ContentPart, AssistantContent};
+use crate::models::llm_types::{
+    AssistantContent, ChatMessage, ContentPart, InlineData, LLMChatRequest, LLMChatResponse,
+    LLMModel, TokenUsage, ToolCall, ToolCallFunction, UserContent,
+};
 use async_trait::async_trait;
 use base64::Engine as _;
 use futures::StreamExt;
@@ -58,8 +61,11 @@ impl GoogleProvider {
         };
         let upload_url = format!("{}/files", upload_url.trim_end_matches('/'));
 
-        eprintln!(
-            "Uploading file to Google File API: {upload_url} (size: {num_bytes} bytes, mime: {mime_type})"
+        tracing::info!(
+            url = %upload_url,
+            bytes = num_bytes,
+            mime = %mime_type,
+            "Uploading file to Google File API"
         );
 
         // Step 2: Initial resumable request
@@ -80,7 +86,7 @@ impl GoogleProvider {
             .await
             .map_err(|e| {
                 let err_msg = format!("Failed to initiate upload: {e}");
-                eprintln!("{err_msg}");
+                tracing::error!(error = %e, "Failed to initiate upload");
                 AppError::Generic(err_msg)
             })?;
 
@@ -90,10 +96,8 @@ impl GoogleProvider {
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
-            let err_msg = format!(
-                "Failed to initiate upload (status {status}): {error_text}"
-            );
-            eprintln!("{err_msg}");
+            let err_msg = format!("Failed to initiate upload (status {status}): {error_text}");
+            tracing::error!(status = ?status, error = %error_text, "Failed to initiate upload");
             return Err(AppError::Generic(err_msg));
         }
 
@@ -104,12 +108,12 @@ impl GoogleProvider {
             .and_then(|h| h.to_str().ok())
             .ok_or_else(|| {
                 let err_msg = "No upload URL in response headers".to_string();
-                eprintln!("{err_msg}");
+                tracing::error!("No upload URL in response headers");
                 AppError::Generic(err_msg)
             })?
             .to_string();
 
-        eprintln!("Got upload session URL: {upload_session_url}");
+        tracing::info!(session_url = %upload_session_url, "Got upload session URL");
 
         // Step 3: Upload the actual bytes
         let upload_response = client
@@ -122,7 +126,7 @@ impl GoogleProvider {
             .await
             .map_err(|e| {
                 let err_msg = format!("Failed to upload file bytes: {e}");
-                eprintln!("{err_msg}");
+                tracing::error!(error = %e, "Failed to upload file bytes");
                 AppError::Generic(err_msg)
             })?;
 
@@ -132,23 +136,21 @@ impl GoogleProvider {
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
-            let err_msg = format!(
-                "Failed to upload file bytes (status {status}): {error_text}"
-            );
-            eprintln!("{err_msg}");
+            let err_msg = format!("Failed to upload file bytes (status {status}): {error_text}");
+            tracing::error!(status = ?status, error = %error_text, "Failed to upload file bytes");
             return Err(AppError::Generic(err_msg));
         }
 
         // Parse response to get file URI and name
         let response_json: serde_json::Value = upload_response.json().await.map_err(|e| {
             let err_msg = format!("Failed to parse upload response: {e}");
-            eprintln!("{err_msg}");
+            tracing::error!(error = %e, "Failed to parse upload response");
             AppError::Generic(err_msg)
         })?;
 
-        eprintln!(
-            "Upload response: {}",
-            serde_json::to_string_pretty(&response_json).unwrap_or_else(|_| "{}".to_string())
+        tracing::debug!(
+            response = ?response_json,
+            "Upload response"
         );
 
         let file_uri = response_json
@@ -157,7 +159,7 @@ impl GoogleProvider {
             .and_then(|u| u.as_str())
             .ok_or_else(|| {
                 let err_msg = format!("No file URI in response: {response_json:?}");
-                eprintln!("{err_msg}");
+                tracing::error!(response = ?response_json, "No file URI in response");
                 AppError::Generic(err_msg)
             })?
             .to_string();
@@ -168,13 +170,15 @@ impl GoogleProvider {
             .and_then(|n| n.as_str())
             .ok_or_else(|| {
                 let err_msg = format!("No file name in response: {response_json:?}");
-                eprintln!("{err_msg}");
+                tracing::error!(response = ?response_json, "No file name in response");
                 AppError::Generic(err_msg)
             })?
             .to_string();
 
-        eprintln!(
-            "Successfully uploaded file: {file_name} (URI: {file_uri})"
+        tracing::info!(
+            name = %file_name,
+            uri = %file_uri,
+            "Successfully uploaded file"
         );
         Ok((file_uri, file_name))
     }
@@ -750,8 +754,7 @@ impl LLMProvider for GoogleProvider {
                                         .and_then(|v| v.as_array())
                                         .is_some_and(|methods| {
                                             methods.iter().any(|method| {
-                                                method
-                                                    .as_str() == Some("generateContent")
+                                                method.as_str() == Some("generateContent")
                                             })
                                         }); // If field missing, assume false or check docs? Docs say it's there.
 
@@ -898,9 +901,7 @@ impl LLMProvider for GoogleProvider {
                                                                 )
                                                                 .await
                                                             {
-                                                                eprintln!(
-                                                                    "Warning: Failed to wait for video processing: {e}"
-                                                                );
+                                                                tracing::warn!(error = %e, "Failed to wait for video processing");
                                                                 // Continue anyway, might work
                                                             }
                                                         }
@@ -914,9 +915,7 @@ impl LLMProvider for GoogleProvider {
                                                         }));
                                                     }
                                                     Err(e) => {
-                                                        eprintln!(
-                                                            "Warning: Failed to upload file: {e}"
-                                                        );
+                                                        tracing::warn!(error = %e, "Failed to upload file");
                                                         // Skip this file
                                                     }
                                                 }
@@ -1010,9 +1009,7 @@ impl LLMProvider for GoogleProvider {
                                                                 )
                                                                 .await
                                                             {
-                                                                eprintln!(
-                                                                    "Warning: Failed to wait for video processing: {e}"
-                                                                );
+                                                                tracing::warn!(error = %e, "Failed to wait for video processing");
                                                                 // Continue anyway, might work
                                                             }
                                                         }
@@ -1026,9 +1023,7 @@ impl LLMProvider for GoogleProvider {
                                                         }));
                                                     }
                                                     Err(e) => {
-                                                        eprintln!(
-                                                            "Warning: Failed to upload file: {e}"
-                                                        );
+                                                        tracing::warn!(error = %e, "Failed to upload file");
                                                         // Skip this file
                                                     }
                                                 }

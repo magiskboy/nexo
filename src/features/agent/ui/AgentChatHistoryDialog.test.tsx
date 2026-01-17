@@ -41,6 +41,20 @@ vi.mock('@/hooks/useAppSettings', () => ({
   useAppSettings: () => ({}),
 }));
 
+// Mock useLogger with a stable instance
+const mockLogger = {
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  setContext: vi.fn(),
+};
+
+vi.mock('@/hooks/useLogger', () => ({
+  useLogger: () => mockLogger,
+}));
+
+
 // Mock RTK Query API
 const mockGetInstalledAgentsQuery = vi.fn();
 vi.mock('../state/api', () => ({
@@ -360,10 +374,6 @@ describe('AgentChatHistoryDialog', () => {
 
   describe('Error Handling', () => {
     it('should handle fetch error gracefully', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
       (invokeCommand as ReturnType<typeof vi.fn>).mockRejectedValue(
         new Error('Failed to fetch')
       );
@@ -371,13 +381,11 @@ describe('AgentChatHistoryDialog', () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(mockLogger.error).toHaveBeenCalledWith(
           'Failed to load agent chat history:',
           expect.any(Error)
         );
       });
-
-      consoleErrorSpy.mockRestore();
     });
 
     it('should show empty state when fetch fails', async () => {

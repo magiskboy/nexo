@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { logger } from '@/lib/logger';
 import type { MCPServerConnection, MCPToolType } from '../types';
 
 // Types matching Rust structs
@@ -38,7 +39,7 @@ function dbToFrontendMCPServerConnection(
     try {
       tools = JSON.parse(dbConn.tools_json);
     } catch (e) {
-      console.error('Error parsing tools_json:', e);
+      logger.error('Error parsing tools_json in MCP slice:', e);
       tools = undefined;
     }
   }
@@ -151,7 +152,7 @@ export const connectMCPConnection = createAsyncThunk(
           try {
             inputSchema = JSON.parse(tool.input_schema);
           } catch (e) {
-            console.error('Error parsing input_schema:', e);
+            logger.error('Error parsing input_schema in MCP slice:', e);
           }
         }
         return {
@@ -172,7 +173,7 @@ export const connectMCPConnection = createAsyncThunk(
       status = 'connected';
       errorMessage = undefined;
     } catch (error: unknown) {
-      console.error('Error connecting to MCP server:', error);
+      logger.error('Error connecting to MCP server:', error);
       // Update status to disconnected on error and save error message
       const errorMsg =
         error instanceof Error

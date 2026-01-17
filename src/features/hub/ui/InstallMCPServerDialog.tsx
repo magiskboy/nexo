@@ -19,6 +19,7 @@ import {
   showSuccess,
 } from '@/features/notifications/state/notificationSlice';
 import type { HubMCPServer } from '@/features/mcp/types';
+import { useLogger } from '@/hooks/useLogger';
 
 export interface InstallMCPServerDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function InstallMCPServerDialog({
 }: InstallMCPServerDialogProps) {
   const { t } = useTranslation(['settings', 'common']);
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const [installing, setInstalling] = useState(false);
 
   const handleInstall = async () => {
@@ -71,7 +73,7 @@ export function InstallMCPServerDialog({
       onInstalled();
       onOpenChange(false);
     } catch (err) {
-      console.error('Error installing MCP server:', err);
+      logger.error('Error installing MCP server:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to install MCP server';
       dispatch(showError(errorMessage));

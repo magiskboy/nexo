@@ -20,6 +20,7 @@ import { InstallAgentDialog } from './InstallAgentDialog';
 import type { HubAgent } from '@/features/agent/types';
 import { useGetInstalledAgentsQuery } from '@/features/agent/state/api';
 import { HubCommunitySection } from './HubCommunitySection';
+import { useLogger } from '@/hooks/useLogger';
 
 export function CommunityAgentsSection({
   onInstalled,
@@ -28,6 +29,7 @@ export function CommunityAgentsSection({
 }) {
   const { t } = useTranslation('settings');
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const [agents, setAgents] = useState<HubAgent[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,12 +47,12 @@ export function CommunityAgentsSection({
       );
       setAgents(data);
     } catch (err) {
-      console.error('Failed to fetch agents:', err);
+      logger.error('Failed to fetch agents:', err);
       dispatch(showError('Failed to load agents from hub'));
     } finally {
       setLoading(false);
     }
-  }, [dispatch]);
+  }, [dispatch, logger]);
 
   useEffect(() => {
     fetchAgents();
@@ -69,7 +71,7 @@ export function CommunityAgentsSection({
         )
       );
     } catch (err) {
-      console.error('Error refreshing hub index:', err);
+      logger.error('Error refreshing hub index:', err);
       dispatch(showError('Failed to refresh hub index'));
     } finally {
       setRefreshing(false);

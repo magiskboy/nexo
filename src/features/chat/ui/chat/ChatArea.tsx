@@ -23,10 +23,12 @@ import { setAgentChatHistoryDrawerOpen } from '@/features/ui/state/uiSlice';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
 import { messagesApi } from '../../state/messagesApi';
 import { useGetLLMConnectionsQuery } from '@/features/llm';
+import { useLogger } from '@/hooks/useLogger';
 
 export function ChatArea() {
   const { t } = useTranslation(['common', 'settings']);
   const dispatch = useAppDispatch();
+  const logger = useLogger();
 
   // Use workspaces hook to get selectedWorkspaceId and selectedLLMConnectionId
   const { selectedWorkspace, selectedWorkspaceId, workspaceSettings } =
@@ -183,7 +185,7 @@ export function ChatArea() {
                     type: mimeType,
                   });
                 } catch (e) {
-                  console.error('Failed to restore file', e);
+                  logger.error('Failed to restore file', e);
                   return null;
                 }
               }
@@ -204,7 +206,7 @@ export function ChatArea() {
           dispatch(setAttachedFiles([]));
         }
       } catch (e) {
-        console.error('Failed to restore images for editing', e);
+        logger.error('Failed to restore images for editing', e);
         dispatch(setAttachedFiles([]));
       }
     }
@@ -241,7 +243,7 @@ export function ChatArea() {
         ).unwrap();
         currentChatId = newChat.id;
       } catch (error) {
-        console.error('Failed to auto-create chat:', error);
+        logger.error('Failed to auto-create chat:', error);
         dispatch(showError(t('cannotCreateChat', { ns: 'settings' })));
         return;
       }
@@ -361,7 +363,7 @@ export function ChatArea() {
             model: modelId,
             llmConnectionId: llmConnectionId,
           }).catch((err) =>
-            console.error('ChatArea: Failed to generate chat title:', err)
+            logger.error('ChatArea: Failed to generate chat title:', err)
           );
         }
       }
@@ -369,7 +371,7 @@ export function ChatArea() {
       // Note: Chat last message is updated by Rust core after message completion
       // Events will handle content updates, so we don't need to update it here
     } catch (error: unknown) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       // Error message is already handled in the thunk
       // Note: Input is already cleared, which is fine for UX
     } finally {

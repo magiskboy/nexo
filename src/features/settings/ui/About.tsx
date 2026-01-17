@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Info, Github, Globe, BookOpen, Heart } from 'lucide-react';
+import { useLogger } from '@/hooks/useLogger';
 import {
   Dialog,
   DialogBody,
@@ -23,13 +24,14 @@ const DOCS_URL = 'https://nexo-docs.nkthanh.dev';
 
 export function About({ open, onOpenChange }: AboutProps) {
   const { t } = useTranslation('common');
+  const logger = useLogger();
 
   const openExternalLink = async (url: string) => {
     try {
       const { openUrl } = await import('@tauri-apps/plugin-opener');
       await openUrl(url);
     } catch (error) {
-      console.error('Failed to open external link:', error);
+      logger.error('Failed to open external link in About:', { url, error });
     }
   };
 

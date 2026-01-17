@@ -32,7 +32,7 @@ impl MCPToolRefreshService {
 
             // Initial refresh
             if let Err(e) = self.refresh_all_tools().await {
-                eprintln!("Initial MCP tools refresh failed: {e}");
+                tracing::error!("Initial MCP tools refresh failed: {e}");
             }
 
             // Then refresh every 5 minutes
@@ -42,7 +42,7 @@ impl MCPToolRefreshService {
             loop {
                 interval.tick().await;
                 if let Err(e) = self.refresh_all_tools().await {
-                    eprintln!("MCP tools refresh failed: {e}");
+                    tracing::error!("MCP tools refresh failed: {e}");
                 }
             }
         });
@@ -90,9 +90,11 @@ impl MCPToolRefreshService {
                 }
                 Err(e) => {
                     // Log error but don't fail the entire refresh
-                    eprintln!(
+                    tracing::error!(
                         "Failed to refresh tools for connection {} ({}): {}",
-                        connection.id, connection.name, e
+                        connection.id,
+                        connection.name,
+                        e
                     );
 
                     // Optionally update status to indicate refresh failure

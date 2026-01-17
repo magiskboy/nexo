@@ -47,6 +47,18 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock useLogger
+vi.mock('@/hooks/useLogger', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    setContext: vi.fn(),
+  }),
+}));
+
+
 vi.mock('@/features/agent/state/api', () => ({
   useGetInstalledAgentsQuery: vi.fn(() => ({
     refetch: vi.fn(),

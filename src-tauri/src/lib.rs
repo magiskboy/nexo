@@ -12,6 +12,7 @@ mod state;
 // Sentry helper macros and functions
 #[macro_use]
 mod lib {
+    pub mod logging;
     pub mod sentry_helpers;
 }
 
@@ -72,11 +73,16 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            // Initialize logging
+            if let Err(e) = lib::logging::init_logging(app.handle()) {
+                tracing::error!("Failed to initialize logging: {e}");
+            }
+
             // Maximize the main window on startup and ensure it's at the top
             if let Some(window) = app.get_webview_window("main") {
                 // Maximize first
                 if let Err(e) = window.maximize() {
-                    eprintln!("Failed to maximize window: {e}");
+                    tracing::error!(error = %e, "Failed to maximize window");
                 }
                 // On macOS, ensure window is at position (0, 0) to remove any gap
                 #[cfg(target_os = "macos")]
@@ -91,7 +97,7 @@ pub fn run() {
                                 y: 0,
                             }))
                         {
-                            eprintln!("Failed to set window position: {e}");
+                            tracing::error!(error = %e, "Failed to set window position");
                         }
                     });
                 }
@@ -224,6 +230,8 @@ pub fn run() {
             features::agent::commands::delete_agent,
             features::agent::commands::get_agent_info,
             features::agent::commands::update_agent,
+            // Logging commands
+            features::logging::commands::write_frontend_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

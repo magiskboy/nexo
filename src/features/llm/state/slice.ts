@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { logger } from '@/lib/logger';
 import type { LLMConnection, LLMModel } from '../types';
 
 // Types matching Rust structs - duplicating local interface to keep slice independent or could share
@@ -35,7 +36,7 @@ function dbToFrontendLLMConnection(dbConn: DbLLMConnection): LLMConnection {
     try {
       models = JSON.parse(dbConn.models_json);
     } catch (e) {
-      console.error('Error parsing models_json:', e);
+      logger.error('Error parsing models_json:', e);
       models = undefined;
     }
   }

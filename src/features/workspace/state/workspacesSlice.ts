@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { logger } from '@/lib/logger';
 import type { Workspace } from '../types';
 
 // Types matching Rust structs
@@ -86,7 +87,10 @@ const workspacesSlice = createSlice({
           key: 'lastWorkspaceId',
           value: action.payload,
         }).catch((error) => {
-          console.error('Failed to save lastWorkspaceId:', error);
+          logger.error(
+            'Failed to save lastWorkspaceId in workspaces slice:',
+            error
+          );
         });
       }
     },
@@ -140,7 +144,10 @@ const workspacesSlice = createSlice({
           key: 'lastWorkspaceId',
           value: action.payload.id,
         }).catch((error) => {
-          console.error('Failed to save lastWorkspaceId:', error);
+          logger.error(
+            'Failed to save lastWorkspaceId after creation in workspaces slice:',
+            error
+          );
         });
       })
       // Update workspace name
@@ -168,7 +175,10 @@ const workspacesSlice = createSlice({
               key: 'lastWorkspaceId',
               value: newSelectedId,
             }).catch((error) => {
-              console.error('Failed to save lastWorkspaceId:', error);
+              logger.error(
+                'Failed to save lastWorkspaceId after deletion in workspaces slice:',
+                error
+              );
             });
           }
         }

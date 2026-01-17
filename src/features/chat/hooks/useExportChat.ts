@@ -2,8 +2,10 @@ import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import * as opener from '@tauri-apps/plugin-opener';
 import type { Message } from '@/app/types';
+import { useLogger } from '@/hooks/useLogger';
 
 export function useExportChat() {
+  const logger = useLogger();
   const exportFile = async (
     content: string,
     filename: string,
@@ -31,7 +33,7 @@ export function useExportChat() {
         }
         return;
       } catch (error) {
-        console.error(
+        logger.error(
           'Tauri export failed, falling back to browser download',
           error
         );

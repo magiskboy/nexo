@@ -11,6 +11,7 @@ import {
   type UsageChartPoint,
   type UsageStat,
 } from '@/models/usage';
+import { useLogger } from '@/hooks/useLogger';
 
 export interface UseUsageReturn {
   filter: UsageFilter;
@@ -30,6 +31,7 @@ export interface UseUsageReturn {
 
 export function useUsage(): UseUsageReturn {
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const [filter, setFilter] = useState<UsageFilter>({});
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [chartData, setChartData] = useState<UsageChartPoint[]>([]);
@@ -60,10 +62,11 @@ export function useUsage(): UseUsageReturn {
       });
       setLogs(logsRes);
     } catch (error) {
-      console.error('Failed to fetch usage data:', error);
+      logger.error('Failed to fetch usage data:', error);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, interval, page]);
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export function useUsage(): UseUsageReturn {
       dispatch(showSuccess('Usage data cleared successfully'));
       fetchData();
     } catch (error) {
-      console.error('Failed to clear usage data:', error);
+      logger.error('Failed to clear usage data:', error);
       dispatch(showError('Failed to clear usage data'));
     }
   };

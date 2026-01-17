@@ -40,6 +40,7 @@ import { useWorkspaces } from '@/features/workspace';
 import { useExportChat } from '@/features/chat/hooks/useExportChat';
 import { useAppDispatch } from '@/app/hooks';
 import { navigateToWorkspaceSettings } from '@/features/ui/state/uiSlice';
+import { useLogger } from '@/hooks/useLogger';
 
 export function ChatSidebar() {
   // Track render performance
@@ -62,6 +63,7 @@ export function ChatSidebar() {
     handleDeleteChat,
     handleRenameChat,
   } = useChats(selectedWorkspaceId);
+  const logger = useLogger();
   const { handleExportMarkdown, handleExportJSON } = useExportChat();
   const { t } = useTranslation(['common', 'chat', 'settings']);
   const dispatch = useAppDispatch();
@@ -97,7 +99,7 @@ export function ChatSidebar() {
       setChatToRename(null);
       setNewChatTitle('');
     } catch (error) {
-      console.error('Error renaming chat:', error);
+      logger.error('Error renaming chat:', error);
     }
   };
 
@@ -124,7 +126,7 @@ export function ChatSidebar() {
       setDeleteDialogOpen(false);
       setChatToDelete(null);
     } catch (error) {
-      console.error('Error deleting chat:', error);
+      logger.error('Error deleting chat:', error);
     }
   };
 
@@ -150,7 +152,7 @@ export function ChatSidebar() {
         handleExportJSON(chatId, messages);
       }
     } catch (error) {
-      console.error('Failed to export chat from sidebar:', error);
+      logger.error('Failed to export chat from sidebar:', error);
     }
   };
 

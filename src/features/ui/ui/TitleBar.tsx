@@ -2,6 +2,7 @@ import { useState, useEffect, ReactNode } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, X, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLogger } from '@/hooks/useLogger';
 
 interface TitleBarProps {
   leftContent?: ReactNode;
@@ -32,6 +33,7 @@ export function TitleBar({
 }: TitleBarProps = {}) {
   const [isMaximized, setIsMaximized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const logger = useLogger();
 
   const platform = detectPlatform();
 
@@ -79,7 +81,7 @@ export function TitleBar({
       const appWindow = getCurrentWindow();
       await appWindow.minimize();
     } catch (error) {
-      console.error('Error minimizing window:', error);
+      logger.error('Error minimizing window:', error);
     }
   };
 
@@ -111,7 +113,7 @@ export function TitleBar({
         setIsMaximized(maximized);
       }
     } catch (error) {
-      console.error('Error toggling maximize/fullscreen:', error);
+      logger.error('Error toggling maximize/fullscreen:', error);
     }
   };
 
@@ -126,7 +128,7 @@ export function TitleBar({
       const appWindow = getCurrentWindow();
       await appWindow.close();
     } catch (error) {
-      console.error('Error closing window:', error);
+      logger.error('Error closing window:', error);
     }
   };
 
@@ -157,7 +159,7 @@ export function TitleBar({
         const fullscreen = await appWindow.isFullscreen();
         setIsFullscreen(fullscreen);
       } catch (error) {
-        console.error('Error toggling fullscreen on double-click:', error);
+        logger.error('Error toggling fullscreen on double-click:', error);
         // Fallback to maximize if fullscreen fails
         const appWindow = getCurrentWindow();
         await appWindow.toggleMaximize();

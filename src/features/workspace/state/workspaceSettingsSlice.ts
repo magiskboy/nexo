@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { logger } from '@/lib/logger';
 import type { WorkspaceSettings } from '../types';
 
 // Types matching Rust structs
@@ -50,7 +51,10 @@ export const fetchWorkspaceSettings = createAsyncThunk(
       try {
         mcpToolIds = JSON.parse(dbSettings.mcp_tool_ids);
       } catch (e) {
-        console.error('Error parsing mcpToolIds:', e);
+        logger.error(
+          'Error parsing mcpToolIds in workspace settings slice:',
+          e
+        );
       }
     }
 
@@ -66,7 +70,10 @@ export const fetchWorkspaceSettings = createAsyncThunk(
       try {
         toolPermissionConfig = JSON.parse(dbSettings.tool_permission_config);
       } catch (e) {
-        console.error('Error parsing toolPermissionConfig:', e);
+        logger.error(
+          'Error parsing toolPermissionConfig in workspace settings slice:',
+          e
+        );
       }
     }
 

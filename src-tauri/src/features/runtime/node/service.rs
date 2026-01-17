@@ -176,6 +176,7 @@ impl NodeRuntime {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::error!(?stderr, "FNM uninstall failed");
             return Err(AppError::Node(format!("FNM uninstall failed: {stderr}")));
         }
 

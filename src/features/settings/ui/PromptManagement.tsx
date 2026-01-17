@@ -22,6 +22,8 @@ import {
   showError,
   showSuccess,
 } from '@/features/notifications/state/notificationSlice';
+import { logger } from '@/lib/logger';
+
 interface Prompt {
   id: string;
   name: string;
@@ -40,21 +42,21 @@ export function PromptManagement() {
   const [promptToDelete, setPromptToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadPrompts();
-  }, []);
-
-  const loadPrompts = async () => {
+  const loadPrompts = React.useCallback(async () => {
     try {
       setLoading(true);
       const data = await invokeCommand<Prompt[]>(TauriCommands.GET_PROMPTS);
       setPrompts(data);
     } catch (error) {
-      console.error('Error loading prompts:', error);
+      logger.error('Error loading prompts:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadPrompts();
+  }, [loadPrompts]);
 
   const handleAdd = () => {
     setEditingPrompt(null);
@@ -76,7 +78,7 @@ export function PromptManagement() {
       setPromptToDelete(null);
       dispatch(showSuccess(t('promptDeleted'), t('promptDeletedDescription')));
     } catch (error) {
-      console.error('Error deleting prompt:', error);
+      logger.error('Error deleting prompt:', error);
       dispatch(showError(t('cannotDeletePrompt')));
     }
   };
@@ -111,7 +113,7 @@ export function PromptManagement() {
         )
       );
     } catch (error) {
-      console.error('Error saving prompt:', error);
+      logger.error('Error saving prompt:', error);
       dispatch(showError(t('cannotSavePrompt')));
     }
   };

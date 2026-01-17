@@ -14,6 +14,18 @@ vi.mock('@/app/hooks', () => ({
   useAppDispatch: vi.fn(),
 }));
 
+// Mock useLogger
+vi.mock('@/hooks/useLogger', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    setContext: vi.fn(),
+  }),
+}));
+
+
 // Mock notification actions
 vi.mock('@/features/notifications/state/notificationSlice', () => ({
   showSuccess: vi.fn((msg) => ({ type: 'success', payload: msg })),

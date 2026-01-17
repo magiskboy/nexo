@@ -15,6 +15,7 @@ import {
 } from '../state/messages';
 import { showError } from '@/features/notifications/state/notificationSlice';
 import { setAttachedFiles } from '../state/chatInputSlice';
+import { useLogger } from '@/hooks/useLogger';
 
 /**
  * Hook to access and manage chats
@@ -22,6 +23,7 @@ import { setAttachedFiles } from '../state/chatInputSlice';
 export function useChats(selectedWorkspaceId: string | null) {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(['common', 'settings']);
+  const logger = useLogger();
 
   // Selectors - use raw selector first
   const chatsByWorkspaceId = useAppSelector(
@@ -101,7 +103,7 @@ export function useChats(selectedWorkspaceId: string | null) {
         })
       ).unwrap();
     } catch (error) {
-      console.error('Error creating new chat:', error);
+      logger.error('Error creating new chat:', error);
       dispatch(showError(t('cannotCreateChat', { ns: 'settings' })));
     }
   };
@@ -149,7 +151,7 @@ export function useChats(selectedWorkspaceId: string | null) {
         }
       }
     } catch (error) {
-      console.error('Error deleting chat:', error);
+      logger.error('Error deleting chat:', error);
       dispatch(showError(t('cannotDeleteChat', { ns: 'settings' })));
       throw error;
     }
@@ -164,7 +166,7 @@ export function useChats(selectedWorkspaceId: string | null) {
         })
       ).unwrap();
     } catch (error) {
-      console.error('Error renaming chat:', error);
+      logger.error('Error renaming chat:', error);
       dispatch(showError(t('cannotRenameChat', { ns: 'settings' })));
       throw error;
     }

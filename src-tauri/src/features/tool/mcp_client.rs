@@ -104,7 +104,7 @@ impl MCPClientService {
                 Ok(t) => t,
                 Err(e) => {
                     let err_msg = format!("Failed to create SSE transport for {url}: {e}");
-                    eprintln!("{err_msg}");
+                    tracing::error!("{}", err_msg);
                     return Err(AppError::Generic(err_msg));
                 }
             };
@@ -131,14 +131,14 @@ impl MCPClientService {
                 Ok(p) => p,
                 Err(e) => {
                     let err_msg = format!("Invalid stdio URL '{url}': parse error: {e}");
-                    eprintln!("{err_msg}");
+                    tracing::error!("{}", err_msg);
                     return Err(AppError::Validation(err_msg));
                 }
             };
 
             if parts.is_empty() {
                 let err_msg = format!("Invalid stdio URL '{url}': command cannot be empty");
-                eprintln!("{err_msg}");
+                tracing::error!("{}", err_msg);
                 return Err(AppError::Validation(err_msg));
             }
 
@@ -276,7 +276,7 @@ impl MCPClientService {
                     let err_msg = format!(
                         "Failed to create stdio transport for command '{command}' with args {args:?}: {e}"
                     );
-                    eprintln!("{err_msg}");
+                    tracing::error!("{}", err_msg);
                     return Err(AppError::Generic(err_msg));
                 }
             };
@@ -287,7 +287,7 @@ impl MCPClientService {
         // Start the client
         if let Err(e) = client.clone().start().await {
             let err_msg = format!("Failed to start MCP client for {url}: {e}");
-            eprintln!("{err_msg}");
+            tracing::error!("{}", err_msg);
             return Err(AppError::Generic(err_msg));
         }
 
@@ -322,7 +322,7 @@ impl MCPClientService {
                     url.clone(),
                     e
                 );
-                eprintln!("{err_msg}");
+                tracing::error!("{}", err_msg);
                 return Err(AppError::Generic(err_msg));
             }
         };
@@ -391,7 +391,7 @@ impl MCPClientService {
                     url.clone(),
                     e
                 );
-                eprintln!("{err_msg}");
+                tracing::error!("{}", err_msg);
                 return Err(AppError::Generic(err_msg));
             }
         };

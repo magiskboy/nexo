@@ -10,6 +10,18 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock useLogger
+vi.mock('@/hooks/useLogger', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    setContext: vi.fn(),
+  }),
+}));
+
+
 vi.mock('lucide-react', () => ({
   Info: () => <div data-testid="info-icon" />,
   Github: () => <div data-testid="github-icon" />,

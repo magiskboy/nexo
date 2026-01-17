@@ -9,6 +9,7 @@ import {
   showError,
 } from '@/features/notifications/state/notificationSlice';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 interface MessageImageProps {
   src: string;
@@ -77,7 +78,7 @@ export const MessageImage = ({
           URL.revokeObjectURL(url);
         }
       } catch (err) {
-        console.error('Failed to load local image:', src, err);
+        logger.error('Failed to load local image:', { src, error: err });
         if (active) {
           setError(err instanceof Error ? err.message : 'Failed to load image');
         }
@@ -181,7 +182,7 @@ export const MessageImage = ({
         showSuccess(t('downloadComplete') || 'Download complete', fileName)
       );
     } catch (err) {
-      console.error('Failed to download image:', err);
+      logger.error('Failed to download image:', { src, error: err });
       dispatch(
         showError(
           t('downloadFailed') || 'Download failed',
@@ -204,7 +205,10 @@ export const MessageImage = ({
         onClick={() => onClick?.(displaySrc)}
         onContextMenu={handleContextMenu}
         onError={(e) => {
-          console.error('Image load error for src:', displaySrc, e);
+          logger.error('Image load error for src:', {
+            src: displaySrc,
+            error: e,
+          });
           setError('Image failed to render');
         }}
       />

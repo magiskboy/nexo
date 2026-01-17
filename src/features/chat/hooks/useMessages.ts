@@ -12,6 +12,7 @@ import { useGetMessagesQuery } from '../state/messagesApi';
 
 import { useTranslation } from 'react-i18next';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { logger } from '@/lib/logger';
 
 const STREAMING_TIMEOUT = 60000; // 60 seconds
 
@@ -168,7 +169,7 @@ export function useMessages(selectedChatId: string | null) {
       invokeCommand(TauriCommands.CANCEL_MESSAGE, {
         chatId: selectedChatId,
       }).catch((error) => {
-        console.error('[useMessages] CANCEL_MESSAGE failed:', error);
+        logger.error('[useMessages] CANCEL_MESSAGE failed:', error);
       });
     } else {
       dispatch(stopStreaming());

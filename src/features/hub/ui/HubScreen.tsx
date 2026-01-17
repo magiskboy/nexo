@@ -12,6 +12,7 @@ import { InstallPromptDialog } from './InstallPromptDialog';
 import type { HubMCPServer } from '@/features/mcp/types';
 import type { HubPrompt } from '@/features/prompt/types';
 import { Bot, Server, FileText } from 'lucide-react';
+import { useLogger } from '@/hooks/useLogger';
 
 interface Prompt {
   id: string;
@@ -19,6 +20,7 @@ interface Prompt {
 
 export function HubScreen() {
   const { t } = useTranslation('settings');
+  const logger = useLogger();
   const [activeTab, setActiveTab] = useState('agent');
 
   // Agents
@@ -51,9 +53,9 @@ export function HubScreen() {
       const data = await invokeCommand<Prompt[]>(TauriCommands.GET_PROMPTS);
       setPrompts(data);
     } catch (e) {
-      console.error(e);
+      logger.error('Failed to load prompts:', e);
     }
-  }, []);
+  }, [logger]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

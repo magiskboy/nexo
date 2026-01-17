@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
 import type { Prompt } from '@/app/types';
+import { logger } from '@/lib/logger';
 
 interface UseSlashCommandOptions {
   input: string;
@@ -41,7 +42,7 @@ export function useSlashCommand({
       setPrompts(data);
       hasLoadedPromptsRef.current = true;
     } catch (error) {
-      console.error('Error loading prompts:', error);
+      logger.error('Error loading prompts:', error);
     } finally {
       setIsLoading(false);
     }

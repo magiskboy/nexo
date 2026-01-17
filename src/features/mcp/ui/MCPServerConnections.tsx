@@ -53,6 +53,7 @@ import {
 import type { MCPToolType, MCPServerConnection } from '../types';
 
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { useLogger } from '@/hooks/useLogger';
 
 interface PythonRuntimeStatus {
   version: string;
@@ -69,6 +70,7 @@ interface NodeRuntimeStatus {
 export function MCPServerConnections() {
   const { t } = useTranslation('settings');
   const dispatch = useAppDispatch();
+  const logger = useLogger();
 
   // RTK Query Hooks
   const { data: mcpConnections = [], refetch: refetchConnections } =
@@ -107,7 +109,7 @@ export function MCPServerConnections() {
         setPythonRuntimes(pyStatus);
         setNodeRuntimes(nodeStatus);
       } catch (error) {
-        console.error('Failed to load runtimes:', error);
+        logger.error('Failed to load runtimes:', error);
       } finally {
         setRuntimesLoading(false);
       }
@@ -118,7 +120,7 @@ export function MCPServerConnections() {
       // Reset loading state when dialog closes
       setRuntimesLoading(false);
     }
-  }, [dialogOpen]);
+  }, [dialogOpen, logger]);
 
   const handleAdd = () => {
     setEditingConnection(null);
@@ -141,7 +143,7 @@ export function MCPServerConnections() {
         showSuccess(t('connectionDeleted'), t('connectionDeletedDescription'))
       );
     } catch (error) {
-      console.error('Error deleting MCP connection:', error);
+      logger.error('Error deleting MCP connection:', error);
       dispatch(showError(t('cannotDeleteConnection')));
     }
   };
@@ -168,11 +170,11 @@ export function MCPServerConnections() {
         env_vars: connection.env_vars,
         runtime_path: connection.runtime_path,
       }).catch((error) => {
-        console.error('Error reloading MCP connection:', error);
+        logger.error('Error reloading MCP connection:', error);
         dispatch(showError(t('cannotReloadConnection')));
       });
     } catch (error) {
-      console.error('Error updating MCP status:', error);
+      logger.error('Error updating MCP status:', error);
       dispatch(showError(t('cannotReloadConnection')));
     }
   };
@@ -188,7 +190,7 @@ export function MCPServerConnections() {
         )
       );
     } catch (error) {
-      console.error('Error disconnecting MCP connection:', error);
+      logger.error('Error disconnecting MCP connection:', error);
       dispatch(showError(t('cannotDisconnectConnection')));
     }
   };
@@ -227,7 +229,7 @@ export function MCPServerConnections() {
             env_vars: connection.env_vars,
             runtime_path: connection.runtime_path,
           }).catch((error) => {
-            console.error('Error reconnecting MCP server:', error);
+            logger.error('Error reconnecting MCP server:', error);
           });
         }
 
@@ -254,13 +256,13 @@ export function MCPServerConnections() {
           env_vars: connection.env_vars,
           runtime_path: connection.runtime_path,
         }).catch((error) => {
-          console.error('Error connecting MCP server:', error);
+          logger.error('Error connecting MCP server:', error);
         });
 
         return; // Exit early for new connections
       }
     } catch (error) {
-      console.error('Error saving MCP connection:', error);
+      logger.error('Error saving MCP connection:', error);
       dispatch(showError(t('cannotSaveConnection')));
     }
   };

@@ -21,6 +21,7 @@ import {
   showSuccess,
 } from '@/features/notifications/state/notificationSlice';
 import type { HubPrompt } from '../types';
+import { useLogger } from '@/hooks/useLogger';
 
 interface CommunityPromptsSectionProps {
   installedPromptIds: string[];
@@ -33,6 +34,7 @@ export function CommunityPromptsSection({
 }: CommunityPromptsSectionProps) {
   const { t } = useTranslation('settings');
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const [prompts, setPrompts] = useState<HubPrompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function CommunityPromptsSection({
       );
       setPrompts(data);
     } catch (err) {
-      console.error('Error loading hub prompts:', err);
+      logger.error('Error loading hub prompts:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load prompts from hub';
       setError(errorMessage);
@@ -82,7 +84,7 @@ export function CommunityPromptsSection({
         )
       );
     } catch (err) {
-      console.error('Error refreshing hub index:', err);
+      logger.error('Error refreshing hub index:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to refresh hub index';
       dispatch(showError(errorMessage));

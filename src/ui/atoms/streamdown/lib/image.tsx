@@ -3,6 +3,7 @@ import { DownloadIcon } from 'lucide-react';
 import type { DetailedHTMLProps, ImgHTMLAttributes } from 'react';
 import type { ExtraProps } from './markdown';
 import { cn, save } from './utils';
+import { logger } from '@/lib/logger';
 
 const fileExtensionPattern = /\.[^/.]+$/;
 
@@ -65,7 +66,7 @@ export const ImageComponent = ({
 
       save(filename, blob, blob.type);
     } catch (error) {
-      console.error('Failed to download image:', error);
+      logger.error('Failed to download image in streamdown:', { src, error });
     }
   };
 

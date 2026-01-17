@@ -16,6 +16,7 @@ import {
 } from '@/features/notifications/state/notificationSlice';
 import { setSelectedModel } from '@/features/chat/state/chatInputSlice';
 import { createChat, clearAllChats } from '@/features/chat/state/chatsSlice';
+import { useLogger } from '@/hooks/useLogger';
 
 import {
   useGetWorkspacesQuery,
@@ -40,6 +41,7 @@ import { useGetMCPConnectionsQuery } from '@/features/mcp';
 export function useWorkspaces() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(['common', 'settings']);
+  const logger = useLogger();
 
   // Selectors
   // We still read from slice for components that expect slice structure,
@@ -137,7 +139,7 @@ export function useWorkspaces() {
     saveAppSettingMutation({
       key: 'lastWorkspaceId',
       value: workspace.id,
-    }).catch(console.error);
+    }).catch((error) => logger.error('Failed to save lastWorkspaceId:', error));
 
     // Track workspace switch
     const { trackWorkspaceOperation, setWorkspaceContext } =
@@ -161,7 +163,9 @@ export function useWorkspaces() {
       saveAppSettingMutation({
         key: 'lastWorkspaceId',
         value: newWorkspace.id,
-      }).catch(console.error);
+      }).catch((error) =>
+        logger.error('Failed to save lastWorkspaceId after creation:', error)
+      );
 
       trackWorkspaceOperation('create', newWorkspace.id);
 
@@ -172,7 +176,7 @@ export function useWorkspaces() {
         })
       ).unwrap();
     } catch (error) {
-      console.error('Error creating workspace:', error);
+      logger.error('Error creating workspace:', error);
       dispatch(showError(t('cannotCreateWorkspace', { ns: 'settings' })));
 
       const { trackError } = await import('@/lib/sentry-utils');
@@ -219,7 +223,7 @@ export function useWorkspaces() {
         )
       );
     } catch (error) {
-      console.error('Error saving workspace settings:', error);
+      logger.error('Error saving workspace settings:', error);
       dispatch(showError(t('cannotSaveWorkspaceSettings', { ns: 'settings' })));
     }
   };
@@ -248,16 +252,25 @@ export function useWorkspaces() {
           saveAppSettingMutation({
             key: 'lastWorkspaceId',
             value: nextId,
-          }).catch(console.error);
+          }).catch((error) =>
+            logger.error(
+              'Failed to save lastWorkspaceId after deletion:',
+              error
+            )
+          );
         } else {
           dispatch(setSelectedWorkspace(null));
           saveAppSettingMutation({ key: 'lastWorkspaceId', value: '' }).catch(
-            console.error
+            (error) =>
+              logger.error(
+                'Failed to clear lastWorkspaceId after deletion:',
+                error
+              )
           );
         }
       }
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+      logger.error('Error deleting workspace:', error);
       dispatch(showError(t('cannotDeleteWorkspace', { ns: 'settings' })));
     }
   };

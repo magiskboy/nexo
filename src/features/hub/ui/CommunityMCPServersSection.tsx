@@ -18,6 +18,7 @@ import {
 } from '@/features/notifications/state/notificationSlice';
 import type { HubMCPServer } from '@/features/mcp/types';
 import { HubCommunitySection } from './HubCommunitySection';
+import { useLogger } from '@/hooks/useLogger';
 
 interface CommunityMCPServersSectionProps {
   installedServerIds: string[];
@@ -30,6 +31,7 @@ export function CommunityMCPServersSection({
 }: CommunityMCPServersSectionProps) {
   const { t } = useTranslation('settings');
   const dispatch = useAppDispatch();
+  const logger = useLogger();
   const [servers, setServers] = useState<HubMCPServer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function CommunityMCPServersSection({
       );
       setServers(data);
     } catch (err) {
-      console.error('Error loading hub MCP servers:', err);
+      logger.error('Error loading hub MCP servers:', err);
       const errorMessage =
         err instanceof Error
           ? err.message
@@ -74,7 +76,7 @@ export function CommunityMCPServersSection({
         )
       );
     } catch (err) {
-      console.error('Error refreshing hub index:', err);
+      logger.error('Error refreshing hub index:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to refresh hub index';
       dispatch(showError(errorMessage));

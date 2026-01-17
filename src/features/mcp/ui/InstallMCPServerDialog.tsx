@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useLogger } from '@/hooks/useLogger';
 import { Button } from '@/ui/atoms/button/button';
 import { Label } from '@/ui/atoms/label';
 import {
@@ -34,6 +35,7 @@ export function InstallMCPServerDialog({
   onInstalled,
 }: InstallMCPServerDialogProps) {
   const { t } = useTranslation(['settings', 'common']);
+  const logger = useLogger();
   const dispatch = useAppDispatch();
   const [installing, setInstalling] = useState(false);
 
@@ -71,7 +73,7 @@ export function InstallMCPServerDialog({
       onInstalled();
       onOpenChange(false);
     } catch (err) {
-      console.error('Error installing MCP server:', err);
+      logger.error('Error installing MCP server:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to install MCP server';
       dispatch(showError(errorMessage));

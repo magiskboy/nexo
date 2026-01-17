@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLogger } from '@/hooks/useLogger';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { navigateToChat } from '@/features/ui/state/uiSlice';
 
@@ -25,6 +26,7 @@ import type { WorkspaceSettings } from '@/features/workspace/types';
 
 export function WorkspaceSettingsScreen() {
   const { t } = useTranslation(['settings', 'common']);
+  const logger = useLogger();
   const dispatch = useAppDispatch();
 
   // Workspace Settings Logic
@@ -78,7 +80,7 @@ export function WorkspaceSettingsScreen() {
         showSuccess(t('allChatsCleared'), t('allChatsClearedDescription'))
       );
     } catch (error) {
-      console.error('Error clearing all chats:', error);
+      logger.error('Error clearing all chats in WorkspaceSettings:', error);
       dispatch(showError(t('cannotClearAllChats')));
     }
   };
@@ -88,7 +90,10 @@ export function WorkspaceSettingsScreen() {
       await handleSaveWorkspaceSettings(settings);
       dispatch(navigateToChat());
     } catch (error) {
-      console.error('Error saving workspace settings:', error);
+      logger.error(
+        'Error saving workspace settings in WorkspaceSettings:',
+        error
+      );
       dispatch(showError(t('cannotSaveWorkspaceSettings')));
     }
   };

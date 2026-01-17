@@ -15,6 +15,7 @@ import uiReducer from '@/features/ui/state/uiSlice';
 import notificationReducer from '@/features/notifications/state/notificationSlice';
 import toolPermissionReducer from '@/features/tools/state/toolPermissionSlice';
 import { sentryMiddleware } from './sentryMiddleware';
+import { loggingMiddleware } from './loggingMiddleware';
 
 import { baseApi } from './api/baseApi';
 
@@ -34,7 +35,11 @@ export const store = configureStore({
     toolPermission: toolPermissionReducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(sentryMiddleware, baseApi.middleware),
+    getDefaultMiddleware().concat(
+      sentryMiddleware,
+      loggingMiddleware,
+      baseApi.middleware
+    ),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

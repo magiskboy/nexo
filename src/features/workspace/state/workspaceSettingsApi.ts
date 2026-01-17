@@ -1,5 +1,6 @@
 import { baseApi } from '@/app/api/baseApi';
 import { TauriCommands } from '@/bindings/commands';
+import { logger } from '@/lib/logger';
 import type { WorkspaceSettings } from '../types';
 
 interface DbWorkspaceSettings {
@@ -44,7 +45,10 @@ export const workspaceSettingsApi = baseApi.injectEndpoints({
           try {
             mcpToolIds = JSON.parse(dbSettings.mcp_tool_ids);
           } catch (e) {
-            console.error('Error parsing mcpToolIds:', e);
+            logger.error(
+              'Error parsing mcpToolIds in workspace settings API:',
+              e
+            );
           }
         }
 
@@ -62,7 +66,10 @@ export const workspaceSettingsApi = baseApi.injectEndpoints({
               dbSettings.tool_permission_config
             );
           } catch (e) {
-            console.error('Error parsing toolPermissionConfig:', e);
+            logger.error(
+              'Error parsing toolPermissionConfig in workspace settings API:',
+              e
+            );
           }
         }
 
