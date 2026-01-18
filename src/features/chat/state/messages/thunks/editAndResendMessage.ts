@@ -100,6 +100,11 @@ export function createEditAndResendMessageThunk(actions: {
       // - Call LLM
       // - Handle tool calls and agent loop if needed
       // - Emit events for streaming and tool execution
+      const model = context.llmConnection.models?.find(
+        (m) => m.id === context.selectedModel
+      );
+      const supportsThinking = model?.supportsThinking ?? false;
+
       const result = await invokeCommand<{ assistant_message_id: string }>(
         TauriCommands.EDIT_AND_RESEND_MESSAGE,
         {
@@ -109,7 +114,8 @@ export function createEditAndResendMessageThunk(actions: {
           newFiles: files, // Map files to newFiles expected by backend
           metadata,
           selectedModel: context.selectedModel,
-          reasoningEffort: isThinkingEnabled ? reasoningEffort : undefined,
+          reasoningEffort:
+            isThinkingEnabled && supportsThinking ? reasoningEffort : undefined,
           llmConnectionId: context.llmConnection.id,
         }
       );

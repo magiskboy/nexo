@@ -54,6 +54,11 @@ export function createSendMessageThunkNew(_actions: {
       // - Call LLM
       // - Handle tool calls and agent loop if needed
       // - Emit events for streaming and tool execution
+      const model = context.llmConnection.models?.find(
+        (m) => m.id === context.selectedModel
+      );
+      const supportsThinking = model?.supportsThinking ?? false;
+
       const result = await invokeCommand<{ assistant_message_id: string }>(
         TauriCommands.SEND_MESSAGE,
         {
@@ -62,7 +67,8 @@ export function createSendMessageThunkNew(_actions: {
           files,
           metadata,
           selectedModel: context.selectedModel,
-          reasoningEffort: isThinkingEnabled ? reasoningEffort : undefined,
+          reasoningEffort:
+            isThinkingEnabled && supportsThinking ? reasoningEffort : undefined,
           llmConnectionId: context.llmConnection.id,
         }
       );

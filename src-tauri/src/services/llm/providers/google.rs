@@ -773,11 +773,8 @@ impl LLMProvider for GoogleProvider {
                                     id.strip_prefix("models/").unwrap_or(&id).to_string();
 
                                 // Check model capabilities
-                                let (
-                                    supports_tools,
-                                    supports_thinking,
-                                    supports_image_generation,
-                                ) = Self::check_model_capabilities(&clean_id);
+                                let (supports_tools, supports_thinking, supports_image_generation) =
+                                    Self::check_model_capabilities(&clean_id);
 
                                 Some(LLMModel {
                                     id: clean_id,
@@ -1132,10 +1129,10 @@ impl LLMProvider for GoogleProvider {
         // - Gemini 3: thinkingLevel (low, medium, high)
         // - Gemini 2.5: thinkingBudget (number of tokens)
         // Image generation models don't support thinking
-        let is_image_generation_model = Self::is_image_generation_model(&model);
+        let (_, supports_thinking, _) = Self::check_model_capabilities(&model);
 
         if let Some(effort) = request.reasoning_effort.as_ref() {
-            if !effort.is_empty() && !is_image_generation_model {
+            if !effort.is_empty() && supports_thinking {
                 if let Some(gen_config) = body
                     .get_mut("generationConfig")
                     .and_then(|v| v.as_object_mut())
