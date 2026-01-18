@@ -23,6 +23,34 @@ impl GoogleProvider {
         Self { client }
     }
 
+    /// Clean JSON Schema parameters for Google Gemini API compatibility
+    /// Removes unsupported fields like additionalProperties in certain contexts
+    fn clean_parameters_for_google(params: &serde_json::Value) -> serde_json::Value {
+        match params {
+            serde_json::Value::Object(obj) => {
+                let mut cleaned = serde_json::Map::new();
+
+                for (key, value) in obj {
+                    // Skip additionalProperties field as Google API doesn't support it in all contexts
+                    if key == "additionalProperties" {
+                        continue;
+                    }
+
+                    // Recursively clean nested objects and arrays
+                    cleaned.insert(key.clone(), Self::clean_parameters_for_google(value));
+                }
+
+                serde_json::Value::Object(cleaned)
+            }
+            serde_json::Value::Array(arr) => serde_json::Value::Array(
+                arr.iter()
+                    .map(|v| Self::clean_parameters_for_google(v))
+                    .collect(),
+            ),
+            _ => params.clone(),
+        }
+    }
+
     /// Check if a MIME type is an image type
     fn is_image_mime_type(mime: &str) -> bool {
         matches!(
@@ -1192,10 +1220,17 @@ impl LLMProvider for GoogleProvider {
                 let google_tools: Vec<serde_json::Value> = tools
                     .iter()
                     .map(|t| {
+                        // Clean parameters to remove unsupported fields for Google API
+                        let cleaned_params = t
+                            .function
+                            .parameters
+                            .as_ref()
+                            .map(|p| Self::clean_parameters_for_google(p));
+
                         json!({
                             "name": t.function.name,
                             "description": t.function.description,
-                            "parameters": t.function.parameters
+                            "parameters": cleaned_params
                         })
                     })
                     .collect();
