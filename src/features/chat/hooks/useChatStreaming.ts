@@ -444,6 +444,7 @@ export function useChatStreaming() {
     const unlistenChatUpdated = listenToEvent<ChatUpdatedEvent>(
       TauriEvents.CHAT_UPDATED,
       (payload) => {
+        logger.info('[useChatStreaming] Received chat_updated event:', payload);
         dispatch(
           updateChatTitle.fulfilled(
             { id: payload.chat_id, title: payload.title },

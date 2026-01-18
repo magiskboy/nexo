@@ -344,7 +344,6 @@ export function ChatArea() {
           }
         }
       } else {
-        const isFirstMessage = messages.length === 0;
         await dispatch(
           sendMessage({
             chatId: currentChatId,
@@ -354,17 +353,7 @@ export function ChatArea() {
           })
         ).unwrap();
 
-        // Trigger AI chat renaming after first prompt
-        if (isFirstMessage) {
-          invokeCommand(TauriCommands.GENERATE_CHAT_TITLE, {
-            chatId: currentChatId,
-            userPrompt: userInput,
-            model: modelId,
-            llmConnectionId: llmConnectionId,
-          }).catch((err) =>
-            logger.error('ChatArea: Failed to generate chat title:', err)
-          );
-        }
+        // Chat title generation is now handled automatically by backend in send_message
       }
 
       // Note: Chat last message is updated by Rust core after message completion

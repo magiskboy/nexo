@@ -9,6 +9,16 @@ import { sortMessages } from './utils/messageSorting';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 
+/**
+ * Helper function to create a composite key for tool calls
+ * This prevents conflicts between different types of tool calls
+ * @param id - The tool call ID
+ * @param type - The type of tool call ('message' | 'permission')
+ */
+function createToolCallKey(id: string, type: 'message' | 'permission'): string {
+  return `${type}:${id}`;
+}
+
 interface MessageListProps {
   // Data
   messages: Message[];
@@ -144,10 +154,10 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
     );
 
     const toggleToolCall = useCallback(
-      (id: string) => {
+      (compositeKey: string) => {
         const newValue = {
           ...expandedToolCalls,
-          [id]: !expandedToolCalls[id],
+          [compositeKey]: !expandedToolCalls[compositeKey],
         };
         if (onExpandedToolCallsChange) {
           onExpandedToolCallsChange(newValue);
@@ -199,12 +209,13 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
 
           // Handle tool_call messages separately (completed/executing)
           if (message.role === 'tool_call') {
+            const toolCallKey = createToolCallKey(message.id, 'message');
             return (
               <ToolCallItem
                 key={message.id}
                 message={message}
-                isExpanded={expandedToolCalls[message.id] || false}
-                onToggle={toggleToolCall}
+                isExpanded={expandedToolCalls[toolCallKey] || false}
+                onToggle={() => toggleToolCall(toolCallKey)}
                 onCancel={onCancelToolExecution}
                 t={t}
               />
@@ -257,6 +268,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                 pending &&
                 pending.toolCalls.map((tc) => {
                   const timeLeftValue = permissionTimeLeft[message.id];
+                  const toolCallKey = createToolCallKey(tc.id, 'permission');
 
                   return (
                     <ToolCallItem
@@ -267,8 +279,8 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                         arguments: tc.arguments,
                         status: 'pending_permission',
                       }}
-                      isExpanded={expandedToolCalls[tc.id] !== false} // Default to expanded
-                      onToggle={toggleToolCall}
+                      isExpanded={expandedToolCalls[toolCallKey] !== false} // Default to expanded
+                      onToggle={() => toggleToolCall(toolCallKey)}
                       onCancel={onCancelToolExecution}
                       timeLeft={timeLeftValue}
                       t={t}

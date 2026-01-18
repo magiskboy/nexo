@@ -27,7 +27,7 @@ export interface ToolCallItemProps {
   message?: Message;
   data?: ToolCallData;
   isExpanded: boolean;
-  onToggle: (id: string) => void;
+  onToggle: () => void;
   t: (key: string) => string;
   onRespond?: (allow: boolean) => void;
   onCancel?: () => void;
@@ -64,16 +64,12 @@ export const ToolCallItem = memo(
       return { toolCallData: null, parseError: null };
     }, [message, data]);
 
-    const id = message?.id || data?.id;
-
     const handleToggle = useCallback(() => {
       const selection = window.getSelection();
       if (selection && selection.toString().length > 0) return;
 
-      if (id) {
-        onToggle(id);
-      }
-    }, [id, onToggle]);
+      onToggle();
+    }, [onToggle]);
 
     const handleRespond = useCallback(
       (e: MouseEvent<HTMLButtonElement>, allow: boolean) => {

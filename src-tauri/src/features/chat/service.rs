@@ -177,9 +177,7 @@ impl ChatService {
                 .get("type")
                 .and_then(|v| v.as_str())
                 .unwrap_or("default");
-            description.push_str(&format!(
-                "- {id} (Label: {label}, Type: {node_type})\n"
-            ));
+            description.push_str(&format!("- {id} (Label: {label}, Type: {node_type})\n"));
         }
 
         description.push_str("\nConnections:\n");
@@ -878,6 +876,29 @@ impl ChatService {
             }
         }
 
+        // Auto-generate chat title if this is the first message
+        // existing_messages was fetched at line 458, before we created the user message
+        // So if existing_messages.len() == 0, this is the first message
+        if existing_messages.is_empty() {
+            let title_chat_id = chat_id.clone();
+            let title_content = content.clone();
+            let title_model = selected_model.or(workspace_settings.default_model.clone());
+            let title_llm_connection_id = Some(llm_connection_id);
+            let title_app = app.clone();
+
+            // Spawn background task for title generation
+            tokio::spawn(async move {
+                generate_chat_title_internal(
+                    title_app,
+                    title_chat_id,
+                    title_content,
+                    title_model,
+                    title_llm_connection_id,
+                )
+                .await;
+            });
+        }
+
         Ok((assistant_message_id, llm_response.content))
     }
 
@@ -1248,6 +1269,7 @@ impl ChatService {
     }
 
     /// Automatically rename a chat based on the first user prompt
+    /// (Public API for backward compatibility - validates message count)
     pub fn generate_chat_title(
         &self,
         app: AppHandle,
@@ -1261,123 +1283,29 @@ impl ChatService {
             let state = app.state::<crate::state::AppState>();
             let chat_service = &state.chat_service;
 
-            // 1. Get LLM connection and workspace default model
-            let (llm_connection, workspace_default_model) = if let Some(conn_id) = llm_connection_id
-            {
-                let conn = match chat_service.llm_connection_service.get_by_id(&conn_id) {
-                    Ok(Some(conn)) => conn,
-                    _ => {
-                        return;
-                    }
-                };
-                (conn, None)
-            } else {
-                // Try to get from chat -> workspace settings
-                let chat = match chat_service.repository.get_by_id(&chat_id) {
-                    Ok(Some(c)) => c,
-                    _ => {
-                        return;
-                    }
-                };
-                let settings = match chat_service
-                    .workspace_settings_service
-                    .get_by_workspace_id(&chat.workspace_id)
-                {
-                    Ok(Some(s)) => s,
-                    _ => {
-                        return;
-                    }
-                };
-                let conn_id = match settings.llm_connection_id {
-                    Some(id) => id,
-                    None => {
-                        return;
-                    }
-                };
-
-                let conn = match chat_service.llm_connection_service.get_by_id(&conn_id) {
-                    Ok(Some(conn)) => conn,
-                    _ => {
-                        return;
-                    }
-                };
-                (conn, settings.default_model.clone())
+            // Check if this is the first message in the chat
+            // Only generate title if message_count == 1 (the user message just sent)
+            let message_count = match chat_service.message_service.get_by_chat_id(&chat_id) {
+                Ok(messages) => messages.len(),
+                Err(_) => {
+                    tracing::error!(chat_id = %chat_id, "Failed to get messages for title generation");
+                    return;
+                }
             };
 
-            let model = model
-                .or(workspace_default_model)
-                .or(llm_connection.default_model.clone())
-                .unwrap_or_default();
-            if model.is_empty() {
+            if message_count != 1 {
+                // Not the first message, skip title generation
+                tracing::debug!(
+                    chat_id = %chat_id,
+                    message_count = message_count,
+                    "Skipping title generation - not the first message"
+                );
                 return;
             }
 
-            // 2. Prepare rename prompt
-            let system_prompt = "You are a concise chat title generator. Generate a 3-6 word title that captures the intent of the user's prompt. Output only the title without any formatting, quotes, or punctuation.";
-            let user_prompt = format!("User Prompt: {user_content}");
-
-            let messages = vec![
-                ChatMessage::System {
-                    content: system_prompt.to_string(),
-                },
-                ChatMessage::User {
-                    content: UserContent::Text(user_prompt),
-                },
-            ];
-
-            let request = LLMChatRequest {
-                model,
-                messages,
-                temperature: Some(0.3),
-                max_tokens: Some(30),
-                stream: false,
-                tools: None,
-                tool_choice: None,
-                reasoning_effort: None,
-                stream_options: None,
-                response_modalities: None,
-                image_config: None,
-            };
-
-            // 3. Call LLM
-            // Use dummy IDs to avoid interfering with current chat UI
-            let result = chat_service
-                .llm_service
-                .chat(
-                    &llm_connection.base_url,
-                    Some(&llm_connection.api_key),
-                    request,
-                    "system_auto_rename".to_string(),
-                    format!("rename_{chat_id}"),
-                    app.clone(),
-                    None,
-                    &llm_connection.provider,
-                )
+            // Call internal function
+            generate_chat_title_internal(app, chat_id, user_content, model, llm_connection_id)
                 .await;
-
-            if let Ok(response) = result {
-                let mut title = response.content.trim().to_string();
-
-                // Clean up any quotes if the model ignored directions
-                if title.starts_with('"') && title.ends_with('"') && title.len() > 2 {
-                    title = title[1..title.len() - 1].to_string();
-                }
-
-                if !title.is_empty() {
-                    // 4. Update Database
-                    if chat_service
-                        .repository
-                        .update(&chat_id, Some(&title), None)
-                        .is_ok()
-                    {
-                        // 5. Emit event to notify frontend
-                        let emitter = crate::features::chat::ChatEmitter::new(app);
-                        let _ = emitter.emit_chat_updated(chat_id, title);
-                    }
-                }
-            } else if let Err(e) = result {
-                tracing::error!(chat_id = %chat_id, error = ?e, "Error generating chat title");
-            }
         });
     }
 
@@ -2065,5 +1993,149 @@ impl ChatService {
         api_messages.push(ChatMessage::User { content });
 
         Ok(api_messages)
+    }
+}
+
+/// Internal async function to generate chat title
+/// Called by both send_message (auto) and generate_chat_title (manual API)
+/// Does NOT validate message count - caller must ensure this is the first message
+async fn generate_chat_title_internal(
+    app: AppHandle,
+    chat_id: String,
+    user_content: String,
+    model: Option<String>,
+    llm_connection_id: Option<String>,
+) {
+    let state = app.state::<crate::state::AppState>();
+    let chat_service = &state.chat_service;
+
+    // 1. Get LLM connection and workspace default model
+    let (llm_connection, workspace_default_model) = if let Some(conn_id) = llm_connection_id {
+        let conn = match chat_service.llm_connection_service.get_by_id(&conn_id) {
+            Ok(Some(conn)) => conn,
+            _ => {
+                tracing::error!(chat_id = %chat_id, "Failed to get LLM connection for title generation");
+                return;
+            }
+        };
+        (conn, None)
+    } else {
+        // Try to get from chat -> workspace settings
+        let chat = match chat_service.repository.get_by_id(&chat_id) {
+            Ok(Some(c)) => c,
+            _ => {
+                tracing::error!(chat_id = %chat_id, "Failed to get chat for title generation");
+                return;
+            }
+        };
+        let settings = match chat_service
+            .workspace_settings_service
+            .get_by_workspace_id(&chat.workspace_id)
+        {
+            Ok(Some(s)) => s,
+            _ => {
+                tracing::error!(chat_id = %chat_id, "Failed to get workspace settings for title generation");
+                return;
+            }
+        };
+        let conn_id = match settings.llm_connection_id {
+            Some(id) => id,
+            None => {
+                tracing::debug!(chat_id = %chat_id, "No LLM connection configured for workspace");
+                return;
+            }
+        };
+
+        let conn = match chat_service.llm_connection_service.get_by_id(&conn_id) {
+            Ok(Some(conn)) => conn,
+            _ => {
+                tracing::error!(chat_id = %chat_id, conn_id = %conn_id, "Failed to get LLM connection");
+                return;
+            }
+        };
+        (conn, settings.default_model.clone())
+    };
+
+    let model = model
+        .or(workspace_default_model)
+        .or(llm_connection.default_model.clone())
+        .unwrap_or_default();
+    if model.is_empty() {
+        tracing::debug!(chat_id = %chat_id, "No model available for title generation");
+        return;
+    }
+
+    // 2. Prepare rename prompt
+    let system_prompt = "You are a concise chat title generator. Generate a 3-6 word title that captures the intent of the user's prompt. Output only the title without any formatting, quotes, or punctuation.";
+    let user_prompt = format!("User Prompt: {user_content}");
+
+    let messages = vec![
+        ChatMessage::System {
+            content: system_prompt.to_string(),
+        },
+        ChatMessage::User {
+            content: UserContent::Text(user_prompt),
+        },
+    ];
+
+    let request = LLMChatRequest {
+        model,
+        messages,
+        temperature: Some(0.3),
+        max_tokens: Some(30),
+        stream: false,
+        tools: None,
+        tool_choice: None,
+        reasoning_effort: None,
+        stream_options: None,
+        response_modalities: None,
+        image_config: None,
+    };
+
+    // 3. Call LLM
+    // Use dummy IDs to avoid interfering with current chat UI
+    let result = chat_service
+        .llm_service
+        .chat(
+            &llm_connection.base_url,
+            Some(&llm_connection.api_key),
+            request,
+            "system_auto_rename".to_string(),
+            format!("rename_{chat_id}"),
+            app.clone(),
+            None,
+            &llm_connection.provider,
+        )
+        .await;
+
+    if let Ok(response) = result {
+        let mut title = response.content.trim().to_string();
+
+        // Clean up any quotes if the model ignored directions
+        if title.starts_with('"') && title.ends_with('"') && title.len() > 2 {
+            title = title[1..title.len() - 1].to_string();
+        }
+
+        if !title.is_empty() {
+            // 4. Update Database
+            if chat_service
+                .repository
+                .update(&chat_id, Some(&title), None)
+                .is_ok()
+            {
+                tracing::info!(chat_id = %chat_id, title = %title, "Emitting chat_updated event");
+                // 5. Emit event to notify frontend
+                let emitter = crate::features::chat::ChatEmitter::new(app);
+                if let Err(e) = emitter.emit_chat_updated(chat_id.clone(), title.clone()) {
+                    tracing::error!(chat_id = %chat_id, error = ?e, "Failed to emit chat_updated event");
+                } else {
+                    tracing::debug!(chat_id = %chat_id, "Chat title generated successfully");
+                }
+            } else {
+                tracing::error!(chat_id = %chat_id, "Failed to update chat title in database");
+            }
+        }
+    } else if let Err(e) = result {
+        tracing::error!(chat_id = %chat_id, error = ?e, "Error generating chat title");
     }
 }
