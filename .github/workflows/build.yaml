@@ -81,12 +81,11 @@ jobs:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'Nexo __VERSION__'
           releaseBody: |
-            # Nexo v0.1.0-beta.5
+            # Nexo v0.1.0-beta.6
 
-            ## Improvements
+            ## Fixes
 
-            - Improved MCP connection form layout with better organization and styling
-            - Automated Homebrew formula updates for macOS releases
+            - Fixed Homebrew workflow dispatch API call for automated macOS releases
 
             ---
 
