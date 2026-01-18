@@ -137,9 +137,7 @@ impl MCPConfigService {
             "sse" | "http-streamable" | "streamable-http" => {
                 // For sse/http-streamable: url is direct, headers is JSON string
                 let url = config.url.clone().ok_or_else(|| {
-                    AppError::Hub(format!(
-                        "Missing 'url' in {server_type} MCP server config"
-                    ))
+                    AppError::Hub(format!("Missing 'url' in {server_type} MCP server config"))
                 })?;
 
                 let headers = if let Some(headers_obj) = &config.headers {

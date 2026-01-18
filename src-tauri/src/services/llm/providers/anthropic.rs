@@ -3,7 +3,10 @@ use crate::error::AppError;
 use crate::events::{
     MessageEmitter, TokenUsage as EventTokenUsage, ToolCall as EventToolCall, ToolEmitter,
 };
-use crate::models::llm_types::{LLMChatResponse, ToolCall, ToolCallFunction, TokenUsage, LLMModel, LLMChatRequest, ChatMessage, UserContent, ContentPart, AssistantContent, ToolChoice};
+use crate::models::llm_types::{
+    AssistantContent, ChatMessage, ContentPart, LLMChatRequest, LLMChatResponse, LLMModel,
+    TokenUsage, ToolCall, ToolCallFunction, ToolChoice, UserContent,
+};
 use async_trait::async_trait;
 use futures::StreamExt;
 use reqwest::Client;
@@ -306,7 +309,10 @@ impl AnthropicProvider {
                 } else if event_type == "message_start" {
                     if let Ok(val) = serde_json::from_str::<Value>(event_data) {
                         if let Some(usage) = val.get("message").and_then(|m| m.get("usage")) {
-                            if let Some(it) = usage.get("input_tokens").and_then(serde_json::Value::as_u64) {
+                            if let Some(it) = usage
+                                .get("input_tokens")
+                                .and_then(serde_json::Value::as_u64)
+                            {
                                 input_tokens = it as u32;
                             }
                         }
@@ -314,7 +320,10 @@ impl AnthropicProvider {
                 } else if event_type == "message_delta" {
                     if let Ok(val) = serde_json::from_str::<Value>(event_data) {
                         if let Some(usage) = val.get("usage") {
-                            if let Some(ot) = usage.get("output_tokens").and_then(serde_json::Value::as_u64) {
+                            if let Some(ot) = usage
+                                .get("output_tokens")
+                                .and_then(serde_json::Value::as_u64)
+                            {
                                 output_tokens = ot as u32;
                             }
                         }
@@ -723,17 +732,19 @@ impl LLMProvider for AnthropicProvider {
         }
 
         // Handle Tools
-        let tools = request.tools.map(|req_tools| req_tools
-                    .into_iter()
-                    .map(|t| AnthropicTool {
-                        name: t.function.name,
-                        description: t.function.description,
-                        input_schema: t
-                            .function
-                            .parameters
-                            .unwrap_or(serde_json::json!({"type": "object", "properties": {}})),
-                    })
-                    .collect());
+        let tools = request.tools.map(|req_tools| {
+            req_tools
+                .into_iter()
+                .map(|t| AnthropicTool {
+                    name: t.function.name,
+                    description: t.function.description,
+                    input_schema: t
+                        .function
+                        .parameters
+                        .unwrap_or(serde_json::json!({"type": "object", "properties": {}})),
+                })
+                .collect()
+        });
 
         // Handle Tool Choice
         let tool_choice = if let Some(tc) = request.tool_choice {

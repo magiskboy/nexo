@@ -79,7 +79,8 @@ impl UsageRepository for SqliteUsageRepository {
 
         let mut stmt = conn.prepare(&query)?;
 
-        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(std::convert::AsRef::as_ref).collect();
+        let params_ref: Vec<&dyn rusqlite::ToSql> =
+            params.iter().map(std::convert::AsRef::as_ref).collect();
 
         let rows = stmt.query_map(params_ref.as_slice(), |row| {
             Ok(UsageStat {
@@ -135,7 +136,8 @@ impl UsageRepository for SqliteUsageRepository {
             params.push(Box::new(end));
         }
 
-        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(std::convert::AsRef::as_ref).collect();
+        let params_ref: Vec<&dyn rusqlite::ToSql> =
+            params.iter().map(std::convert::AsRef::as_ref).collect();
 
         conn.query_row(&query, params_ref.as_slice(), |row| {
             Ok(UsageSummary {
@@ -185,7 +187,8 @@ impl UsageRepository for SqliteUsageRepository {
 
         query.push_str(" GROUP BY bucket ORDER BY bucket ASC");
 
-        let params_ref: Vec<&dyn rusqlite::ToSql> = params.iter().map(std::convert::AsRef::as_ref).collect();
+        let params_ref: Vec<&dyn rusqlite::ToSql> =
+            params.iter().map(std::convert::AsRef::as_ref).collect();
 
         let mut stmt = conn.prepare(&query)?;
         let rows = stmt.query_map(params_ref.as_slice(), |row| {
